@@ -61,14 +61,14 @@ export default function Login() {
   };
   return (
     <SpanContainer>
-        <div className="img js-fullheight" style={{backgroundImage: `url(${banner_LOGO})`}}>
-            <div className="img js-fullheight" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+        <div className="img js-fullheight">
+            <div className="img js-fullheight" style={{backgroundColor: 'rgba(42, 42, 42, 0.5)'}}>
                 <section className="ftco-section">
                     <div className="container">
                         <div className="row justify-content-center">
                             <div className="col-md-6 text-center mb-5">
                                 <h2 className="heading-section">
-                                    <img src={positivotransparente_LOGO} width="250px"/>
+                                    <img src={'https://circus-pi.vercel.app/assets/change-logo-dark-transparente-6852406f.png'} width="250px"/>
                                 </h2>
                             </div>
                         </div>

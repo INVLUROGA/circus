@@ -120,11 +120,6 @@ export const PerfilCliente = () => {
                       <InformacionGeneralCliente data={userCliente}/>
                   </ScrollPanel>
                 </TabPanel>
-                <TabPanel header='MEMBRESIAS'>
-                  <ScrollPanel style={{ width: '100%', height: '55vh' }} className="custombar2">
-                      <PanelMembresias id_cli={userCliente.id_cli}/>
-                  </ScrollPanel>
-                </TabPanel>
                 <TabPanel header='Documentos adjuntos'>
                 <ScrollPanel style={{ width: '100%', height: '55vh' }} className="custombar2">
                   <SectionFiles uid_file={userCliente.uid_file_adj}/>
@@ -138,17 +133,6 @@ export const PerfilCliente = () => {
                 <TabPanel header='Compras'>
                 <ScrollPanel style={{ width: '100%', height: '55vh' }} className="custombar2">
                   <ComprasxCliente uid={uid} dataVenta={userCliente.tb_venta}/>
-                </ScrollPanel>
-                </TabPanel>
-                <TabPanel header='Reportes'>
-                <ScrollPanel style={{ width: '100%', height: '55vh' }} className="custombar2">
-                  <ReportesxCliente uid={uid} dataVenta={userCliente.tb_venta}/>
-                </ScrollPanel>
-                </TabPanel>
-                <TabPanel header='NUTRICIONISTA'>
-                <ScrollPanel style={{ width: '100%', height: '55vh' }} className="custombar2">
-                  {/* <ReportesxCliente uid={uid} dataVenta={userCliente.tb_venta}/> */}
-                  <ScreenNutricionista id_cli={userCliente?.id_cli} dataCli={userCliente}/>
                 </ScrollPanel>
                 </TabPanel>
               </TabView>

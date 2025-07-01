@@ -37,7 +37,6 @@ const dividirEventosPorColumna = (eventos) => {
 };
 const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, labelNombre, resource, eventosDelRecurso})=>{
   const { resourceTitle, cargo_empl, resourceId, urlImageAvatar } = resource;
-    console.log({eventosDelRecurso});
     const ahora = dayjs(); // Fecha y hora actual
 
     const eventosPasados = eventosDelRecurso.filter(e => dayjs(e.start).isBefore(ahora));
@@ -178,7 +177,7 @@ const ScheduleTable = ({
   const [slotMinutes, setSlotMinutes] = useState(60);
 
   // 2. Dimensiones fijas
-  const slotHeight = 50; // px que ocupa cada bloque de `slotMinutes`
+  const slotHeight = 150; // px que ocupa cada bloque de `slotMinutes`
   const minuteHeight = slotHeight / slotMinutes; // px por minuto
   const headerHeight = 130; // altura de la parte “sticky” (selector + títulos)
 
