@@ -60,7 +60,9 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
         const onSubmitCustomEvento=()=>{
             cancelInfoEvento()
             const {  id, ...valores} = formState
-            putEventoServicioxEmpresa({...valores}, etiquetas_busquedas, new Date(dayjs(fecha_inicio).toISOString()), formState.id)
+            console.log({eninfo: formState.start});
+            
+            putEventoServicioxEmpresa({...valores}, etiquetas_busquedas, new Date(dayjs(formState.start).toISOString()), formState.id)
         }
     const footerModal = ()=>{
         return (

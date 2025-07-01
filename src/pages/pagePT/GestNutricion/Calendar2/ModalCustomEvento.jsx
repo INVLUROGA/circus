@@ -11,6 +11,7 @@ import { Button } from 'primereact/button';
 import dayjs from 'dayjs';
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 import { Loading } from '@/components/Loading';
+import { ModalCliente } from '../../GestClientes/ModalCliente';
 const customEvent = {
     id: 0,
     id_cli: 0,
@@ -21,9 +22,10 @@ const customEvent = {
     fecha_fin: null,
     etiquetas_busquedas: []
 }
-export const ModalCustomEvento = ({show, onHide, resor}) => {
+export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => {
     const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmpleados, dataParametrosServicios, obtenerServiciosxEmpresa, postEventoServicioxEmpresa, isLoading } = useCalendarStore()
     const { DataGeneral:dataOrigen, obtenerParametroPorEntidadyGrupo:obtenerDataOrigen } = useTerminoStore()
+    const [isOpenModalCustomCliente, setisOpenModalCustomCliente] = useState(false)
     const { formState, 
             id_cli, 
             id_estado, 
@@ -36,6 +38,7 @@ export const ModalCustomEvento = ({show, onHide, resor}) => {
     const [target, setTarget] = useState([]);
     // console.log({resor}, 'asdfasdf');
     // ———> Este es el useEffect para recalcular fecha_fin:
+    
     useEffect(() => {
         if (!fecha_inicio) return;
 
@@ -61,7 +64,7 @@ export const ModalCustomEvento = ({show, onHide, resor}) => {
             setSource(dataParametrosServicios)
             obtenerDataOrigen('citas', 'origen-citas')
         }
-    }, [show])
+    }, [show, isOpenModalCustomCliente])
     const onSubmitCustomEvento=()=>{
         onCancelModal()
         const {  id, ...valores} = formState
@@ -71,9 +74,17 @@ export const ModalCustomEvento = ({show, onHide, resor}) => {
         onHide()
         onResetForm()
     }
-    
+    const onOpenModalRegisterCliente = ()=>{
+        setisOpenModalCustomCliente(true)
+        // onCancelModal()
+    }
+    const onCloseModalRegisterCliente = ()=>{
+        setisOpenModalCustomCliente(false)
+        onShowCustomEvento(resor)
+    }
   return (
     <>
+    <ModalCliente show={isOpenModalCustomCliente} onHide={onCloseModalRegisterCliente}/>
     {
         isLoading ? (
             <Loading show={isLoading}/>
@@ -86,18 +97,23 @@ export const ModalCustomEvento = ({show, onHide, resor}) => {
                                     <Form>
                                                 <Row>
                                                 <Col sm={12}>
-                                                    <div className='m-2'>
-                                                        <label>Cliente:</label> 
-                                                        <Select
-                                                            onChange={(e) => onInputChangeReact(e, 'id_cli')}
-                                                            name="id_cli"
-                                                            placeholder={'Seleccionar...'}
-                                                            className="react-select"
-                                                            classNamePrefix="react-select"
-                                                            options={dataClientes}
-                                                            value={(dataClientes||[]).find((op)=>op.value===id_cli)}
-                                                            required
-                                                        />
+                                                    <div className='m-2 d-flex align-items-end'>
+                                                        <div className='w-75'>
+                                                            <label>Cliente:</label> 
+                                                            <Select
+                                                                onChange={(e) => onInputChangeReact(e, 'id_cli')}
+                                                                name="id_cli"
+                                                                placeholder={'Seleccionar...'}
+                                                                className="react-select"
+                                                                classNamePrefix="react-select"
+                                                                options={dataClientes}
+                                                                value={(dataClientes||[]).find((op)=>op.value===id_cli)}
+                                                                required
+                                                            />
+                                                        </div>
+                                                        <div className='mx-2'>
+                                                            <Button label='CLIENTE' icon={'pi pi-plus'} onClick={onOpenModalRegisterCliente}/>
+                                                        </div>
                                                     </div>
                                                 </Col>
                                                 <Col sm={6}>
@@ -239,7 +255,6 @@ export const ModalCustomEvento = ({show, onHide, resor}) => {
             </Dialog>
         )
     }
-    
     </>
   )
 }

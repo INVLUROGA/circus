@@ -17,6 +17,7 @@ const registerCliente = {
 const DatosCliente = ({dataCliente}) => {
 	const dispatch = useDispatch()
 	const {obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores, DataVendedores} = useTerminoStore()
+	const {obtenerParametroPorEntidadyGrupo:obtenerDataOrigenCircus, DataGeneral:dataOrigenCircus} = useTerminoStore()
 	const [MsgValidation, setMsgValidation] = useState('')
 	const [clienteSelect, setClienteSelect] = useState({})
 	const [EmpleadoSelect, setEmpleadoSelect] = useState({})
@@ -32,6 +33,7 @@ const DatosCliente = ({dataCliente}) => {
 	useEffect(() => {
 		obtenerParametrosClientes()
 		obtenerParametrosVendedores()
+		obtenerDataOrigenCircus('nueva-venta-circus', 'origen')
 	}, [])
 	useEffect(() => {
 		dispatch(onSetDetalleCli({
@@ -71,7 +73,6 @@ const DatosCliente = ({dataCliente}) => {
 		const dataCli = DataClientes.find(
             (option) => option.label === e.value
         )
-		console.log(dataCli, "cliente change");
 		onInputChangeReact(e, 'id_cli')
 	}
 	return (
@@ -96,6 +97,7 @@ const DatosCliente = ({dataCliente}) => {
 												)|| 0}
 												required
 											/>
+											<Button>+ AGREGAR CLIENTE</Button>
 											</div>
 										</Col>
 										<Col xl={12} sm={12}>
@@ -103,11 +105,11 @@ const DatosCliente = ({dataCliente}) => {
 											<Select
 												onChange={(e) => onInputChangeReact(e, 'id_origen')}
 												name="id_origen"
-												placeholder={'De donde nos conoce el socio'}
+												placeholder={'De donde nos conoce el cliente'}
 												className="react-select"
 												classNamePrefix="react-select"
-												options={arrayOrigenDeCliente}
-												value={arrayOrigenDeCliente.find(
+												options={dataOrigenCircus}
+												value={dataOrigenCircus.find(
 													(option) => option.value === id_origen
 												) || 0}
 												required

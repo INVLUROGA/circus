@@ -19,8 +19,10 @@ const regCliente = {
 export const CardVenta = ({dataVenta, datos_pagos, detalle_cli_modelo, funToast}) => {
   //wthis: 100: servicio, 101: producto
   const { obtenerServicios, dataView } = useNuevaVentaStore()
+  const { obtenerProductos, dataProductos } = useNuevaVentaStore()
   useEffect(() => {
     obtenerServicios()
+    obtenerProductos()
   }, [])
   
   const { DataClientes, obtenerParametrosClientes } = useTerminoStore()
@@ -32,6 +34,8 @@ const [DEFAULT_monto, setDEFAULT_monto] = useState(0)
 const [id_item, setid_item] = useState(0)
 const [cantidad, setcantidad] = useState(0)
 const onOpenModalAgregarCarrito = (servSelect)=>{
+  console.log({servSelect});
+  
   setservSelect(servSelect)
   setisOpenModalAgregarCarrito(true)
   setlabelServicio(servSelect.label)
@@ -59,15 +63,13 @@ useEffect(() => {
     </Card> */}
           <TabView>
             <TabPanel header='SERVICIOS'>
-
+                <DetalleItemProSer dataView={dataView} onOpenModalAgregarCarrito={onOpenModalAgregarCarrito}/>
             </TabPanel>
             <TabPanel header='PRODUCTOS'>
-
+                <DetalleItemProSer dataView={dataProductos} onOpenModalAgregarCarrito={onOpenModalAgregarCarrito}/>
             </TabPanel>
             <TabPanel header='TODOS'>
-              <div className="card-body d-flex flex-column" style={{ height: '60vh' /* o '100%' si ya está definido */ }}>
-                <DetalleItemProSer dataView={dataView} onOpenModalAgregarCarrito={onOpenModalAgregarCarrito}/>
-              </div>
+                <DetalleItemProSer dataView={[...dataView, ...dataProductos]} onOpenModalAgregarCarrito={onOpenModalAgregarCarrito}/>
             </TabPanel>
           </TabView>
     <ModalAgregarCarrito servSelect={servSelect} id_item={id_item} cantidad_MAX={cantidad} monto_default={DEFAULT_monto} labelServ={labelServicio} onHide={onCloseModalAgregarCarrito} show={isOpenModalAgregarCarrito}/>

@@ -62,8 +62,8 @@ export const useCalendarStore = () => {
 					etiquetas_busquedas
 				);
 			}
-			setIsLoading(false);
 			await obtenerEventoServicioxEmpresa(599, fecha_inicio);
+			setIsLoading(false);
 			// await obtenerArticulos(id_enterprice);
 			setmessage({ msg: data.msg, ok: data.ok });
 		} catch (error) {
@@ -77,11 +77,12 @@ export const useCalendarStore = () => {
 		id_cita
 	) => {
 		try {
+			setIsLoading(true);
 			const { data } = await PTApi.put(`/cita/servicio-cita/${id_cita}`, {
 				formState,
 			});
-			setIsLoading(false);
 			await obtenerEventoServicioxEmpresa(599, fecha_inicio);
+			setIsLoading(false);
 			// await obtenerArticulos(id_enterprice);
 			setmessage({ msg: data.msg, ok: data.ok });
 		} catch (error) {
@@ -96,6 +97,7 @@ export const useCalendarStore = () => {
 					fecha_inicio: fecha_inicio,
 				},
 			});
+			console.log({ fecha_inicio, data });
 			setIsLoading(false);
 			// await obtenerArticulos(id_enterprice);
 			setmessage({ msg: data.msg, ok: data.ok });

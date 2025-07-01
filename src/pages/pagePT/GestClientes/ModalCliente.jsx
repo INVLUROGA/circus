@@ -15,6 +15,7 @@ import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 import { Loading } from '@/components/Loading';
 import { Toast } from 'primereact/toast';
 import { clearErrorMessage } from '@/store/usuario/usuarioClienteSlice';
+import { Dialog } from 'primereact/dialog';
 
 
 const regUsuarioCliente= {
@@ -128,13 +129,12 @@ export const ModalCliente = ({show, onHide}) => {
     <>
             <Toast  ref={refToast}/>
     {loading ? (<Loading show={loading}/> ) : (
-    <Modal show={show} onHide={onHide} size='xl' backdrop={'static'}>
-    <Modal.Header>
+    <Dialog header={'AGREGAR CLIENTE'} visible={show} onHide={onHide} style={{width: '70rem', height: '40rem'}} backdrop={'static'}>
+    {/* <Modal.Header>
         <Modal.Title>Agregar socio</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>
+    </Modal.Header> */}
 				<Row>
-					<Col xl={3} className="">
+					{/* <Col xl={3} className="">
 						<div className="d-flex justify-content-center">
 							<img src={selectedFile} width={180} height={180} />
 						</div>
@@ -148,8 +148,8 @@ export const ModalCliente = ({show, onHide}) => {
                                 ViewDataImg(e)
                             }} 
                             />
-					</Col>
-					<Col xl={9} className="">
+					</Col> */}
+					<Col xl={12} className="">
 						<form>
                             <Row>
                                 <Col xl={4}>
@@ -218,25 +218,6 @@ export const ModalCliente = ({show, onHide}) => {
                                             placeholder="Fecha de nacimiento"
                                             // required
                                         />
-                                    </div>
-                                </Col>
-                                <Col xl={4}>
-                                    <div className="mb-2">
-                                        <label htmlFor="estCivil_cli" className="form-label">
-                                            Estado civil*
-                                        </label>
-										<Select
-											onChange={(e) => onInputChangeReact(e, 'estCivil_cli')}
-											name="estCivil_cli"
-											placeholder={'Seleccione el estado civil'}
-											className="react-select"
-											classNamePrefix="react-select"
-											options={arrayEstadoCivil}
-											value={arrayEstadoCivil.find(
-												(option) => option.value === estCivil_cli
-											)}
-											// required
-										/>
                                     </div>
                                 </Col>
                                 <Col xl={4}>
@@ -351,12 +332,12 @@ export const ModalCliente = ({show, onHide}) => {
                                 <Col xl={4}>
                                     <div className="mb-2">
                                         <label htmlFor="tipoCli_cli" className="form-label">
-                                            Tipo de socio*
+                                            Tipo de cliente*
                                         </label>
 										<Select
 											onChange={(e) => onInputChangeReact(e, 'tipoCli_cli')}
 											name="tipoCli_cli"
-											placeholder={'Seleccione el tipo de socio'}
+											placeholder={'Seleccione el tipo de cliente'}
 											className="react-select"
 											classNamePrefix="react-select"
 											options={arrayTipoCliente}
@@ -365,57 +346,6 @@ export const ModalCliente = ({show, onHide}) => {
 											)}
 											// required
 										/>
-                                    </div>
-                                </Col>
-                                <Col xl={4}>
-                                    <div className="mb-2">
-                                        <label htmlFor="ubigeo_distrito_trabajo" className="form-label">
-                                            Distrito del trabajo*
-                                        </label>
-										<Select
-											onChange={(e) => onInputChangeReact(e, 'ubigeo_distrito_trabajo')}
-											name="ubigeo_distrito_trabajo"
-											placeholder={'Seleccione el distrito de trabajo'}
-											className="react-select"
-											classNamePrefix="react-select"
-											options={dataDistritos}
-											value={dataDistritos.find(
-												(option) => option.value === ubigeo_distrito_trabajo
-											)}
-											// required
-										/>
-                                    </div>
-                                </Col>
-                                <Col xl={4}>
-                                    <div className="mb-2">
-                                        <label htmlFor="trabajo_cli" className="form-label">
-                                            Trabajo
-                                        </label>
-                                        <input
-                                            className="form-control"
-                                            type="text"
-                                            name="trabajo_cli"
-                                            id="trabajo_cli"
-                                            value={trabajo_cli}
-                                            onChange={onInputChange}
-                                            placeholder="Trabajo"
-                                        />
-                                    </div>
-                                </Col>
-                                <Col xl={4}>
-                                    <div className="mb-2">
-                                        <label htmlFor="cargo_cli" className="form-label">
-                                            Cargo
-                                        </label>
-                                        <input
-                                            className="form-control"
-                                            type="text"
-                                            name="cargo_cli"
-                                            id="cargo_cli"
-                                            value={cargo_cli}
-                                            onChange={onInputChange}
-                                            placeholder="Cargo"
-                                        />
                                     </div>
                                 </Col>
                                 <Col xl={4}>
@@ -450,28 +380,43 @@ export const ModalCliente = ({show, onHide}) => {
                                         />
                                     </div>
                                 </Col>
+                                <Col xl={4}>
+                                    <div className="mb-2">
+                                        <label htmlFor="tel_cli" className="form-label">
+                                            FACEBOOK
+                                        </label>
+                                        <input
+                                            className="form-control"
+                                            type="text"
+                                            name="tel_cli"
+                                            id="tel_cli"
+                                            value={tel_cli}
+                                            onChange={onInputChange}
+                                            placeholder="FACEBOOK"
+                                        />
+                                    </div>
+                                </Col>
+                                <Col xl={4}>
+                                    <div className="mb-2">
+                                        <label htmlFor="tel_cli" className="form-label">
+                                            INSTAGRAM
+                                        </label>
+                                        <input
+                                            className="form-control"
+                                            type="text"
+                                            name="tel_cli"
+                                            id="tel_cli"
+                                            value={tel_cli}
+                                            onChange={onInputChange}
+                                            placeholder="INSTAGRAM"
+                                        />
+                                    </div>
+                                </Col>
                             </Row>
                             
 						</form>
 					</Col>
 				</Row>
-				<Row className="">
-                    <Tabs>
-                        <Tab eventKey={'infoContacEmerg'} title={'Informacion de contacto de emergencia'}>
-                            <LayoutInfoContacEmergencia 
-                                />
-                        </Tab>
-                        <Tab eventKey={'infoContac'} title={'Informacion de contacto del socio'}>
-                            <LayoutInfoContacto/>
-                        </Tab>
-                        <Tab eventKey={'comentarios'} title={'Comentario'}>
-                            <LayoutComentario/>
-                        </Tab>
-                        {/* <Tab eventKey={'docanex'} title={'Documentos anexados'}>
-                            <LayoutInfoContacto/>
-                        </Tab> */}
-                    </Tabs>
-                </Row>
                 <Button className='me-3' onClick={onSubmitAgregarCliente}>Guardar socio</Button>
                 <a className='text-danger' onClick={btnCancelModal}>Cancelar</a>
                 <br/>
@@ -484,8 +429,9 @@ export const ModalCliente = ({show, onHide}) => {
                         )
                     })
                 }
-    </Modal.Body>
-    </Modal>
+    {/* <Modal.Body>
+    </Modal.Body> */}
+    </Dialog>
     )
     }
     </>

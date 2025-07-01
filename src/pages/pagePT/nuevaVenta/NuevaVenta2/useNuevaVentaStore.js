@@ -5,13 +5,17 @@ import { useDispatch } from 'react-redux';
 
 export const useNuevaVentaStore = () => {
 	const [dataView, setdataView] = useState([]);
+	const [dataProductos, setdataProductos] = useState([]);
 	const [cajas, setcajas] = useState([]);
 	const dispatch = useDispatch();
 	const obtenerServicios = async () => {
 		const { data } = await PTApi.get('/circus/obtener-servicios');
+		console.log({ serv: data.servicios });
+
 		const dataAlter = data.servicios.map((serv) => {
 			return {
 				tipo: 'servicio',
+				id: serv.id || 0,
 				label: serv.nombre_servicio || '',
 				subCategoria: serv?.tb_parametro?.label_param || '',
 				precio: serv.precio || 0,
@@ -20,7 +24,23 @@ export const useNuevaVentaStore = () => {
 			};
 		});
 		setdataView(dataAlter);
-		// setdataFormaPagos(data.audit);
+	};
+	const obtenerProductos = async () => {
+		const { data } = await PTApi.get('/circus/obtener-productos/599');
+
+		const dataAlter = data.productos.map((serv) => {
+			return {
+				tipo: 'producto',
+				id: serv.id || 0,
+				label: serv.nombre_producto || '',
+				subCategoria: 'PRODUCTO' || '',
+				precio: serv.prec_venta || 0,
+				duracion: '' || 0,
+				uid: `producto${serv.id}` || '',
+			};
+		});
+		console.log({ prod: data.productos, dataAlter });
+		setdataProductos(dataAlter);
 	};
 	const obtenerCajaActual = async () => {
 		try {
@@ -47,8 +67,10 @@ export const useNuevaVentaStore = () => {
 	};
 	return {
 		obtenerServicios,
+		obtenerProductos,
 		obtenerCajaActual,
 		onAperturarCaja,
 		dataView,
+		dataProductos,
 	};
 };

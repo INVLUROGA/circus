@@ -62,9 +62,9 @@ export const arrayTipoCambio = [
 ];
 export const arrayEstadosCitas = [
 	{ label: 'Confirmada', value: 500 },
-	{ label: 'Asistio', value: 501 },
-	{ label: 'No Asistio', value: 502 },
-	{ label: 'Cancelada', value: 503 },
+	{ label: 'Asistio', value: 502 },
+	{ label: 'No Asistio', value: 503 },
+	{ label: 'Cancelada', value: 501 },
 ];
 
 export const arrayRedesSociales = [
@@ -162,7 +162,7 @@ export const arrayTipoDoc = [
 	{ label: 'Otro', value: 0 },
 ];
 export const arrayTipoCliente = [
-	{ label: 'Socio', value: 84 },
+	{ label: 'Cliente', value: 84 },
 	{ label: 'canje uso Imagen', value: 229 },
 	{ label: 'canje influencer', value: 266 },
 	// { label: 'canje - influencer moda', value: 221 },

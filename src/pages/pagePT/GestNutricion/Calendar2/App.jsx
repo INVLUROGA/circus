@@ -11,12 +11,40 @@ import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import config from '@/config';
 import { ModalInfoEvento } from './ModalInfoEvento';
-const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, labelNombre, resource})=>{
+const dividirEventosPorColumna = (eventos) => {
+  const columnas = [];
+
+  eventos.forEach((evento) => {
+    let colocado = false;
+    for (const columna of columnas) {
+      const enConflicto = columna.some((e) =>
+        (new Date(evento.start) < new Date(e.end)) &&
+        (new Date(evento.end) > new Date(e.start))
+      );
+      if (!enConflicto) {
+        columna.push(evento);
+        colocado = true;
+        break;
+      }
+    }
+
+    if (!colocado) {
+      columnas.push([evento]);
+    }
+  });
+
+  return columnas; // Array de columnas, cada una con eventos que no se cruzan entre sí
+};
+const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, labelNombre, resource, eventosDelRecurso})=>{
   const { resourceTitle, cargo_empl, resourceId, urlImageAvatar } = resource;
+    console.log({eventosDelRecurso});
+    const ahora = dayjs(); // Fecha y hora actual
+
+    const eventosPasados = eventosDelRecurso.filter(e => dayjs(e.start).isBefore(ahora));
   return (
     
             <div
-              className='bg-primary text-black'
+              className='bg-black text-primary'
               style={{
                 height: height,
                 textAlign: 'center',
@@ -33,12 +61,15 @@ const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, 
                 justifyContent: 'center',
               }}
             >
-          <div className='text-center'>
+          <div className='text-center d-flex align-items-center'>
             <div>
-              <img src={urlImageAvatar} className="rounded-circle" width={100} height={100} />
+              <img src={urlImageAvatar} className="rounded-circle" width={120} height={120} />
             </div>
-            <div className='fs-3'>{resourceTitle.split(' ')[0]}</div>
-            <div className=''>{arrayCargoEmpl.find(e=>e.value===cargo_empl)?.label}</div>
+            <div className='mx-2'>
+              <div className='fs-1'>{resourceTitle.split(' ')[0]}</div>
+              <div className=''>{arrayCargoEmpl.find(e=>e.value===cargo_empl)?.label}</div>
+              <div className=''><span className='fs-3'>CITAS: <span className='text-ISESAC'>{eventosPasados.length}</span>/<span className='text-change'>{eventosDelRecurso.length}</span></span> </div>
+            </div>
             <div>
               {/* <Button className='m-1 p-1' onClick={()=>onOpenModalCustomEvento(resource)}>Agregar evento</Button> */}
               {/* <Button className='m-1 p-1'>Todo los eventos</Button> */}
@@ -77,22 +108,30 @@ e})=>{
   className={`${getEstado(`${e.id_estado}`)} `}
   onClick={()=>onOpenModalInfoEvento(e)}
   style={{
-    cursor: 'pointer',
-    position: 'absolute',
-    top: top,
-    left: 4,
-    right: 4,
-    height: height,            // asegúrate de que sea un número (px) o una cadena con 'px'
-    background: '#99CCF8',
-    borderRadius: 3,
-    padding: '0 2px',
-    boxSizing: 'border-box',
-    display: 'flex',           // convertimos en flex-column
-    flexDirection: 'column',
-    overflowY: 'auto',         // ← scroll vertical
-    overflowX: 'hidden',       // ← ocultar scroll horizontal
-    borderLeft: '8px solid #2169A8',
-  }}
+  cursor: 'pointer',
+  position: 'absolute',
+  top: top,
+  left: 4,
+  right: 4,
+  height: height,
+  background: '#99CCF8',
+  borderRadius: 3,
+  padding: '0 2px',
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  borderLeft: '8px solid #2169A8',
+  transition: 'box-shadow 0.2s ease',
+  boxShadow: '0 0 0 transparent', // sombra inicial
+}}
+onMouseEnter={(e) => {
+  e.currentTarget.style.boxShadow = '0px 4px 50px rgba(0, 0, 0, 0.8)';
+}}
+onMouseLeave={(e) => {
+  e.currentTarget.style.boxShadow = '0 0 0 transparent';
+}}
   whileHover={{ scale: 1.2 }}
   transition={{ type: 'tween', duration: 0.2 }}
   title={`${e.title} — ${start.toLocaleTimeString()} to ${end.toLocaleTimeString()}`}
@@ -141,7 +180,7 @@ const ScheduleTable = ({
   // 2. Dimensiones fijas
   const slotHeight = 50; // px que ocupa cada bloque de `slotMinutes`
   const minuteHeight = slotHeight / slotMinutes; // px por minuto
-  const headerHeight = 170; // altura de la parte “sticky” (selector + títulos)
+  const headerHeight = 130; // altura de la parte “sticky” (selector + títulos)
 
   // 3. Altura total del bloque de horas (scroll vertical)
   const totalMinutes = (endHour - startHour) * 60;
@@ -156,8 +195,15 @@ const ScheduleTable = ({
 
   // 5. Ancho total de TODO el contenido (columna horas + recursos)
   const hourColumnWidth = 80;
-  const resourceWidth = 400;
-  const totalWidth = hourColumnWidth + resources.length * resourceWidth;
+  const resourceWidth = 350;
+const totalWidth = hourColumnWidth + resources.reduce((acc, r) => {
+  const eventosDelRecurso = events.filter((e) =>
+    e.id_empl === r.resourceId && dayjs(e.start).format('YYYY-MM-DD') === date
+  );
+  const columnas = dividirEventosPorColumna(eventosDelRecurso);
+  const nCols = columnas.length || 1;
+  return acc + (nCols * resourceWidth);
+}, 0);
 
   // 6. Estados para la línea guía y la etiqueta de hora
   const [hoverY, setHoverY] = useState(null);    // desplazamiento vertical dentro del contenido
@@ -369,88 +415,91 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
         </div>
 
         {/* -------------------- Columnas de recursos -------------------- */}
-        {resources.map((r) => (
-          <div
-            key={r.resourceId}
-            style={{
-              flex: `0 0 ${resourceWidth}px`,
-              position: 'relative',
-              height: totalHeight,
-              borderRight: '3px solid #ccc',
-            }}
-          >
-            {/* Título del recurso (sticky) */}
-            <ResourcesTitle
-              resource={r}
-              boxShadow={''}
-              onOpenModalCustomEvento={onOpenModalCustomEvento}
-              height={`${headerHeight}px`}
-            />
+        {resources.map((r) => {
+  const eventosDelRecurso = events
+    .filter((e) => e.id_empl === r.resourceId && dayjs(e.start).format('YYYY-MM-DD') === date);
 
-            {/* Cuadrícula y eventos */}
-            <div style={{ position: 'relative', height: `${timesHeight}px` }}>
-              {/* Líneas horizontales de la cuadrícula */}
-              {timeMarks.map((m) => (
-                <div
-                  key={m}
-                  onClick={(evt) => handleGridClick(evt, r)}
-                  style={{
-                    position: 'absolute',
-                    top: `${m * minuteHeight}px`,
-                    left: 0,
-                    right: 0,
-                    borderTop: '1px solid #eee',
-                    height: `${slotHeight}px`,
-                  }}
-                />
-              ))}
-              {/* Eventos filtrados por recurso y día */}
-              {events
-                .filter((e) => {
-                  // Ajusta aquí e.resourceId o e.id_empl según tu API
-                  const sameResource = e.id_empl === r.resourceId;
-                  const eventDay = dayjs(e.start).format('YYYY-MM-DD');
-                  const sameDay = eventDay === date;
-                  return sameResource && sameDay;
-                })
-                .map((e) => {
-                  const start = new Date(e.start);
-                  const end = new Date(e.end);
-                  const offsetPx =
-                    ((start.getHours() * 60 + start.getMinutes()) - startHour * 60) *
-                    minuteHeight;
-                  const eventHeight = ((end - start) / 60000) * minuteHeight;
-                  // console.log({e, r});
-                  const { comentario, eventos, id_empl } = r;
-                  return (
-                    <EventItem
-                      key={e.id}
-                      start={start}
-                      end={end}
-                      top={`${offsetPx}px`}
-                      onOpenModalInfoEvento={onOpenModalInfoEvento}
-                      // onClick={
-                      //   ()=>{
-                      //     onOpenModalCustomEvento({
-                            // id_empl: id_empl,
-                            //     // resourceData: resource,
-                            //     fecha_inicio: fechaHora,
-                            //     comentario: comentario,
-                            //     id_origen: 0,
-                            //     status_cita: 0,
-                            //     fecha_fin: null,
-                            //     id: 0
-                      //       })
-                      //   }
-                      // }
-                      height={`${eventHeight}px`}
-                      e={e}
-                    />
-                  );
-                })}
-            </div>
-          </div>
+  const columnasDeEventos = dividirEventosPorColumna(eventosDelRecurso);
+  const tieneSolapamiento = columnasDeEventos.length > 1;
+
+  const anchoRecurso = tieneSolapamiento
+    ? columnasDeEventos.length * resourceWidth
+    : resourceWidth;
+
+  return (
+    <div
+      key={r.resourceId}
+      style={{
+        flex: `0 0 ${anchoRecurso}px`,
+        position: 'relative',
+        height: totalHeight,
+        borderRight: '3px solid #ccc',
+      }}
+    >
+      {/* Header del recurso */}
+      <ResourcesTitle
+        resource={r}
+        eventosDelRecurso={eventosDelRecurso}
+        boxShadow={''}
+        onOpenModalCustomEvento={onOpenModalCustomEvento}
+        height={`${headerHeight}px`}
+      />
+
+      {/* Zona de eventos */}
+      <div style={{ position: 'relative', height: `${timesHeight}px` }}>
+        {/* Líneas horarias */}
+        {timeMarks.map((m) => (
+          <div
+            key={m}
+            onClick={(evt) => handleGridClick(evt, r)}
+            style={{
+              position: 'absolute',
+              top: `${m * minuteHeight}px`,
+              left: 0,
+              right: 0,
+              borderTop: '1px solid #eee',
+              height: `${slotHeight}px`,
+            }}
+          />
         ))}
+
+        {/* Eventos distribuidos por columnas internas */}
+        {columnasDeEventos.map((columnaEventos, indexColumna) => {
+          const anchoColumnaInterna = 100 / columnasDeEventos.length;
+
+          return columnaEventos.map((e) => {
+            const start = new Date(e.start);
+            const end = new Date(e.end);
+            const offsetPx = ((start.getHours() * 60 + start.getMinutes()) - startHour * 60) * minuteHeight;
+            const eventHeight = ((end - start) / 60000) * minuteHeight;
+
+            return (
+              <div
+                key={e.id}
+                style={{
+                  position: 'absolute',
+                  top: `${offsetPx}px`,
+                  left: `${(anchoColumnaInterna * indexColumna)}%`,
+                  width: `${anchoColumnaInterna}%`,
+                  height: `${eventHeight}px`,
+                }}
+              >
+                <EventItem
+                  start={start}
+                  end={end}
+                  top={`0px`}
+                  height={`100%`}
+                  onOpenModalInfoEvento={onOpenModalInfoEvento}
+                  e={e}
+                />
+              </div>
+            );
+          });
+        })}
+      </div>
+    </div>
+  );
+})}
         {/* -------------------- LÍNEA GUÍA (dentro del wrapper que scrollea) -------------------- */}
         {hoverY !== null && (
           <div
@@ -515,9 +564,9 @@ function App() {
   useEffect(() => {
     setdataCitas(dataView)
   }, [dataView])
-  
-  
   const onOpenModalCustomEvento = (resort)=>{
+    console.log(resort);
+    
     setResor(resort)
     setisOpenModalCustomEvento(true)
   }
@@ -672,7 +721,7 @@ function App() {
         events={dataCitas}
         onOpenModalInfoEvento={onOpenModalInfoEvento}
       />
-      <ModalCustomEvento resor={resor} show={isOpenModalCustomEvento} onHide={onCloseModalCustomEvento}/>
+      <ModalCustomEvento resor={resor} show={isOpenModalCustomEvento} onShowCustomEvento={onOpenModalCustomEvento} onHide={onCloseModalCustomEvento}/>
       <ModalInfoEvento show={isOpenModalInfoEvento} onHide={onCloseModalInfoEvento} resor={resor}/>
     </div>
   );

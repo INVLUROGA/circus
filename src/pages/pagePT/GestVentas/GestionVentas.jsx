@@ -10,14 +10,7 @@ export const GestionVentas = () => {
     <PageBreadcrumb title="COMPROBANTES DE VENTAS POR DIA" subName="Ventas" />
     <Card>
         <Card.Body>
-                    <TabView>
-                      <TabPanel header='CHANGE'>
-                          <TodoVentas id_empresa={598}/>
-                      </TabPanel>
-                      <TabPanel header='HISTORICO'>
-                          <TodoVentas id_empresa={0}/>
-                      </TabPanel>
-                    </TabView>
+                          <TodoVentas id_empresa={599}/>
         </Card.Body>
     </Card>
     </>

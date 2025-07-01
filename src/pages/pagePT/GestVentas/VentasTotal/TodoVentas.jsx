@@ -21,14 +21,17 @@ import { Col, Row } from 'react-bootstrap';
 import { PdfComprobanteVenta } from './PdfComprobanteVenta';
 import config from '@/config';
 import sinAvatar from '@/assets/images/sinPhoto.jpg';
+import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 
 
 export const TodoVentas=({id_empresa})=> {
   
   locale('es')
   const { obtenerTablaVentas, dataVentas } = useVentasStore()
+  const  { obtenerParametroPorEntidadyGrupo:obtenerDataComprobantes, DataGeneral:dataComprobantes } = useTerminoStore()
   useEffect(() => {
       obtenerTablaVentas(id_empresa)
+      obtenerDataComprobantes('nueva-venta', 'comprobante')
   }, [])
   const [customers, setCustomers] = useState(null);
   const [valueFilter, setvalueFilter] = useState([])
@@ -50,14 +53,14 @@ export const TodoVentas=({id_empresa})=> {
         fetchData()
         // initFilters();
     }, [dataVentas]);
-
+    
     const getCustomers = (data) => {
         return [...(data || [])].map((d) => {
             // d.date = new Date(d.date);
             let newItem = {...d}
             let date = dayjs.utc(d.fecha_venta);
             newItem.fecha_venta_v = new Date(date.format());
-            newItem.tipo_comprobante = arrayFacturas.find(e=>e.value===d.id_tipoFactura)?.label
+            newItem.tipo_comprobante = dataComprobantes.find(e=>e.value===d.id_tipoFactura)?.label
             return newItem;
         });
     };
@@ -75,15 +78,21 @@ export const TodoVentas=({id_empresa})=> {
     const renderHeader = () => {
         return (
           <>
-                  <span className='font-24'>
-                    CANTIDAD DE ITEMS: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
+                  <span className='font-24 text-black'>
+                    CANTIDAD DE ATENCIONES TOTAL: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
                   </span> 
-                  {/* <span className='font-24 mx-2'>
-                    |
+                  <br/>
+                  <span className='font-24 text-black'>
+                    CANTIDAD DE ATENCIONES DE JUNIO: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
+                  </span> 
+                  <br/>
+                  <span className='font-24 text-black'>
+                    CANTIDAD DE CLIENTES NUEVOS DE JUNIO: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
                   </span>
-                  <span className='font-24'>
-                    FACTURAS: {valueFilter?.length==0?customers?.length:valueFilter?.length}
-                  </span> */}
+                  <br/>
+                  <span className='font-24 text-black'>
+                    CANTIDAD DE CLIENTES RECURRENTES DE JUNIO: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
+                  </span>
             <div className="flex justify-content-end">
                 <IconField iconPosition="left">
                     <InputIcon className="pi pi-search" />
@@ -100,14 +109,15 @@ export const TodoVentas=({id_empresa})=> {
         const combinedArray = [
           ...rowData.detalle_ventaCitas,
           ...rowData.detalle_ventaMembresia,
-          ...rowData.detalle_ventaProductos
+          ...rowData.detalle_ventaProductos,
+          ...rowData.detalle_ventaservicios
         ];
 
         // Calcular la suma total de tarifa_monto
         const sumaTotal = combinedArray.reduce((total, item) => total + item.tarifa_monto, 0);
 
       return(
-          <div className={`flex align-items-center ${rowExtensionColor(rowData, 'text-primary')} gap-2`}>
+          <div style={{fontSize: '25px'}} className={`flex align-items-center ${rowExtensionColor(rowData, 'text-black fw-bold')} gap-2`}>
             
               <span>{<MoneyFormatter  amount={sumaTotal}/> }</span>
           </div>
@@ -130,11 +140,13 @@ export const TodoVentas=({id_empresa})=> {
   }
   const fechaDeComprobanteBodyTemplate = (rowData)=>{
     return (
-      <div className={`flex align-items-center gap-2 ${rowExtensionColor(rowData, 'text-primary')}`}>
-          <span className={`text-primary ${rowExtensionColor(rowData, 'text-primary')} fw-bold`}>{FormatoDateMask(rowData.fecha_venta_v, 'dddd D [de] MMMM ')}
+      <div className={`${rowExtensionColor(rowData, 'text-primary')}`}>
+          <span className={`text-primary ${rowExtensionColor(rowData, 'text-primary')} fw-bold`}>{FormatoDateMask(rowData.fecha_venta_v, 'dddd D [/]  ')}
           {/* <span className='text-black'></span> */}
           </span>
-          {FormatoDateMask(rowData.fecha_venta_v, '[del] YYYY [a las] h:mm A')}
+          <span>
+            {FormatoDateMask(rowData.fecha_venta_v, ' h:mm A')}
+          </span>
       </div>
     )
   }
@@ -181,7 +193,7 @@ const removeVentaBodyTemplate = (rowData)=>{
       {
               rowData.status_remove==1 ? (
               <Col xxl={12}>
-              <Button className='m-0' onClick={()=>onClickPdfComprobante(rowData.id)} icon={'pi pi-trash fs-3'}> </Button>
+              <Button className='m-0 bg-change' onClick={()=>onClickPdfComprobante(rowData.id)} icon={'pi pi-trash fs-3'}> </Button>
             </Col>): (
               <div className='text-white fs-3'>
               ELIMINADO
@@ -198,18 +210,11 @@ const infoClienteBodyTemplate = (rowData)=>{
       <Col xxl={12}>
       <div className='d-flex justify-content-between align-items-center'>
         {/* <span className='text-primary fw-bold'>{rowData.tb_cliente.nombres_apellidos_cli}</span> */}
-        <img width={90} height={80} className='border-circle' src={rowData.tb_cliente?.tb_images.length>0?`${config.API_IMG.AVATAR_CLI}${avatarCli}`:sinAvatar}/>
-        <span className={`${rowExtensionColor(rowData, 'text-primary')} fw-bold ml-2`} style={{width: '190px'}}>{rowData.tb_cliente.nombres_apellidos_cli}</span>
+        {/* <img width={90} height={80} className='border-circle' src={rowData.tb_cliente?.tb_images?.length>0?`${config.API_IMG.AVATAR_CLI}${avatarCli}`:sinAvatar}/> */}
+        <span className={`${rowExtensionColor(rowData, 'text-black')} fw-bold ml-2`} style={{width: '190px'}}>{rowData.tb_cliente?.nombres_apellidos_cli}</span>
       </div>
       </Col>
     </Row>
-  )
-}
-const asesorBodyTemplate = (rowData)=>{
-  return (
-    <div className={`${rowExtensionColor(rowData, 'text-primary')} fw-bold`}>
-    { rowData.tb_empleado.nombres_apellidos_empl}
-    </div>
   )
 }
 const ncomprobanteBodyTemplate = (rowData)=>{
@@ -232,7 +237,6 @@ const valueFiltered = (f)=>{
 const rowClassName = (rowData) => {
   return rowExtension(rowData);
 };
-
 const rowExtension = (rowData)=>{
   switch (rowData.status_remove) {
     case 0:
@@ -267,12 +271,12 @@ const rowExtensionColor = (rowData, color_pr)=>{
                   globalFilterFields={["tb_cliente.nombres_apellidos_cli", "tb_empleado.nombres_apellidos_empl", "tipo_comprobante", "numero_transac"]} header={header} emptyMessage="No customers found.">
               <Column field="id" header="Id" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} body={idBodyTemplate}/>
               {/* <Column field="id" header="Foto de" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} /> */}
-              <Column field="fecha_venta" header="FECHA" filter filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
-              <Column field="tb_cliente.nombres_apellidos_cli" body={infoClienteBodyTemplate} header="SOCIOS" filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
-              <Column field="tb_empleado.nombres_apellidos_empl" header="ASESOR COMERCIAL" body={asesorBodyTemplate} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
+              <Column field="fecha_venta" header={<span style={{bottom: '20px', position: 'relative'}}><span className='fs-2 text-black cursor-pointer'>JUNIO</span> <br/><span>FECHA Y HORA</span></span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
+              <Column field="tb_cliente.nombres_apellidos_cli" body={infoClienteBodyTemplate} header={<span className='text-black'>CLIENTES</span>} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
+              {/* <Column field="tb_empleado.nombres_apellidos_empl" header="ASESOR COMERCIAL" body={asesorBodyTemplate} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} /> */}
+              <Column header={<span className='text-black'>TOTAL</span>} body={totalVentasBodyTemplate} style={{ minWidth: '12rem' }} />
               <Column field="tipo_comprobante" header="COMPROBANTE" body={comprobanteBodyTemplate} filter filterPlaceholder="Buscar tipo de comprobante" style={{ minWidth: '12rem' }} />
               <Column field="numero_transac" header="Nº DE COMPR." body={ncomprobanteBodyTemplate} filter filterPlaceholder="Search by name" style={{ maxWidth: '7rem' }} />
-              <Column header="TOTAL" body={totalVentasBodyTemplate} style={{ minWidth: '12rem' }} />
               <Column header="" frozen style={{ minWidth: '12rem' }} body={actionBodyTemplate} />
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={logoPdfBodyTemplate} /> */}
               <Column header="" frozen style={{ minWidth: '2rem' }} body={removeVentaBodyTemplate} />

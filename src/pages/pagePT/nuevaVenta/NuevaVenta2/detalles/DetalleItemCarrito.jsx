@@ -30,7 +30,7 @@ export const DetalleItemCarrito = ({c, onClickRemoveItemCarrito, onClickEditItem
                                   </div>
                               </div>
                               <div className="flex flex-row lg:flex-column align-items-center lg:align-items-end gap-1 lg:gap-2">
-                                                        <span className="text-6xl font-semibold"><SymbolSoles isbottom={true} numero={<NumberFormatMoney amount={c.montoOficial}/>}/></span>
+                                                        <span className="text-6xl font-semibold"><SymbolSoles isbottom={true} numero={<NumberFormatMoney amount={c.tarifa}/>}/></span>
                                                           {/* <Button icon="pi pi-pencil" label=""></Button> */}
                                                           <Button icon="pi pi-pencil" onClick={()=>onClickEditItemCarrito(c.uid)} label=""></Button>
                                                           <Button icon="pi pi-trash" onClick={()=>onClickRemoveItemCarrito(c.uid)} label=""></Button>

@@ -31,7 +31,6 @@ export const NuevaVenta2 = () => {
   useEffect(() => {
     obtenerCajaActual()
   }, [])
-  console.log(dataView);
   
   return (
     <>
@@ -47,10 +46,7 @@ export const NuevaVenta2 = () => {
             </Col>
             {/* Primera columna */}
             <Col md={4}>
-            <Card style={{height: '100%'}}>
-              <Card.Header>
-              </Card.Header>
-                <Card.Body>
+            
                   <TabView>
                     <TabPanel header={'PRODUCTOS Y SERVICIOS'}>
                       <CardVenta dataVenta={venta} detalle_cli_modelo={detalle_cli_modelo} datos_pagos={datos_pagos} funToast={showToastVenta}/>
@@ -59,12 +55,16 @@ export const NuevaVenta2 = () => {
                       <CardPagos dataPagos={datos_pagos} venta={carrito} detalle_cli_modelo={detalle_cli_modelo}/>
                     </TabPanel>
                   </TabView>
+            {/* <Card style={{height: '100%'}}>
+              <Card.Header>
+              </Card.Header>
+                <Card.Body>
                 </Card.Body>
-            </Card>
+            </Card> */}
             </Col>
             {/* Segunda columna */}
             <Col md={5}>
-              <CardCarrito carrito={carrito}/>
+              <CardCarrito carrito={carrito} dataPagos={datos_pagos} detalle_cli_modelo={detalle_cli_modelo}/>
             </Col>
             {/* <Col md={12} className="d-flex flex-column">
             </Col> */}

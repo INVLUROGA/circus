@@ -17,18 +17,23 @@ const regAgregarCarrito = {
   porcentaje_descuento: 0
 }
 export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_default, servSelect, cantidad_MAX }) => {
-  console.log(servSelect);
-  
-  const { obtenerParametrosVendedores, DataVendedores } = useTerminoStore();
+  const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxEstilistas, DataVendedores:dataEstilistas } = useTerminoStore();
+  const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxAsistentesEstilistas, DataVendedores:dataAsistentesEstilistas } = useTerminoStore();
   const [montoTotal, setMontoTotal] = useState(monto_default); // Estado para monto calculado
   const dispatch = useDispatch()
   const { formState, id_empl, cantidad, monto_descuento, porcentaje_descuento, onInputChange, onInputChangeReact, onResetForm } = useForm(regAgregarCarrito);
   const [labelSelectEmpl, setlabelSelectEmpl] = useState('')
   useEffect(() => {
     if(show){
-      obtenerParametrosVendedores();
+      obtenerEmpleadosxEstilistas(26, 5, 599);
+      obtenerEmpleadosxAsistentesEstilistas(27, 5, 599)
     }
   }, [show]);
+
+  const dataCargos = [
+    ...dataEstilistas,
+    ...dataAsistentesEstilistas
+  ]
     // Función para manejar cambios en cantidad y restringir valores
     const handleCantidadChange = (e) => {
       let value = e.target.value; // Convertir a número
@@ -63,7 +68,9 @@ export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_de
     onResetForm()
   }
   const onClickAgregarItemsAlCarrito = ()=>{
-    dispatch(onAddItemsCarrito({...formState, monto_default, labelSelectEmpl, labelServ, uid: servSelect.uid, tipo: servSelect.tipo}))
+    console.log({servSelect});
+    
+    dispatch(onAddItemsCarrito({...formState, monto_default, labelSelectEmpl, labelServ, uid: servSelect.uid, id_servicio: servSelect.id, tipo: servSelect.tipo}))
     onCloseAgregarCarrito()
   }
   
@@ -91,8 +98,8 @@ export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_de
           placeholder={"Seleccionar el vendedor"}
           className="react-select"
           classNamePrefix="react-select"
-          options={DataVendedores}
-          value={DataVendedores.find((option) => option.value === id_empl) || 0}
+          options={dataCargos}
+          value={dataCargos.find((option) => option.value === id_empl) || 0}
           required
         />
       </div>

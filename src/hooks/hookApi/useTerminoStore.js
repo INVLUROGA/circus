@@ -212,12 +212,16 @@ export const useTerminoStore = () => {
 			console.log(error);
 		}
 	};
-	const obtenerDepartamentos = async (id_provincia, id_departamento) => {
+	const obtenerEmpleadosxCargoxDepartamentoxEmpresa = async (
+		id_cargo,
+		id_departamento,
+		id_empresa
+	) => {
 		try {
 			const { data } = await PTApi.get(
-				`/parametros/get_params/distritos/${id_departamento}/${id_provincia}`
+				`/parametros/empleados/${id_cargo}/${id_departamento}/${id_empresa}`
 			);
-			setdataDistritos(data);
+			setDataVendedores(data);
 		} catch (error) {
 			console.log(error);
 		}
@@ -395,7 +399,7 @@ export const useTerminoStore = () => {
 	};
 	const obtenerParametrosClientes = async () => {
 		try {
-			const { data } = await PTApi.get(`/parametros/get_params/clientes`);
+			const { data } = await PTApi.get(`/parametros/get_params/clientes/599`);
 			// console.log(data);
 			// console.log(data);
 			setDataClientes(data);
@@ -563,6 +567,7 @@ export const useTerminoStore = () => {
 		}
 	};
 	return {
+		obtenerEmpleadosxCargoxDepartamentoxEmpresa,
 		getEtiquetasxEntidadGrupo,
 		putEtiquetaxEntidadxGrupo,
 		getEtiquetasxIdEntidadGrupo,

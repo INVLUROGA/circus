@@ -14,8 +14,6 @@ import { useVentasStore } from '@/hooks/hookApi/useVentasStore'
 export const CardPagos = ({venta, dataPagos, detalle_cli_modelo}) => {
   const [isOpenSideBarFormPago, setisOpenSideBarFormPago] = useState(false)
   const { startRegisterVenta } = useVentasStore()
-
-
   /*
   LABEL,
   CANTIDAD,
@@ -33,15 +31,14 @@ export const CardPagos = ({venta, dataPagos, detalle_cli_modelo}) => {
  const onCloseSideBarFormPago = ()=>{
   setisOpenSideBarFormPago(false)
  }
- console.log(dataPagos, "data pagos");
  
  const carritoItems = venta.map(c=>{
   const cantidadxMontoDefault = c.cantidad*c.monto_default
-  const montoOficial = cantidadxMontoDefault-c.monto_descuento
+  const tarifa = cantidadxMontoDefault-c.monto_descuento
   return{
     ...c,
     cantidadxMontoDefault,
-    tarifa_monto: montoOficial
+    tarifa_monto: tarifa
   }
  })
  const onClickAgregarVenta = ()=>{
@@ -53,11 +50,10 @@ export const CardPagos = ({venta, dataPagos, detalle_cli_modelo}) => {
  
   return (
     <>
-      <div className='float-end'>
+      <div>
               <Button label='PAGAR' onClick={onOpenSideBarFormPago}/>
-            </div>
-                <ItemsPagos dataPagos={dataPagos}/>
-
+      </div>
+          <ItemsPagos dataPagos={dataPagos}/>
         <SideBarFormPago show={isOpenSideBarFormPago} onHide={onCloseSideBarFormPago}/>
     </>
   )

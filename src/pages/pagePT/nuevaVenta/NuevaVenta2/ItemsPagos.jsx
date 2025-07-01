@@ -28,6 +28,7 @@ export const ItemsPagos = ({dataPagos}) => {
     const deleteOnePay = (id) =>{
         dispatch(onDeleteOneDetallePago(id))
     }
+
   return (
     <>
     {
@@ -35,6 +36,7 @@ export const ItemsPagos = ({dataPagos}) => {
         return(
           <ItemPago 
           key={e.value}
+          nombre_pago={formatNombrePago(e.label_forma_pago, e.label_tipo_tarjeta, e.label_tarjeta, e.label_banco)}
           fechaPay={e.fecha_pago} 
           id_banco={obtenerLabelPorValue(dataparametro, e.id_banco)}
           id_tipo_tarjeta={obtenerLabelPorValue(dataparametro, e.id_tipo_tarjeta)}
@@ -50,3 +52,12 @@ export const ItemsPagos = ({dataPagos}) => {
     </>
   )
 }
+const formatNombrePago = (formaPago, tipoTarjeta, tarjeta, banco) => {
+  const partes = [formaPago];
+
+  if (tipoTarjeta && tipoTarjeta !== '0') partes.push(tipoTarjeta);
+  if (tarjeta && tarjeta !== '0') partes.push(tarjeta);
+  if (banco && banco !== '0') partes.push(banco);
+
+  return partes.join(' | ');
+};

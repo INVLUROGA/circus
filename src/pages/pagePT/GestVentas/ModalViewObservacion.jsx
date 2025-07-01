@@ -18,12 +18,14 @@ import { ItemVentaMembresia } from '@/components/ItemsResumenVenta/ItemVentaMemb
 import { ItemVentaTransferenciaMembresia } from '@/components/ItemsResumenVenta/ItemVentaTransferenciaMembresia';
 import Select from 'react-select'
 import { useGestVentasStore } from './useGestVentasStore';
+import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 export const ModalViewObservacion = ({onHide, show, data, id}) => {
     // console.log(data);
     const closeModal = ()=>{
         onHide();
     }
     const { obtenerVentaporId, dataVentaxID, isLoading } = useVentasStore()
+    const { obtenerParametroPorEntidadyGrupo:obtenerDataOrigen, DataGeneral:dataOrigen } = useTerminoStore()
     const { putVentas } = useGestVentasStore()
     const [isProcedenciaCustom, setisProcedenciaCustom] = useState(false)
     const [formOrigen, setformOrigen] = useState({
@@ -35,9 +37,8 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
     useEffect(() => {
         if(id==0)return;
         obtenerVentaporId(id)
-    }, [id])
-    useEffect(() => {
-      if(id!=0)return;
+        obtenerDataOrigen('nueva-venta-circus', 'origen')
+        if(id!=0)return;
     }, [id])
     const productDialogFooter = (
         <React.Fragment>
@@ -83,8 +84,8 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
                                             placeholder={'Seleccionar el origen'}
                                             className="react-select"
                                             classNamePrefix="react-select"
-                                            options={arrayOrigenDeCliente}
-                                            value={arrayOrigenDeCliente.find(
+                                            options={dataOrigen}
+                                            value={dataOrigen.find(
                                                 (option) => option.value === formOrigen
                                             )}
                                             //   defaultValue={optionsAlmacenProd[id_almacen]}
@@ -95,7 +96,7 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
                                     </>
                                 ):(
                                     <>
-                                    {arrayOrigenDeCliente.find(e=>e.value===dataVentaxID[0]?.id_origen)?.label} 
+                                    {dataOrigen.find(e=>e.value===dataVentaxID[0]?.id_origen)?.label} 
                                     <i className='pi pi-pencil hover-text cursor-pointer ml-4' onClick={onCustomProcedencia}></i>
                                     </>
                                 )
