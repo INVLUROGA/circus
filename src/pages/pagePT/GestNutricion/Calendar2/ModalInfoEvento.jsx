@@ -64,11 +64,18 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
             
             putEventoServicioxEmpresa({...valores}, etiquetas_busquedas, new Date(dayjs(formState.start).toISOString()), formState.id)
         }
+        const onDeleteEvento=()=>{
+            cancelInfoEvento()
+            const {  id, ...valores} = formState
+            console.log({eninfo: formState.start});
+            putEventoServicioxEmpresa({flag: false}, etiquetas_busquedas, new Date(dayjs(formState.start).toISOString()), formState.id)
+        }
     const footerModal = ()=>{
         return (
             <>
             <Button className='' style={{margin: '5px'}} label='CANCELAR' onClick={cancelInfoEvento} text/>
             <Button className='' style={{margin: '5px'}} label='GUARDAR' onClick={onSubmitCustomEvento}/>
+            <Button className='bg-change' style={{margin: '5px'}} label='ELIMINAR' onClick={onDeleteEvento}/>
             {/* <Button className='bg-leyenda-asistio' style={{margin: '5px'}} label='ASISTIO'/>
             <Button className='bg-leyenda-no-asistio' style={{margin: '5px'}} label='NO ASISTIO'/>
             <Button className='bg-leyenda-cancelada' style={{margin: '5px'}} label='CANCELADA'/> */}
