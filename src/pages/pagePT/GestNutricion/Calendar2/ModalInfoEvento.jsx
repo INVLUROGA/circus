@@ -67,7 +67,7 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
     const footerModal = ()=>{
         return (
             <>
-            <Button className='' style={{margin: '5px'}} label='CANCELAR' text/>
+            <Button className='' style={{margin: '5px'}} label='CANCELAR' onClick={cancelInfoEvento} text/>
             <Button className='' style={{margin: '5px'}} label='GUARDAR' onClick={onSubmitCustomEvento}/>
             {/* <Button className='bg-leyenda-asistio' style={{margin: '5px'}} label='ASISTIO'/>
             <Button className='bg-leyenda-no-asistio' style={{margin: '5px'}} label='NO ASISTIO'/>
@@ -140,7 +140,13 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
                 </div>
                 <div style={{ display: "flex" }}>
                     <span style={labelStyle}>COMENTARIOS:</span>
-                    <span style={valueStyle}>{formState.comentario}</span>
+                    <span style={valueStyle}>
+                        <textarea
+                        value={comentario}
+                        onChange={onInputChange}
+                        name='comentario'
+                        />
+                    </span>
                 </div>
             {/* {JSON.stringify(resor)} */}
             {/* {JSON.stringify(dataOrigen)} */}
