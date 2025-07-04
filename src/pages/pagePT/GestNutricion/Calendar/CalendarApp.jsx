@@ -8,6 +8,8 @@ import { PageBreadcrumb } from '@/components';
 import App from '../Calendar2/App';
 import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
+import { TabPanel, TabView } from 'primereact/tabview';
+import { Calendar2 } from '../Calendar3/Calendar2';
 export const CalendarApp = ({tipo_serv}) => {
 	const {
 		isOpen,
@@ -57,17 +59,23 @@ const events = [
 						<Card.Body style={{height: '100%'}}>
 							<Row>
 								<Col xl={12}>
-								
-									{/* fullcalendar control */}
-									<App
-										onDateClick={onDateClick}
-										onEventClick={onEventClick}
-										onDrop={onDrop}
-										onEventDrop={onEventDrop}
-										events={events}
-										localizer={localizer}
-										tipo_serv={tipo_serv}
-									/>
+									<TabView>
+										<TabPanel header={'CALENDARIO POR ESTILISTA'}>
+											<Calendar2/>
+										</TabPanel>
+										<TabPanel header={'DIAS'}>
+											{/* fullcalendar control */}
+											<App
+												onDateClick={onDateClick}
+												onEventClick={onEventClick}
+												onDrop={onDrop}
+												onEventDrop={onEventDrop}
+												events={events}
+												localizer={localizer}
+												tipo_serv={tipo_serv}
+											/>
+										</TabPanel>
+									</TabView>
 								</Col>
 							</Row>
 						</Card.Body>

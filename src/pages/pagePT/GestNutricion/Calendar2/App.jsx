@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import config from '@/config';
 import { ModalInfoEvento } from './ModalInfoEvento';
+import { TabPanel, TabView } from 'primereact/tabview';
 const dividirEventosPorColumna = (eventos) => {
   const columnas = [];
 
@@ -541,7 +542,6 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
   );
 };
 
-
 ScheduleTable.propTypes = {
   date: PropTypes.string.isRequired,
   startHour: PropTypes.number.isRequired,
@@ -585,7 +585,6 @@ function App() {
     {resourceId: 3556, orden: 400},
     {resourceId: 3553, orden: 500},
   ]
-
   const resourcesEmpleados = dataEmpleados.map(e=>{
     return {
       resourceId: Number(e.value),
@@ -647,82 +646,93 @@ function App() {
   };
 
   return (
-    <div>
-            {/* Botón "retroceder" */}
-            
-												<div className="chart-widget-list d-flex">
-												<p>
-													<i className="mdi mdi-square leyenda-confirmada"></i> Confirmada
-												</p>
-												<p>
-													<i className="mdi mdi-square leyenda-cancelada"></i> Cancelada
-												</p>
-												<p className="mb-0">
-													<i className="mdi mdi-square leyenda-asistio"></i> Asistió
-												</p>
-												<p className="mb-0">
-													<i className="mdi mdi-square leyenda-no-asistio"></i> No asistió
-												</p>
-												</div>
-                      <div className='d-flex align-items-center justify-content-center'>
-                        {/* Botón anterior */}
-                        <button
-                          onClick={handlePrevDay}
-                          aria-label="Fecha anterior"
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ◀
-                        </button>
+		<div>
+			<div className="chart-widget-list d-flex">
+				<p>
+					<i className="mdi mdi-square leyenda-confirmada"></i> Confirmada
+				</p>
+				<p>
+					<i className="mdi mdi-square leyenda-cancelada"></i> Cancelada
+				</p>
+				<p className="mb-0">
+					<i className="mdi mdi-square leyenda-asistio"></i> Asistió
+				</p>
+				<p className="mb-0">
+					<i className="mdi mdi-square leyenda-no-asistio"></i> No asistió
+				</p>
+			</div>
+			<div className="d-flex align-items-center justify-content-center">
+				{/* Botón anterior */}
+				<button
+					onClick={handlePrevDay}
+					aria-label="Fecha anterior"
+					style={{
+						border: 'none',
+						background: 'transparent',
+						fontSize: '1.5rem',
+						cursor: 'pointer',
+					}}
+				>
+					◀
+				</button>
 
-                        {/* Texto de la fecha */}
-                        <div className='fs-1 text-center' style={{width: '700px'}} onClick={handleDateMaskClick}>
-                          <DateMask date={currentDate} format={'dddd DD [DE] MMMM [DEL] YYYY'} />
-                        </div>
+				{/* Texto de la fecha */}
+				<div
+					className="fs-1 text-center"
+					style={{ width: '700px' }}
+					onClick={handleDateMaskClick}
+				>
+					<DateMask date={currentDate} format={'dddd DD [DE] MMMM [DEL] YYYY'} />
+				</div>
 
-                        {/* Input invisible */}
-                        <input
-                          ref={inputRef}
-                          type="date"
-                          value={currentDate}
-                          onChange={handleInputChange}
-                          style={{
-                            position: 'absolute',
-                            opacity: 0,
-                            pointerEvents: 'none' // evita problemas de clic si hay superposición
-                          }}
-                        />
+				{/* Input invisible */}
+				<input
+					ref={inputRef}
+					type="date"
+					value={currentDate}
+					onChange={handleInputChange}
+					style={{
+						position: 'absolute',
+						opacity: 0,
+						pointerEvents: 'none', // evita problemas de clic si hay superposición
+					}}
+				/>
 
-                        {/* Botón siguiente */}
-                        <button
-                          onClick={handleNextDay}
-                          aria-label="Fecha siguiente"
-                          style={{
-                            border: 'none',
-                            background: 'transparent',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ▶
-                        </button>
-                      </div>
-      <ScheduleTable
-        date={currentDate}
-        onOpenModalCustomEvento={onOpenModalCustomEvento}
-        startHour={9}
-        endHour={21}
-        resources={resourcesEmpleadosOrdenados}
-        events={dataCitas}
-        onOpenModalInfoEvento={onOpenModalInfoEvento}
-      />
-      <ModalCustomEvento resor={resor} show={isOpenModalCustomEvento} onShowCustomEvento={onOpenModalCustomEvento} onHide={onCloseModalCustomEvento}/>
-      <ModalInfoEvento show={isOpenModalInfoEvento} onHide={onCloseModalInfoEvento} resor={resor}/>
-    </div>
+				{/* Botón siguiente */}
+				<button
+					onClick={handleNextDay}
+					aria-label="Fecha siguiente"
+					style={{
+						border: 'none',
+						background: 'transparent',
+						fontSize: '1.5rem',
+						cursor: 'pointer',
+					}}
+				>
+					▶
+				</button>
+			</div>
+			<ScheduleTable
+				date={currentDate}
+				onOpenModalCustomEvento={onOpenModalCustomEvento}
+				startHour={9}
+				endHour={21}
+				resources={resourcesEmpleadosOrdenados}
+				events={dataCitas}
+				onOpenModalInfoEvento={onOpenModalInfoEvento}
+			/>
+			<ModalCustomEvento
+				resor={resor}
+				show={isOpenModalCustomEvento}
+				onShowCustomEvento={onOpenModalCustomEvento}
+				onHide={onCloseModalCustomEvento}
+			/>
+			<ModalInfoEvento
+				show={isOpenModalInfoEvento}
+				onHide={onCloseModalInfoEvento}
+				resor={resor}
+			/>
+		</div>
   );
 }
 
