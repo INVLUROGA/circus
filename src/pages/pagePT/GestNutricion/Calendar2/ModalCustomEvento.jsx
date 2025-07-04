@@ -149,7 +149,7 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
 														<Button
 															label="CLIENTE"
 															icon={'pi pi-plus'}
-															onClick={onOpenModalEventosDelCliente}
+															onClick={onOpenModalRegisterCliente}
 														/>
 													</div>
 												</div>
