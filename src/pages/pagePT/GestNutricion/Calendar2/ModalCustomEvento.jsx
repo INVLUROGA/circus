@@ -117,10 +117,10 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
                                     }
                             </div>
 					}
-					style={{ width: '60rem', maxHeight: '90vh' }} // no height fijo
-					breakpoints={{ '960px': '90vw', '640px': '100vw' }}
+					style={{ width: '60rem' }} // no height fijo
+					// breakpoints={{ '960px': '90vw', '640px': '100vw' }}
 				>
-					<div style={{ height: '70vh', overflow: 'hidden' }}>
+					<div style={{  overflow: 'hidden' }}>
 						<Row style={{ height: '100%' }}>
 							<Col lg={12}>
 								<SimpleBar style={{ maxHeight: '100%' }}>

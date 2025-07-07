@@ -18,23 +18,18 @@ function formatDateToSQLServerWithDayjs(date, isStart = true) {
 }
 function desestructurarVentas(ventas) {
 	const resultado = {
-		membresias: [],
+		servicios: [],
 		productos: [],
-		citas: [],
 	};
 
 	ventas.forEach((venta) => {
 		// Calcular total de tarifa_monto por cada tipo
-		const totalMembresia = (venta.detalle_ventaMembresia || []).reduce(
+		const totalMembresia = (venta.detalle_ventaservicios || []).reduce(
 			(acc, m) => acc + (m.tarifa_monto || 0),
 			0
 		);
 		const totalProducto = (venta.detalle_ventaProductos || []).reduce(
 			(acc, p) => acc + (p.tarifa_monto || 0),
-			0
-		);
-		const totalCita = (venta.detalle_ventaCitas || []).reduce(
-			(acc, c) => acc + (c.tarifa_monto || 0),
 			0
 		);
 
@@ -50,21 +45,8 @@ function desestructurarVentas(ventas) {
 			cliente: venta.tb_cliente || {},
 			empleado: venta.tb_empleado || {},
 			pagos: venta.detalle_ventaPagoVenta || [],
-			tarifa_monto_total: totalMembresia + totalProducto + totalCita,
+			tarifa_monto_total: totalMembresia + totalProducto,
 		};
-
-		(venta.detalle_ventaMembresia || []).forEach((membresia) => {
-			resultado.membresias.push({
-				...base,
-				membresia: {
-					...membresia,
-					programa: membresia.tb_programa_training || {},
-					semana: membresia.tb_semanas_training || {},
-				},
-				tarifa_monto: membresia.tarifa_monto || 0,
-			});
-		});
-
 		(venta.detalle_ventaProductos || []).forEach((producto) => {
 			resultado.productos.push({
 				...base,
@@ -76,14 +58,14 @@ function desestructurarVentas(ventas) {
 			});
 		});
 
-		(venta.detalle_ventaCitas || []).forEach((cita) => {
-			resultado.citas.push({
+		(venta.detalle_ventaservicios || []).forEach((serv) => {
+			resultado.servicios.push({
 				...base,
-				cita: {
-					...cita,
-					servicio: cita.tb_servicio || {},
+				serv: {
+					...serv,
+					servicio: serv.circus_servicio || {},
 				},
-				tarifa_monto: cita.tarifa_monto || 0,
+				tarifa_monto: serv.tarifa_monto || 0,
 			});
 		});
 	});
@@ -164,7 +146,6 @@ export const useVentasStore = () => {
 					formatDateToSQLServerWithDayjs(arrayDate[1], false),
 				],
 			});
-
 			const { data } = await PTApi.get('/venta/get-ventas-x-fecha/599', {
 				params: {
 					arrayDate: [
@@ -173,61 +154,8 @@ export const useVentasStore = () => {
 					],
 				},
 			});
-			let ingresosSeparados = data.ventas.map((e) => {
-				return {
-					fitology:
-						e.detalle_ventaCitas?.reduce((total, item) => {
-							// Sumar tarifa_monto solo si el producto pertenece a la categoría 18
-							if (item.tb_servicio.tipo_servicio === 'FITOL') {
-								return total + (item.tarifa_monto || 0);
-							}
-							return total;
-						}, 0) || 0, // Valor inicial 0 para evitar errores
-					nutricion:
-						e.detalle_ventaCitas?.reduce((total, item) => {
-							// Sumar tarifa_monto solo si el producto pertenece a la categoría 18
-							if (item.tb_servicio.tipo_servicio === 'NUTRI') {
-								return total + (item.tarifa_monto || 0);
-							}
-							return total;
-						}, 0) || 0, // Valor inicial 0 para evitar errores
-					accesorios:
-						e.detalle_ventaProductos?.reduce((total, item) => {
-							// Sumar tarifa_monto solo si el producto pertenece a la categoría 18
-							if (item.tb_producto.id_categoria === 18) {
-								return total + (item.tarifa_monto || 0);
-							}
-							return total;
-						}, 0) || 0, // Valor inicial 0 para evitar errores
-					suplementos:
-						e.detalle_ventaProductos?.reduce((total, item) => {
-							// Sumar tarifa_monto solo si el producto pertenece a la categoría 18
-							if (item.tb_producto.id_categoria === 17) {
-								return total + (item.tarifa_monto || 0);
-							}
-							return total;
-						}, 0) || 0, // Valor inicial 0 para evitar errores
-					programas: e.detalle_ventaMembresia.reduce((total, item) => {
-						return total + (item.tarifa_monto || 0);
-					}, 0),
-				};
-			});
-			const resultado = ingresosSeparados.reduce(
-				(acc, obj) => {
-					// Sumar cada propiedad
-					acc.accesorios += obj.accesorios;
-					acc.fitology += obj.fitology;
-					acc.nutricion += obj.nutricion;
-					acc.programas += obj.programas;
-					acc.suplementos += obj.suplementos;
-
-					return acc;
-				},
-				{ accesorios: 0, fitology: 0, nutricion: 0, programas: 0, suplementos: 0 }
-			);
-			console.log({ resve: resultado, data, destr: desestructurarVentas(data.ventas) });
-
-			setIngresosSeparados_x_Fecha(resultado);
+			console.log({ data, destr: desestructurarVentas(data.ventas) });
+			// setIngresosSeparados_x_Fecha(resultado);
 			setdataVentaxFecha(desestructurarVentas(data.ventas));
 		} catch (error) {
 			console.log(error);

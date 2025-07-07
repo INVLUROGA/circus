@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useCalendarStore } from '../Calendar2/useCalendarStore'
 import { DateMaskString } from '@/components/CurrencyMask';
 import dayjs from 'dayjs';
+import { Calendario } from './Calendario';
 
 export const Calendar2 = () => {
     const { dataEmpleados, obtenerEmpleadosxDepartamento, obtenerEventoServicioxEmpresa  } = useCalendarStore()
@@ -13,16 +14,19 @@ export const Calendar2 = () => {
     }, [currentDate])
   return (
     <div>
-      <ItemEmpleado/>
+      <Calendario/>
+      {/* <ItemEmpleado dataEmpleados={dataEmpleados[0]}/> */}
     </div>
   )
 }
 
-const ItemEmpleado = ()=>{
+const ItemEmpleado = ({dataEmpleados})=>{
   return (
     <div>
       <div>
-        
+        {
+          JSON.stringify(dataEmpleados)
+        }
       </div>
     </div>
   )

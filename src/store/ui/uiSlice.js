@@ -52,10 +52,14 @@ export const uiSlice = createSlice({
 				item.id === payload.id ? { ...item, selected: payload.selected } : item
 			);
 		},
+		RESET_ItemsCarrito: (state, { payload }) => {
+			state.carrito = [];
+		},
 	},
 });
 export const {
 	onSetData,
+	RESET_ItemsCarrito,
 	onAddItemsCarrito,
 	onSetMinPerCita,
 	onSetViewSubTitle,

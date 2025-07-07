@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Col, Row } from 'react-bootstrap';
 import { FormatRangoFecha } from '../componentesReutilizables/FormatRangoFecha';
 import { Button } from 'primereact/button';
@@ -15,25 +15,19 @@ fec_hasta: new Date(),
 }
 
 export const FechaRangeMES = ({ rangoFechas, textColor }) => {
-    const dispatch = useDispatch();
-  const currentYear = dayjs().year();
+  const dispatch = useDispatch();
 
-  // Estado con fecha inicio y fin del mes seleccionado
+  const [mostrarInputs, setMostrarInputs] = useState(false);
+
   const [dateRange, setDateRange] = useState(() => {
-    if (rangoFechas?.[0] && rangoFechas?.[1]) {
-      return {
-        fec_desde: new Date(rangoFechas[0]),
-        fec_hasta: new Date(rangoFechas[1])
-      };
-    }
-    // por defecto, mes actual
+    const desde = rangoFechas?.[0] ? new Date(rangoFechas[0]) : dayjs().startOf('month').toDate();
+    const hasta = rangoFechas?.[1] ? new Date(rangoFechas[1]) : dayjs().endOf('month').toDate();
     return {
-      fec_desde: dayjs().startOf('month').toDate(),
-      fec_hasta: dayjs().endOf('month').toDate()
+      fec_desde: desde,
+      fec_hasta: hasta
     };
   });
 
-  // Sincronizar si cambia externamente rangoFechas
   useEffect(() => {
     if (rangoFechas?.[0] && rangoFechas?.[1]) {
       setDateRange({
@@ -43,41 +37,82 @@ export const FechaRangeMES = ({ rangoFechas, textColor }) => {
     }
   }, [rangoFechas]);
 
-  // Al pulsar Actualizar, despacha el array [fec_desde, fec_hasta] en ISO
+  const onChangeDesde = (e) => {
+    const newDesde = dayjs(e.target.value + '-01').startOf('month').toDate();
+    setDateRange(prev => ({ ...prev, fec_desde: newDesde }));
+  };
+
+  const onChangeHasta = (e) => {
+    const newHasta = dayjs(e.target.value + '-01').endOf('month').toDate();
+    setDateRange(prev => ({ ...prev, fec_hasta: newHasta }));
+  };
+
   const onClickActualizar = () => {
     dispatch(onSetRangeDate([
       dayjs(dateRange.fec_desde).startOf('day').toISOString(),
       dayjs(dateRange.fec_hasta).endOf('day').toISOString()
     ]));
+    setMostrarInputs(false); // Oculta los inputs después de actualizar
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '40px' }}>
-      <Calendar
-        value={dateRange.fec_desde}
-        onChange={e => {
-          const sel = e.value;
-          setDateRange({
-            fec_desde: dayjs(sel).startOf('month').toDate(),
-            fec_hasta: dayjs(sel).endOf('month').toDate()
-          });
-        }}
-        view="month"
-        dateFormat="mm/yy"
-        mask="99/9999"
-        monthNavigator
-        yearNavigator
-        yearRange={`${currentYear - 2}:${currentYear + 1}`}
-        locale="es"
-        showIcon
-        inputStyle={{ color: textColor, fontWeight: 'bold', width: '200px'}}
-      />
-      <Button style={{backgroundColor: textColor, borderColor: textColor}} onClick={onClickActualizar}>
-        Actualizar
-      </Button>
+    <div className="text-center d-flex align-items-center justify-content-center gap-4 flex-wrap">
+      {!mostrarInputs ? (
+        <p
+          style={{ color: textColor, fontWeight: 'bold', cursor: 'pointer', fontSize: '45px' }}
+          onClick={() => setMostrarInputs(true)}
+        >
+          {dayjs(dateRange.fec_desde).format('MMMM YYYY').toUpperCase()} - {dayjs(dateRange.fec_hasta).format('MMMM YYYY').toUpperCase()}
+        </p>
+      ) : (
+        <div className="d-flex gap-2 align-items-center">
+          <input
+            type="month"
+            autoFocus
+            value={dayjs(dateRange.fec_desde).format('YYYY-MM')}
+            onChange={onChangeDesde}
+            style={{
+              fontSize: '30px',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              color: textColor,
+              border: '2px solid ' + textColor,
+              borderRadius: '8px',
+              padding: '6px'
+            }}
+          />
+          <span style={{ fontSize: '35px', fontWeight: 'bold', color: textColor }}> - </span>
+          <input
+            type="month"
+            value={dayjs(dateRange.fec_hasta).format('YYYY-MM')}
+            onChange={onChangeHasta}
+            onBlur={() => {}} // Opcional: podrías cerrar los inputs si deseas
+            style={{
+              fontSize: '30px',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              color: textColor,
+              border: '2px solid ' + textColor,
+              borderRadius: '8px',
+              padding: '6px'
+            }}
+          />
+        </div>
+      )}
+
+      <div>
+        <Button
+          style={{ backgroundColor: textColor, borderColor: textColor }}
+          onClick={onClickActualizar}
+        >
+          Actualizar
+        </Button>
+      </div>
     </div>
   );
 };
+
+
 export const FechaRange = ({rangoFechas}) => {
     // Your implementation here
     const dispatch = useDispatch()

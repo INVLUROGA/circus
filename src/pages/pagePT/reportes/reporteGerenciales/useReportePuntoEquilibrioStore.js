@@ -26,19 +26,6 @@ export const useReportePuntoEquilibrioStore = () => {
 			const { data: dataParametrosGastos } = await PTApi.get(
 				`/terminologia/terminologiaxEmpresa/${id_empresa}`
 			);
-			const { data: dataVentas } = await PTApi.get(
-				'/venta/reporte/obtener-comparativo-resumen',
-				{
-					params: {
-						arrayDate: [
-							formatDateToSQLServerWithDayjs(RANGE_DATE[0]),
-							formatDateToSQLServerWithDayjs(RANGE_DATE[1]),
-						],
-					},
-				}
-			);
-			console.log({ dataVentas });
-
 			// const {data: dataVentas} = await PTApi
 			setdataGastos(
 				agruparPorGrupoYConcepto(dataGastos.gastos, dataParametrosGastos.termGastos).filter(

@@ -1,7 +1,10 @@
 import { useVentasStore } from '@/hooks/hookApi/useVentasStore'
+import { RESET_ItemsCarrito } from '@/store'
+import { RESET_STATE_VENTA } from '@/store/uiNuevaVenta/uiNuevaVenta'
 import { Button } from 'primereact/button'
 import { Dialog } from 'primereact/dialog'
 import React from 'react'
+import { useDispatch } from 'react-redux'
 
 export const ModalInfoVenta = ({onHide, show, data, dataPagos,
 detalle_cli_modelo,
@@ -19,6 +22,7 @@ carritoItems}) => {
       items: itemsPagos
     },
   ];
+  const dispatch = useDispatch()
 const onSubmitVenta = ()=>{
   const productos = carritoItems.filter(item=>item.tipo==='producto').map(prod=>{
     const { id_servicio, ...valor } = prod;
@@ -26,6 +30,11 @@ const onSubmitVenta = ()=>{
       ...valor, 
       id_producto: prod.id_servicio}})
 		startRegisterVenta({dataVenta: {detalle_venta_servicio: carritoItems.filter(item=>item.tipo==='servicio'), detalle_venta_productos: productos}, datos_pagos: dataPagos, detalle_cli_modelo})
+    // dispatch(onreset)
+		dispatch(RESET_STATE_VENTA())
+    dispatch(RESET_ItemsCarrito())
+    onHide()
+
 }
   const footer = (
     <>
