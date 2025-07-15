@@ -110,10 +110,10 @@ export const useForm = (initialForm = {}, formValidations = {}) => {
 		});
 	};
 	const onInputChangeFunction = (name, value) => {
-		setFormState({
-			...formState,
+		setFormState((prev) => ({
+			...prev,
 			[name]: value,
-		});
+		}));
 	};
 	const onInputChangeRange = (e) => {};
 	const createValidators = () => {

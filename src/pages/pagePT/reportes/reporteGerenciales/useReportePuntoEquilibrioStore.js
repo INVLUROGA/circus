@@ -10,6 +10,7 @@ function formatDateToSQLServerWithDayjs(date) {
 }
 export const useReportePuntoEquilibrioStore = () => {
 	const [dataGastos, setdataGastos] = useState([]);
+	const [dataPorPagar, setdataPorPagar] = useState([]);
 	const [dataPrestamos, setdataPrestamos] = useState([]);
 	const [dataAportes, setdataAportes] = useState([]);
 	const [dataVentas, setdataVentas] = useState([]);
@@ -26,11 +27,19 @@ export const useReportePuntoEquilibrioStore = () => {
 			const { data: dataParametrosGastos } = await PTApi.get(
 				`/terminologia/terminologiaxEmpresa/${id_empresa}`
 			);
+			console.log({ dataGastos });
 			// const {data: dataVentas} = await PTApi
 			setdataGastos(
-				agruparPorGrupoYConcepto(dataGastos.gastos, dataParametrosGastos.termGastos).filter(
-					(e) => e.grupo !== 'PRESTAMOS'
-				)
+				agruparPorGrupoYConcepto(
+					dataGastos.gastos.filter((gasto) => gasto.id_estado_gasto !== 1424),
+					dataParametrosGastos.termGastos
+				).filter((e) => e.grupo !== 'PRESTAMOS')
+			);
+			setdataPorPagar(
+				agruparPorGrupoYConcepto(
+					dataGastos.gastos.filter((gasto) => gasto.id_estado_gasto === 1424),
+					dataParametrosGastos.termGastos
+				).filter((e) => e.grupo !== 'PRESTAMOS')
 			);
 			setdataPrestamos(
 				agruparPorGrupoYConcepto(dataGastos.gastos, dataParametrosGastos.termGastos).filter(
@@ -49,6 +58,7 @@ export const useReportePuntoEquilibrioStore = () => {
 		obtenerGastosxFecha,
 		dataGastos,
 		dataPrestamos,
+		dataPorPagar,
 	};
 };
 
@@ -83,7 +93,7 @@ function agruparPorGrupoYConcepto(dataGastos, dataGrupos) {
 		// c) Para cada concepto, filtrar gastos y calcular montos
 		const conceptos = conceptosUnicos.map((nombreConcepto) => {
 			// todos los gastos de este grupo+concepto
-			const itemsDelConcepto = dataGastos.filter((g) => {
+			const itemsDelConcepto = dataGastos?.filter((g) => {
 				const pg = g.tb_parametros_gasto || {};
 				return (
 					pg.grupo?.trim()?.toUpperCase() === grupoNombre &&

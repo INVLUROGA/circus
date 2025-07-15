@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useReportePuntoEquilibrioStore } from './useReportePuntoEquilibrioStore'
 import { Col, Row, Table } from 'react-bootstrap'
-import { NumberFormatMoney } from '@/components/CurrencyMask'
+import { NumberFormatMoney, NumberFormatter } from '@/components/CurrencyMask'
 import { ModalConceptos } from './ModalConceptos'
 import dayjs from 'dayjs'
 import { FechaRangeMES } from '@/components/RangeCalendars/FechaRange'
@@ -38,7 +38,7 @@ function agruparPorProducto(data) {
   return Array.from(map, ([id_categoria, items]) => ({ id_categoria, items }));
 }
 export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bgHEX, needVentas}) => {
-  const { obtenerGastosxFecha, dataGastos, dataPrestamos } = useReportePuntoEquilibrioStore()
+  const { obtenerGastosxFecha, dataGastos, dataPrestamos, dataPorPagar } = useReportePuntoEquilibrioStore()
   const { obtenerVentasPorFecha, dataVentaxFecha } = useVentasStore()
       const { RANGE_DATE, dataView } = useSelector(e=>e.DATA)
   useEffect(() => {
@@ -66,7 +66,9 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
   }
   // console.log({dataVentaxFecha});
                       const sumaServicios = dataVentaxFecha.servicios?.reduce((total, item) => total + (item.tarifa_monto || 0), 0);
+                      const sumaItemsServicios = dataVentaxFecha.servicios?.length
                       const sumaProductos = dataVentaxFecha.productos?.reduce((total, item) => total + (item.tarifa_monto || 0), 0);
+                      const sumaItemsProductos = dataVentaxFecha.productos?.length
                       const ventasServicios = agruparPorCategoria(dataVentaxFecha.servicios).map((v) => ({
                         ...v,
                         sumaItem: v.items?.reduce((total, item) => total + (item.tarifa_monto || 0), 0)
@@ -75,7 +77,12 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
                         ...v,
                         sumaItem: v.items?.reduce((total, item) => total + (item.tarifa_monto || 0), 0)
                       }))
+  console.log({dataGastos, dataPorPagar});
   
+const totalPorPagar = dataPorPagar.reduce(
+  (acc, g) => acc + (g.montopen + g.montousd * 3.7),
+  0
+);
   // console.log({dataServXCAT: agruparPorCategoria(dataVentaxFecha.servicios), datcat: dataVentaxFecha.servicios});
   return (
 		<div className="w-100">
@@ -99,10 +106,16 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
 										<th className="text-white text-center p-1">
 											<div>S/.</div>
 										</th>
+										<th className="text-white text-center p-1">
+											<div>CUENTAS PAGAR</div>
+										</th>
 									</tr>
 								</thead>
 								<tbody>
 									{dataGastos.map((g, index) => {
+                    	const porPagar = dataPorPagar[index]; // Suponiendo orden igual
+                      console.log({porPagar, g});
+                      
 										return (
 											<tr className={``}>
 												<td
@@ -111,7 +124,6 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
 												>
 													<div
 														className={`bg-porsiaca text-left ${textEmpresa}`}
-														onClick={() => onOpenModalConceptos(g)}
 													>
 														<span className="mr-4">{index + 1}</span>
 														{g.grupo}
@@ -120,20 +132,31 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
 												<td
 													className={`text-center ${g.montopen === 0 ? 'fw-light' : 'fw-bold'}`}
 												>
-													<div className="bg-porsiaca text-right mr-4">
-														<NumberFormatMoney amount={g.montopen+(g.montousd*3.70)} />
+													<div className="bg-porsiaca text-right mr-4" 
+														onClick={() => onOpenModalConceptos(g)}
+                          
+                          >
+														<NumberFormatMoney amount={(g.montopen+(g.montousd*3.70))} />
+													</div>
+												</td>
+												<td
+													className={`text-center ${g.montopen === 0 ? 'fw-light' : 'fw-bold'}`}
+												>
+													<div 
+														onClick={() => onOpenModalConceptos(porPagar)}
+                            className={`bg-porsiaca text-right mr-4 ${(porPagar?.montopen + porPagar?.montousd * 3.7 || 0)<=0?'':'text-change'}`}>
+														<NumberFormatMoney amount={porPagar?.montopen + porPagar?.montousd * 3.7 || 0} />
 													</div>
 												</td>
 											</tr>
 										);
 									})}
 								</tbody>
-								<tfoot className={`${background}`}>
+								<tfoot className={`${background}`} style={{fontSize: '40px'}}>
 									<tr>
 										<td
 											colSpan={2}
 											className="fw-bold text-start text-white"
-											// style={{ fontSize: '40px' }}
 										>
 											Total
 										</td>
@@ -142,7 +165,15 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
 											// style={{ fontSize: '40px' }}
 										>
                       <span className='text-change mr-4'>
-											  <NumberFormatMoney amount={-totalMontopen} />
+											  <NumberFormatMoney amount={-totalMontopen-(-totalPorPagar)} />
+                      </span>
+										</td>
+										<td
+											className="fw-bold text-right"
+											// style={{ fontSize: '40px' }}
+										>
+                      <span className='text-change mr-4'>
+											  <NumberFormatMoney amount={-totalPorPagar} />
                       </span>
 										</td>
 									</tr>
@@ -171,6 +202,7 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
                   <TableVentas 
                     RANGE_DATE={RANGE_DATE}
                     sumaTotal={sumaServicios}
+                    sumaItems={sumaItemsServicios}
                     ventasPartidas={ventasServicios}
                     dataVentaxFecha={dataVentaxFecha}
                   background={background} textEmpresa={textEmpresa} 
@@ -179,6 +211,7 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
                   <TableVentas 
                     RANGE_DATE={RANGE_DATE}
                     sumaTotal={sumaProductos}
+                    sumaItems={sumaItemsProductos}
                     ventasPartidas={ventasProductos}
                     dataVentaxFecha={dataVentaxFecha}
                   nombre_tabla={'PRODUCTOS'}
@@ -256,7 +289,7 @@ const TableRH=({data, background, textEmpresa, RANGE_DATE})=>{
 }
 
 
-const TableVentas=({background, textEmpresa, ventasPartidas, sumaTotal, nombre_tabla})=>{
+const TableVentas=({background, textEmpresa, ventasPartidas, sumaTotal, nombre_tabla, sumaItems})=>{
                       // const sumaTotal = dataVentaxFecha.servicios?.reduce((total, item) => total + (item.tarifa_monto || 0), 0);
   return (
     <div>
@@ -265,18 +298,25 @@ const TableVentas=({background, textEmpresa, ventasPartidas, sumaTotal, nombre_t
             
             <tr>
               <th className="text-white p-1" colSpan={2}><div> <span >{nombre_tabla}</span></div></th>
+              <th className="text-white text-center p-1"><div style={{width: '250px'}}>CANT.</div></th>
               <th className="text-white text-center p-1"><div>S/.</div></th>
             </tr>
           </thead>
           <tbody>
                   {
-                    ventasPartidas.sort((a, b) => b.sumaItem - a.sumaItem).map((v, index)=>{
+                    ventasPartidas.sort((a, b) => b.sumaItem - a.sumaItem).map((v, index, array)=>{
                       return (
                   <tr key={index}>
-                    <td className={`text-center fw-bolder`} colSpan={2}>
+                    <td className={` fw-bolder`} colSpan={2}>
                       <div className={`bg-porsiaca text-left ${textEmpresa}`}>
                         <span className="mr-4">{index + 1}</span>
                         {v.id_categoria}
+                      </div>
+                    </td>
+                    <td className={`text-center ${0 === 0 ? 'fw-light' : 'fw-bold'}`}>
+                      <div className={`bg-porsiaca  ${0 !== 0 && 'text-ISESAC'}`}>
+                        <NumberFormatter amount={v.items.length} />
+                        
                       </div>
                     </td>
                     <td className={`text-center ${0 === 0 ? 'fw-light' : 'fw-bold'}`}>
@@ -289,12 +329,17 @@ const TableVentas=({background, textEmpresa, ventasPartidas, sumaTotal, nombre_t
                     })
                   }
           </tbody>
-          <tfoot className={`${background}`}>
+          <tfoot className={`${background}`} style={{fontSize: '40px'}}>
             <tr>
-              <td colSpan={2} className="fw-bold text-start text-white">
+              <td colSpan={2} className="fw-bold text-start text-black">
                 Total
               </td>
-              <td className="fw-bold text-right  text-white">
+              <td className="fw-bold text-center text-black">
+                <div>
+                  <NumberFormatter amount={sumaItems} />
+                </div>
+              </td>
+              <td className="fw-bold text-right  text-black">
                 <NumberFormatMoney amount={sumaTotal} />
               </td>
             </tr>
@@ -315,7 +360,7 @@ const TableDetalle=({data, background, textEmpresa, totalEgresosUSD, totalEgreso
           <thead className={`${background}`}>
             <tr>
               <th className="text-white p-1" colSpan={1}><div><span className='mx-3'>UTILIDAD</span></div></th>
-              <th className="text-white text-center p-1"><div >S/.</div></th>
+              <th className="text-white text-right p-1"><div style={{width: '550px'}}>S/.</div></th>
               {/* <th className="text-white text-center p-1"><div  style={{fontSize: '37px'}}>$</div></th> */}
             </tr>
           </thead>
@@ -327,7 +372,7 @@ const TableDetalle=({data, background, textEmpresa, totalEgresosUSD, totalEgreso
                       </div>
                     </td>
                     <td className={`text-center ${0===0?'fw-light':'fw-bold'}`}>
-                      <div className={`bg-porsiaca text-right  ${0!==0&&'text-ISESAC'} mr-4`}>
+                      <div className={`bg-porsiaca text-right  ${0!==0&&'text-ISESAC'}`}>
                         <NumberFormatMoney amount={totalVentas}/>
                       </div>
                     </td>
@@ -339,24 +384,24 @@ const TableDetalle=({data, background, textEmpresa, totalEgresosUSD, totalEgreso
                       </div>
                     </td>
                     <td className={`text-center ${0===0?'fw-light':'fw-bold'}`}>
-                      <div className={`bg-porsiaca text-right text-change  ${0!==0&&'text-ISESAC'} mr-4`}>
+                      <div className={`bg-porsiaca text-right text-change  ${0!==0&&'text-ISESAC'} `}>
                         <NumberFormatMoney amount={-totalEgresosPEN}/>
                       </div>
                     </td>
                   </tr>
-                  <tr className={``}>
-                    <td className={`text-center fw-bolder`}>
-                      <div className={`bg-porsiaca text-left ${textEmpresa}`}>
-                        UTILIDAD
-                      </div>
-                    </td>
-                    <td className={`text-center ${2===0?'fw-light':'fw-bold'}`}>
-                      <div className={`bg-porsiaca text-right  ${totalVentas-totalEgresosPEN<=0?'text-change':'text-black'} mr-4`}>
-                        <NumberFormatMoney amount={totalVentas-totalEgresosPEN}/>
-                      </div>
-                    </td>
-                  </tr>
           </tbody>
+          <tfoot className={`${background}`} style={{fontSize: '40px'}}>
+            <tr>
+              <td colSpan={1} className="fw-bold text-start text-black">
+                UTILIDAD
+              </td>
+              <td className="fw-bold text-right text-black">
+                <div className='' >
+                  <NumberFormatMoney amount={totalVentas-totalEgresosPEN} />
+                </div>
+              </td>
+            </tr>
+          </tfoot>
         </Table>
     </div>
   )

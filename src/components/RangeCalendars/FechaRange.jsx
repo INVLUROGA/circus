@@ -62,42 +62,60 @@ export const FechaRangeMES = ({ rangoFechas, textColor }) => {
           style={{ color: textColor, fontWeight: 'bold', cursor: 'pointer', fontSize: '45px' }}
           onClick={() => setMostrarInputs(true)}
         >
-          {dayjs(dateRange.fec_desde).format('MMMM YYYY').toUpperCase()} - {dayjs(dateRange.fec_hasta).format('MMMM YYYY').toUpperCase()}
+          {dayjs(dateRange.fec_desde).format('D [de] MMMM [del] YYYY')} - {dayjs(dateRange.fec_hasta).format('D [de] MMMM [del] YYYY')}
+          {/* {dayjs(dateRange.fec_desde).format('MMMM YYYY').toUpperCase()} - {dayjs(dateRange.fec_hasta).format('MMMM YYYY').toUpperCase()} */}
         </p>
       ) : (
-        <div className="d-flex gap-2 align-items-center">
-          <input
-            type="month"
-            autoFocus
-            value={dayjs(dateRange.fec_desde).format('YYYY-MM')}
-            onChange={onChangeDesde}
-            style={{
-              fontSize: '30px',
-              fontWeight: 'bold',
-              textAlign: 'center',
-              color: textColor,
-              border: '2px solid ' + textColor,
-              borderRadius: '8px',
-              padding: '6px'
-            }}
-          />
-          <span style={{ fontSize: '35px', fontWeight: 'bold', color: textColor }}> - </span>
-          <input
-            type="month"
-            value={dayjs(dateRange.fec_hasta).format('YYYY-MM')}
-            onChange={onChangeHasta}
-            onBlur={() => {}} // Opcional: podrías cerrar los inputs si deseas
-            style={{
-              fontSize: '30px',
-              fontWeight: 'bold',
-              textAlign: 'center',
-              color: textColor,
-              border: '2px solid ' + textColor,
-              borderRadius: '8px',
-              padding: '6px'
-            }}
-          />
-        </div>
+<div className="d-flex gap-3 align-items-center">
+  <div className="text-center">
+    <div style={{ fontSize: '20px', fontWeight: 'bold', color: textColor }}>
+      {dayjs(dateRange.fec_desde).format('D [de] MMMM [del] YYYY')}
+    </div>
+    <input
+      type="date"
+      autoFocus
+      value={dayjs(dateRange.fec_desde).format('YYYY-MM-DD')}
+      onChange={(e) => {
+        const newDesde = dayjs(e.target.value).toDate();
+        setDateRange(prev => ({ ...prev, fec_desde: newDesde }));
+      }}
+      style={{
+        fontSize: '22px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        color: textColor,
+        border: '2px solid ' + textColor,
+        borderRadius: '8px',
+        padding: '6px'
+      }}
+    />
+  </div>
+
+  <span style={{ fontSize: '30px', fontWeight: 'bold', color: textColor }}> - </span>
+
+  <div className="text-center">
+    <div style={{ fontSize: '20px', fontWeight: 'bold', color: textColor }}>
+      {dayjs(dateRange.fec_hasta).format('D [de] MMMM [del] YYYY')}
+    </div>
+    <input
+      type="date"
+      value={dayjs(dateRange.fec_hasta).format('YYYY-MM-DD')}
+      onChange={(e) => {
+        const newHasta = dayjs(e.target.value).toDate();
+        setDateRange(prev => ({ ...prev, fec_hasta: newHasta }));
+      }}
+      style={{
+        fontSize: '22px',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        color: textColor,
+        border: '2px solid ' + textColor,
+        borderRadius: '8px',
+        padding: '6px'
+      }}
+    />
+  </div>
+</div>
       )}
 
       <div>

@@ -156,9 +156,9 @@ export const arraySexo = [
 ];
 
 export const arrayTipoDoc = [
-	{ label: 'Dni', value: 5 },
-	{ label: 'RUC', value: 6 },
-	{ label: 'Carnet de extranjeria', value: 7 },
+	{ label: 'dni', value: 5 },
+	{ label: 'rUC', value: 6 },
+	{ label: 'carnet de extranjeria', value: 7 },
 	{ label: 'Otro', value: 0 },
 ];
 export const arrayTipoCliente = [
