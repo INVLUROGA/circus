@@ -45,7 +45,6 @@ const registerImgAvatar={
 export const ModalCliente = ({show, onHide}) => {
     const [isShow, setisShow] = useState(show);
 	const refToast = useRef(null);
-	const [selectedFile, setSelectedFile] = useState(sinAvatar);
 	const [selectedAvatar, setselectedAvatar] = useState(null);
 	const [msgDoc, setMsgDoc] = useState('');
 	const { errorMessage } = useSelector((e) => e.authClient);
@@ -58,10 +57,6 @@ export const ModalCliente = ({show, onHide}) => {
 			life: life,
 		});
 	};
-	const resetAvatar = () => {
-		setSelectedFile(sinAvatar);
-	};
-	const { usuarioCliente, dataContactsEmerg, comentarios } = useSelector((e) => e.usuario);
 	const { startRegisterUsuarioCliente, loading } = useUsuarioStore();
 	const {
 		obtenerDistritosxDepxProvincia: obtenerDistritosDeLima,
@@ -104,8 +99,7 @@ export const ModalCliente = ({show, onHide}) => {
 	const onSubmitAgregarCliente = () => {
 		dispatch(clearErrorMessage());
 		startRegisterUsuarioCliente(
-			{ ...usuarioCliente, dataContactsEmerg: dataContactsEmerg, comentarios },
-			selectedAvatar,
+			{ ...formState },
 			btnCancelModal,
 			showToastCliente
 		);
@@ -114,9 +108,6 @@ export const ModalCliente = ({show, onHide}) => {
 		onHide();
 		onResetForm();
 		dispatch(clearErrorMessage());
-		resetAvatar();
-		dispatch(onResetComentario());
-		dispatch(onReset_CE());
 		setMsgDoc('');
 	};
 	useEffect(() => {
@@ -176,8 +167,6 @@ export const ModalCliente = ({show, onHide}) => {
 		}
 	}
 	};
-    console.log({formState});
-    
   return (
 		<>
 			<Toast ref={refToast} />

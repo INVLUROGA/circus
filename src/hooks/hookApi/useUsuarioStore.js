@@ -35,8 +35,6 @@ export const useUsuarioStore = () => {
 		btnCancelModal,
 		showToastCliente
 	) => {
-		const { comentario_com } = form.comentarios;
-		const { dataContactsEmerg } = form;
 		try {
 			// const { data: dataCo } = await PTApi.post('/servicios/observacion/post', {
 			// 	comentario: comentario_com,
@@ -46,27 +44,6 @@ export const useUsuarioStore = () => {
 				...form,
 				name_image: selectedFile?.name,
 			});
-			if (selectedFile !== null) {
-				const formData = new FormData();
-				formData.append('file', selectedFile);
-				await PTApi.post(
-					`/storage/blob/create/${dataCliente.cliente.uid_avatar}?container=avatarclientes`,
-					formData
-				);
-			}
-			if (comentario_com.trim().length > 0) {
-				await PTApi.post('/servicios/comentario/post', {
-					uidLocation: dataCliente.cliente.uid_comentario,
-					uid_usuario: user.uid,
-					comentario_com,
-				});
-			}
-			if (dataContactsEmerg.length > 0) {
-				await PTApi.post('/servicios/contacto-emergencia/post', {
-					contactosDeEmergencia: form.dataContactsEmerg,
-					uidLocation: dataCliente.cliente.uid_contactsEmergencia,
-				});
-			}
 			btnCancelModal();
 			setloading(false);
 			await obtenerUsuariosClientes();
