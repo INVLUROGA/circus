@@ -15,9 +15,12 @@ export const ModalConceptos = ({dataProp, show, onHide, textEmpresa, background}
   const onCloseModalDetalle = ()=>{
     setisOpenModalDetallexCelda(false)
   }
+  const sumaTotalSoles = dataProp.reduce((total, item) => total + ((item?.montopen+(item.montousd*3.7)) || 0), 0)
+  const sumaTotalDolares = dataProp.reduce((total, item) => total + ((item?.montousd) || 0), 0)
   return (
     <>
     <Dialog visible={show} onHide={onHide}>
+      <h1>NOTA: LOS COSTOS EN DOLARES HAN SIDO CONVERTIDO A SOLES</h1>
                 <Table striped style={{fontSize: '39px'}}>
                   <thead className={`${background}`}>
                     <tr>
@@ -30,7 +33,6 @@ export const ModalConceptos = ({dataProp, show, onHide, textEmpresa, background}
                     {
                         dataProp.map(p=>{
                             return (
-                                
                     <tr className={``}>
                             <td className={`text-center fw-bolder fs-1`}>
                               <div className={`bg-porsiaca text-left ${textEmpresa}`} onClick={()=>onClickModalDetalle(p.items)}>
@@ -39,11 +41,17 @@ export const ModalConceptos = ({dataProp, show, onHide, textEmpresa, background}
                             </td>
                             <td className={`text-center ${0===0?'fw-light':'fw-bold'} fs-1`}>
                               <div className={`bg-porsiaca text-right  ${0!==0&&'text-ISESAC'}`}>
-                                <NumberFormatMoney amount={p.montopen}/>
+                                {
+                                  p.montousd!==0?(
+                                    <NumberFormatMoney amount={p.montousd*3.7}/>
+                                  ):(
+                                    <NumberFormatMoney amount={p.montopen}/>
+                                  )
+                                }
                               </div>
                             </td>
                             <td className={`text-center ${0===0?'fw-light':'fw-bold'} fs-1`}>
-                              <div className={`bg-porsiaca text-right  ${0!==0&&'text-ISESAC'}`}>
+                              <div className={`bg-porsiaca text-right  ${'text-color-dolar'}`}>
                                 <NumberFormatMoney amount={p.montousd}/>
                               </div>
                             </td>
@@ -52,9 +60,36 @@ export const ModalConceptos = ({dataProp, show, onHide, textEmpresa, background}
                         })
                     }
                   </tbody>
+                  <tfoot>
+                    
+                      <tr className={`${background}`}>
+                        <td
+                          colSpan={1}
+                          className="fw-bold text-start"
+                        >
+                          Total
+                        </td>
+                        <td
+                          className="fw-bold text-right"
+                          // style={{ fontSize: '40px' }}
+                        >
+                          <div className='' style={{fontSize: '50px'}}>
+                          <NumberFormatMoney amount={sumaTotalSoles}/>
+                          </div>
+                        </td>
+                        <td
+                          className="fw-bold text-right"
+                          // style={{ fontSize: '40px' }}
+                        >
+                          <div className='text-color-dolar' style={{fontSize: '50px'}}>
+                          <NumberFormatMoney amount={sumaTotalDolares}/>
+                          </div>
+                        </td>
+                      </tr> 
+                  </tfoot>
                 </Table>
     </Dialog>
-    <ModalDetallexCelda onHide={onCloseModalDetalle} show={isOpenModalDetallexCelda} data={{items: data, grupo: '', concepto: ''}}/>
+    <ModalDetallexCelda background={background} onHide={onCloseModalDetalle} show={isOpenModalDetallexCelda} data={{items: data, grupo: '', concepto: ''}}/>
     </>
   )
 }

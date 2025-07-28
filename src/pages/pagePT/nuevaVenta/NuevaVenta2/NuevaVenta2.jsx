@@ -11,6 +11,7 @@ import { CardPagos } from './CardPagos'
 import { useNuevaVentaStore } from './useNuevaVentaStore'
 import { AperturaCaja } from '../AperturaCaja'
 import { TabPanel, TabView } from 'primereact/tabview'
+import { CardPedidos } from './CardPedidos'
 
 export const NuevaVenta2 = () => {
 
@@ -48,6 +49,9 @@ export const NuevaVenta2 = () => {
             <Col md={4}>
             
                   <TabView>
+                    <TabPanel header={'PEDIDOS'}>
+                      <CardPedidos dataVenta={venta} detalle_cli_modelo={detalle_cli_modelo} datos_pagos={datos_pagos} funToast={showToastVenta}/>
+                    </TabPanel>
                     <TabPanel header={'PRODUCTOS Y SERVICIOS'}>
                       <CardVenta dataVenta={venta} detalle_cli_modelo={detalle_cli_modelo} datos_pagos={datos_pagos} funToast={showToastVenta}/>
                     </TabPanel>

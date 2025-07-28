@@ -1,18 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import Shipping from '../Shipping'
-import { Card, CardTitle, Col, Row } from 'react-bootstrap'
-import { Button } from 'primereact/button'
-import { Tag } from 'primereact/tag'
-import { DataScroller } from 'primereact/datascroller'
 import { TabPanel, TabView } from 'primereact/tabview'
 import { ModalAgregarCarrito } from './ModalAgregarCarrito'
-import { SymbolSoles } from '@/components/componentesReutilizables/SymbolSoles'
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore'
-import Select from 'react-select';
 import { useForm } from '@/hooks/useForm'
 import { useNuevaVentaStore } from './useNuevaVentaStore'
 import { DetalleItemProSer } from './detalles/DetalleItemProSer'
-import { useSelector } from 'react-redux'
 const regCliente = {
   id_cli: 0
 }
@@ -34,8 +26,6 @@ const [DEFAULT_monto, setDEFAULT_monto] = useState(0)
 const [id_item, setid_item] = useState(0)
 const [cantidad, setcantidad] = useState(0)
 const onOpenModalAgregarCarrito = (servSelect)=>{
-  console.log({servSelect});
-  
   setservSelect(servSelect)
   setisOpenModalAgregarCarrito(true)
   setlabelServicio(servSelect.label)
@@ -55,12 +45,6 @@ useEffect(() => {
 
   return (
     <>
-    {/* <Card style={{height: '100%'}}>
-      <Card.Header>
-      </Card.Header>
-        <Card.Body>
-        </Card.Body>
-    </Card> */}
           <TabView>
             <TabPanel header='SERVICIOS'>
                 <DetalleItemProSer dataView={dataView} onOpenModalAgregarCarrito={onOpenModalAgregarCarrito}/>

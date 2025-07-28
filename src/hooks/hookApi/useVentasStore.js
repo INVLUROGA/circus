@@ -11,8 +11,8 @@ function formatDateToSQLServerWithDayjs(date, isStart = true) {
 	const base = dayjs(date);
 
 	const formatted = isStart
-		? base.startOf('day').format('YYYY-MM-DD HH:mm:ss.SSS [-05:00]')
-		: base.endOf('day').format('YYYY-MM-DD HH:mm:ss.SSS [-05:00]');
+		? base.startOf('day').format('YYYY-MM-DD HH:mm:ss.SSS')
+		: base.endOf('day').format('YYYY-MM-DD HH:mm:ss.SSS');
 
 	return formatted;
 }
@@ -72,6 +72,7 @@ function desestructurarVentas(ventas) {
 
 	return resultado;
 }
+
 export const useVentasStore = () => {
 	const dispatch = useDispatch();
 	const [dataVentas, setDataVentas] = useState([]);
@@ -81,10 +82,21 @@ export const useVentasStore = () => {
 	const [msgBox, setmsgBox] = useState({});
 	const [dataVentaxFecha, setdataVentaxFecha] = useState([]);
 	const [IngresosSeparados_x_Fecha, setIngresosSeparados_x_Fecha] = useState([]);
+	const [dataComprobante, setdataComprobante] = useState({});
 	const [loadingMessage, setloadingMessage] = useState('');
 	const [dataContratos, setdataContratos] = useState([]);
 	const { base64ToFile } = helperFunctions();
 
+	const obtenerVentasxComprobantes = async (id_comprobante) => {
+		try {
+			const { data } = await PTApi.get(
+				`/venta/obtener-ventas-x-comprobante/${id_comprobante}/599`
+			);
+			setdataComprobante(data.ventas);
+		} catch (error) {
+			console.log(error);
+		}
+	};
 	const obtenerContratosDeClientes = async () => {
 		try {
 			dispatch(onSetDataView([]));
@@ -154,7 +166,10 @@ export const useVentasStore = () => {
 					],
 				},
 			});
-			console.log({ data, destr: desestructurarVentas(data.ventas) });
+			console.log({
+				datx: data,
+				destr: desestructurarVentas(data.ventas),
+			});
 			// setIngresosSeparados_x_Fecha(resultado);
 			setdataVentaxFecha(desestructurarVentas(data.ventas));
 		} catch (error) {
@@ -276,6 +291,8 @@ export const useVentasStore = () => {
 		obtenerVentaporId,
 		obtenerVentasPorFecha,
 		obtenerContratosDeClientes,
+		obtenerVentasxComprobantes,
+		dataComprobante,
 		loadingMessage,
 		dataVentaxFecha,
 		IngresosSeparados_x_Fecha,

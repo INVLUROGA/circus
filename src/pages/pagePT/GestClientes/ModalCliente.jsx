@@ -38,14 +38,8 @@ const regUsuarioCliente= {
     email_cli: '',
     tel_cli: '',
 }
-const registerImgAvatar={
-    imgAvatar_BASE64: ''
-}
-
 export const ModalCliente = ({show, onHide}) => {
-    const [isShow, setisShow] = useState(show);
 	const refToast = useRef(null);
-	const [selectedAvatar, setselectedAvatar] = useState(null);
 	const [msgDoc, setMsgDoc] = useState('');
 	const { errorMessage } = useSelector((e) => e.authClient);
 	const showToastCliente = (severity, summary, detail, label, life) => {
@@ -103,6 +97,7 @@ export const ModalCliente = ({show, onHide}) => {
 			btnCancelModal,
 			showToastCliente
 		);
+		btnCancelModal();	
 	};
 	const btnCancelModal = () => {
 		onHide();

@@ -6,6 +6,7 @@ import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 import { useDispatch } from 'react-redux';
 import { onSetDetalleCli } from '@/store/uiNuevaVenta/uiNuevaVenta';
 import Select from 'react-select';
+import { useVentasStore } from '@/hooks/hookApi/useVentasStore';
 const registerCliente = {
 	id_cli: 0, 
 	id_empl: 0,
@@ -14,10 +15,16 @@ const registerCliente = {
 	id_origen: 0, 
 	observacion: '',
 }
+function formatoNumero(num) {
+  const abs = Math.abs(num).toString().padStart(8, '0');
+  return (num < 0 ? '-' : '') + abs;
+}
+
 const DatosCliente = ({dataCliente}) => {
 	const dispatch = useDispatch()
 	const {obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores, DataVendedores} = useTerminoStore()
 	const {obtenerParametroPorEntidadyGrupo:obtenerDataOrigenCircus, DataGeneral:dataOrigenCircus} = useTerminoStore()
+	const { dataComprobante, obtenerVentasxComprobantes } = useVentasStore()
 	const [MsgValidation, setMsgValidation] = useState('')
 	const [clienteSelect, setClienteSelect] = useState({})
 	const [EmpleadoSelect, setEmpleadoSelect] = useState({})
@@ -29,12 +36,15 @@ const DatosCliente = ({dataCliente}) => {
 		numero_transac, 
 		id_origen, 
 		observacion,
+		onInputChangeFunction,
 		onInputChangeReact, onInputChange } = useForm(dataCliente)
 	useEffect(() => {
 		obtenerParametrosClientes()
+		
 		obtenerParametrosVendedores()
 		obtenerDataOrigenCircus('nueva-venta-circus', 'origen')
 	}, [])
+	
 	useEffect(() => {
 		dispatch(onSetDetalleCli({
 			...formStateCliente, 
@@ -69,12 +79,25 @@ const DatosCliente = ({dataCliente}) => {
 		)
 		setTipoTransacSelect(dataTipoTransac)
 	}, [id_tipo_transaccion])
+	useEffect(() => {
+		if (dataComprobante?.numero_transac) {
+			onInputChangeFunction('numero_transac', `${dataComprobante?.numero_transac.split('-')[0]}-${formatoNumero(Number(dataComprobante?.numero_transac.split('-')[1])+1)}`)
+		}
+	}, [dataComprobante])
+
 	const inputChangeClientes = (e)=>{
 		const dataCli = DataClientes.find(
             (option) => option.label === e.value
         )
-		onInputChangeReact(e, 'id_cli')
+		onInputChangeFunction('id_cli', e.value)
 	}
+	const onChangeTipoDeComprobante = (e)=>{
+		// obtenerVentasxComprobantes(e.value)
+		obtenerVentasxComprobantes(e?.value)
+		onInputChangeFunction('id_tipo_transaccion', e?.value)
+		// onInputChangeFunction('numero_transac', dataComprobante.numero_transac)   ${Number(dataComprobante?.numero_transac.split('-')[1])+1}
+	}
+	
 	return (
 		<>
 		<form>
@@ -88,7 +111,7 @@ const DatosCliente = ({dataCliente}) => {
 											<Select
 												onChange={(e) => inputChangeClientes(e)}
 												name="id_cli"
-												placeholder={'Seleccionar el socio'}
+												placeholder={'Seleccionar el cliente'}
 												className="react-select"
 												classNamePrefix="react-select"
 												options={DataClientes}
@@ -97,7 +120,6 @@ const DatosCliente = ({dataCliente}) => {
 												)|| 0}
 												required
 											/>
-											<Button>+ AGREGAR CLIENTE</Button>
 											</div>
 										</Col>
 										<Col xl={12} sm={12}>
@@ -119,7 +141,7 @@ const DatosCliente = ({dataCliente}) => {
 										<Col xl={12} sm={12}>
 										<div className='mb-2'>
 											<Select
-												onChange={(e) => onInputChangeReact(e, 'id_tipo_transaccion')}
+												onChange={(e) => onChangeTipoDeComprobante(e)}
 												name="id_tipo_transaccion"
 												placeholder={'Tipo de comprobante'}
 												className="react-select"

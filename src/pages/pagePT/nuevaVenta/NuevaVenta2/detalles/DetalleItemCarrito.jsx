@@ -15,7 +15,7 @@ export const DetalleItemCarrito = ({c, onClickRemoveItemCarrito, onClickEditItem
                                   <div className="flex flex-column">
                                       <span className="flex align-items-center gap-2">
                                           <i className="pi pi-user"></i>
-                                          <h4 className="font-semibold">{c.labelSelectEmpl}</h4>
+                                          <h4 className="font-semibold">{c.labelSelectEmpl.split(' ')[0]}</h4>
                                       </span>
                                   </div>
                                   <div className="flex flex-column">

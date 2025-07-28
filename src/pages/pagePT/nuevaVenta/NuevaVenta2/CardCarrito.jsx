@@ -10,25 +10,20 @@ import { useSelector } from 'react-redux'
 import { DetalleItemCarrito } from './detalles/DetalleItemCarrito'
 import { ModalEditCarrito } from './ModalEditCarrito'
 import { ModalInfoVenta } from './ModalInfoVenta'
+import { ModalAgregarCarrito } from './ModalAgregarCarrito'
 
 export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, detalle_cli_modelo}) => {
-  /*
-  LABEL,
-  CANTIDAD,
-  MONTO,
-  DESCUENTO,
-  EMPLEADO
-  */
  const dispatch = useDispatch()
  const [isOpenModalInfoVenta, setisOpenModalInfoVenta] = useState(false)
- console.log({carrito});
- 
+ const [itemCarritoSelec, setitemCarritoSelec] = useState({})
+ const [isOpenModalCarritoEdit, setisOpenModalCarritoEdit] = useState(false)
  const onClickRemoveItemCarrito = (id)=>{
   dispatch(onDeleteItemCarrito(id))
   setisOpenModalItemCarrito(true)
  }
- const onClickEditItemCarrito=(id)=>{
-
+ const onClickEditItemCarrito=(uid)=>{
+  setitemCarritoSelec(carrito.find((item)=>item.uid === uid))
+  setisOpenModalCarritoEdit(true)
  }
  const onOpenModalInfoVenta = ()=>{
    setisOpenModalInfoVenta(true)
@@ -37,10 +32,13 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
  const onCloseModalInfoVenta = ()=>{
    setisOpenModalInfoVenta(false)
   }
+  const onCloseModalCarrito = ()=>{
+    setisOpenModalCarritoEdit(false)
+  }
  
  const carritoItems = carrito.map(c=>{
   const cantidadxMontoDefault = c.cantidad*c.monto_default
-  const tarifa = cantidadxMontoDefault-c.monto_descuento
+  const tarifa = cantidadxMontoDefault-(c.monto_descuento || 0)
   return{
     ...c,
     cantidadxMontoDefault,
@@ -78,6 +76,8 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
             }
         </Card.Footer>
     </Card>
+
+        <ModalAgregarCarrito servSelect={itemCarritoSelec} onHide={onCloseModalCarrito} show={isOpenModalCarritoEdit}/>
     <ModalInfoVenta show={isOpenModalInfoVenta} onHide={onCloseModalInfoVenta} dataPagos={dataPagos} detalle_cli_modelo={detalle_cli_modelo} carritoItems={carritoItems}/>
     {/* <ModalEditCarrito/> */}
     </>

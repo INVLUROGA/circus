@@ -8,7 +8,7 @@ import { Table } from 'react-bootstrap'
 export const ModalDetallexCelda = ({show, onHide, data}) => {
   
   return (
-    <Dialog visible={show} style={{width: '90rem'}} onHide={onHide} header={`EGRESOS POR DETALLE - ${data?.grupo} - ${data?.concepto}`}>
+    <Dialog visible={show} style={{width: '90rem'}} onHide={onHide} header={`EGRESOS POR DETALLE `}>
         <Table responsive hover striped>
           <thead className='bg-primary'>
               <tr>
@@ -22,23 +22,35 @@ export const ModalDetallexCelda = ({show, onHide, data}) => {
                   {/* <th className='text-white p-1 fs-3'><div className=''>TICKET M.</div></th> */}
               </tr>
           </thead>
-          <tbody>
+          <tbody >
                 {
                   data?.items?.map(f=>{
                     const isSinDoc = f.parametro_comprobante?.label_param==='SIN DOCUMENTO'
                     return (
                       <tr>
-                          <td className='fs-2'><span className={isSinDoc?'text-primary':'text-black'}>{f.tb_Proveedor?.razon_social_prov}</span></td>
-                          <td className='fs-2'><span className={isSinDoc?'text-primary':'text-black'}>{f.descripcion}</span></td>
-                          <td className='fs-2'><span className={isSinDoc?'text-primary':'text-black'}>{dayjs(f.fec_comprobante).format('dddd DD [DE] MMMM [DEL] YYYY')}</span></td>
-                          <td className='fs-2'><span className={isSinDoc?'text-primary':'text-black'}>{dayjs(f.fec_pago).format('dddd DD [DE] MMMM [DEL] YYYY')}</span></td>
-                          <td className='fs-2'><span className={isSinDoc?'text-primary':'text-black'}><NumberFormatMoney amount={f.monto}/></span></td>
-                          <td className='fs-2'><span className={isSinDoc?'text-primary':'text-black'}>{f.parametro_comprobante?.label_param}</span></td>
+                          <td className='fs-2'><div className={isSinDoc?'text-primary':'text-black'}>{f.tb_Proveedor?.razon_social_prov}</div></td>
+                          <td className='fs-2'><div className={isSinDoc?'text-primary':'text-black'}>{f.descripcion}</div></td>
+                          <td className='fs-2'><div className={isSinDoc?'text-primary':'text-black'}>{dayjs(f.fec_comprobante).format('dddd DD [DE] MMMM [DEL] YYYY')}</div></td>
+                          <td className='fs-2'><div className={isSinDoc?'text-primary':'text-black'}>{dayjs(f.fec_pago).format('dddd DD [DE] MMMM [DEL] YYYY')}</div></td>
+                          <td className='fs-2'><div className={isSinDoc?'text-primary':'text-black text-end'}><NumberFormatMoney amount={f.monto}/></div></td>
+                          <td className='fs-2'><div className={isSinDoc?'text-primary':'text-black'}>{f.parametro_comprobante?.label_param}</div></td>
                       </tr>
                     )
                   })
                 }
           </tbody>
+          <tfoot className='bg-primary' style={{fontSize: '50px'}}>
+            <tr>
+                  <td className='text-white p-1'>TOTAL</td>
+                  <td className='text-white p-1'></td>
+                  <td className='text-white p-1'><div className='d-flex justify-content-center'></div></td>
+                  <td className='text-white p-1'><div className='d-flex justify-content-center'></div></td>
+                  <td className='text-white p-1'><div className='d-flex justify-content-center text-end'><NumberFormatMoney amount={data.items.reduce((total, item) => total + (item?.monto || 0), 0)}/></div></td>
+                  <td className='text-white p-1'><div className='d-flex justify-content-center'></div></td>
+                  {/* <th className='text-white p-1 fs-3'>%</th> */}
+                  {/* <th className='text-white p-1 fs-3'><div className=''>TICKET M.</div></th> */}
+              </tr>
+          </tfoot>
         </Table>
         {
           agruparPorComprobante(data?.items).map(g=>{

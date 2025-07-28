@@ -16,17 +16,21 @@ const regAgregarCarrito = {
   cantidad: 1,
   porcentaje_descuento: 0
 }
-export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_default, servSelect, cantidad_MAX }) => {
+export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxEstilistas, DataVendedores:dataEstilistas } = useTerminoStore();
   const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxAsistentesEstilistas, DataVendedores:dataAsistentesEstilistas } = useTerminoStore();
-  const [montoTotal, setMontoTotal] = useState(monto_default); // Estado para monto calculado
+  const [montoTotal, setMontoTotal] = useState(servSelect?.monto_default); // Estado para monto calculado
   const dispatch = useDispatch()
-  const { formState, id_empl, cantidad, monto_descuento, porcentaje_descuento, onInputChange, onInputChangeReact, onResetForm } = useForm(regAgregarCarrito);
+  const { formState, id_empl, cantidad, monto_descuento, porcentaje_descuento, onInputChange, onInputChangeReact, onInputChangeFunction, onResetForm } = useForm(regAgregarCarrito);
   const [labelSelectEmpl, setlabelSelectEmpl] = useState('')
   useEffect(() => {
     if(show){
       obtenerEmpleadosxEstilistas(26, 5, 599);
       obtenerEmpleadosxAsistentesEstilistas(27, 5, 599)
+    }
+        // Si hay un empleado por defecto, lo seteamos en el formState
+    if (servSelect?.id_empl) {
+      onInputChangeFunction("id_empl", servSelect?.id_empl);
     }
   }, [show]);
 
@@ -45,7 +49,7 @@ export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_de
     };
 
   useEffect(() => {
-    let nuevoMonto = monto_default;
+    let nuevoMonto = servSelect?.monto_default;
 
     // Aplicar descuento en soles
     if (monto_descuento) {
@@ -68,9 +72,7 @@ export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_de
     onResetForm()
   }
   const onClickAgregarItemsAlCarrito = ()=>{
-    console.log({servSelect});
-    
-    dispatch(onAddItemsCarrito({...formState, monto_default, labelSelectEmpl, labelServ, uid: servSelect.uid, id_servicio: servSelect.id, tipo: servSelect.tipo}))
+    dispatch(onAddItemsCarrito({...formState, monto_default: servSelect?.monto_default, labelSelectEmpl: dataCargos.find((option) => option.value === (id_empl))?.label, labelServ: servSelect?.labelServ, uid: servSelect?.uid, id_servicio: servSelect?.id, tipo: servSelect?.tipo}))
     onCloseAgregarCarrito()
   }
   
@@ -86,20 +88,19 @@ export const ModalAgregarCarrito = ({ show, onHide, id_item, labelServ, monto_de
   
   
   return (
-    <Dialog footer={footerTemplate} style={{ width: "40rem", height: "50rem" }} header={labelServ} visible={show} onHide={onCloseAgregarCarrito}>
+    <Dialog footer={footerTemplate} style={{ width: "40rem", height: "50rem" }} header={servSelect?.labelServ} visible={show} onHide={onCloseAgregarCarrito}>
       <div className="m-2">
         <label className="form-label">EMPLEADO</label>
         <Select
           onChange={(e) => {
-            setlabelSelectEmpl(e.label)
             onInputChangeReact(e, "id_empl")
           }}
           name="id_empl"
-          placeholder={"Seleccionar el vendedor"}
+          placeholder={"Seleccionar el estilista"}
           className="react-select"
           classNamePrefix="react-select"
           options={dataCargos}
-          value={dataCargos.find((option) => option.value === id_empl) || 0}
+          value={dataCargos.find((option) => option.value === (id_empl)) || null}
           required
         />
       </div>

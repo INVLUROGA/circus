@@ -47,7 +47,6 @@ export const EmpresaPuntoEquilibrio = ({id_empresa,  background, textEmpresa, bg
       obtenerVentasPorFecha(RANGE_DATE, 599)
     }
   }, [id_empresa, RANGE_DATE, needVentas])
-  const planillas = dataGastos.find(gr=>gr.grupo==="RECURSOS HUMANOS")?.conceptos.find(con=>con.concepto==='PLANILLA')?.items
     // 1) Calcula totales con useMemo
   const totalMontopen = useMemo(
     () => dataGastos.reduce((sum, g) => sum + (g.montopen+(g.montousd*3.70) || 0), 0),
@@ -114,7 +113,6 @@ const totalPorPagar = dataPorPagar.reduce(
 								<tbody>
 									{dataGastos.map((g, index) => {
                     	const porPagar = dataPorPagar[index]; // Suponiendo orden igual
-                      console.log({porPagar, g});
                       
 										return (
 											<tr className={``}>
@@ -206,7 +204,7 @@ const totalPorPagar = dataPorPagar.reduce(
                     ventasPartidas={ventasServicios}
                     dataVentaxFecha={dataVentaxFecha}
                   background={background} textEmpresa={textEmpresa} 
-                  nombre_tabla={'VENTAS'}
+                  nombre_tabla={'VENTAS SERVICIOS'}
                   />
                   <TableVentas 
                     RANGE_DATE={RANGE_DATE}
@@ -214,7 +212,7 @@ const totalPorPagar = dataPorPagar.reduce(
                     sumaItems={sumaItemsProductos}
                     ventasPartidas={ventasProductos}
                     dataVentaxFecha={dataVentaxFecha}
-                  nombre_tabla={'PRODUCTOS'}
+                  nombre_tabla={'VENTAS PRODUCTOS'}
                   background={background} textEmpresa={textEmpresa} 
                   />
                 </Col>
@@ -248,12 +246,11 @@ const totalPorPagar = dataPorPagar.reduce(
 const TableRH=({data, background, textEmpresa, RANGE_DATE})=>{
   return (
     <div>
-        <Table striped style={{fontSize: '35px'}}>
+        <Table striped style={{fontSize: '40px'}}>
           <thead className={`bg-azulfuerte`}>
             <tr>
-              <th className="text-black"></th>
-              <th className="text-white text-center p-1"><div style={{fontSize: '50px'}}><span className='mx-4'>PRESTAMOS</span> </div></th>
-              <th className="text-white text-center p-1"><div  style={{fontSize: '50px'}}>S/.</div></th>
+              <th className="text-white p-1"><div style={{fontSize: '50px'}}><span >PRESTAMOS</span> </div></th>
+              <th className="text-white p-1"><div  style={{fontSize: '50px'}}>S/.</div></th>
             </tr>
           </thead>
           <tbody>
@@ -261,20 +258,21 @@ const TableRH=({data, background, textEmpresa, RANGE_DATE})=>{
               data.map((g, index)=>{
                 return (
                   <tr className={``}>
-                    <td className="fw-bold">
-                      <div className={`bg-porsiaca text-left text-azulfuerte`}>
-                        {index+1}
-                      </div>
-                    
-                      </td>
-                    <td className={`text-center fw-bolder`}>
-                      <div className={`bg-porsiaca text-left text-azulfuerte`}>
-                        {/* {g.grupo} */}
+                    <td className={` fw-bolder`}>
+                      <div className={`bg-porsiaca text-azulfuerte`}>
+                        <span className='mr-4'>
+                          {index+1}
+                        </span>
                         PRESTAMOS RAL
                       </div>
                     </td>
-                    <td className={`text-center ${g.montopen===0?'fw-light':'fw-bold'}`}>
-                      <div className='bg-porsiaca text-right'>
+                    <td className={` ${g.montopen===0?'fw-light':'fw-bold'}`}>
+                      <div className='bg-porsiaca'>
+                        <NumberFormatMoney amount={g.montopen}/>
+                      </div>
+                    </td>
+                    <td className={``}>
+                      <div className='bg-porsiaca text-white'>
                         <NumberFormatMoney amount={g.montopen}/>
                       </div>
                     </td>
@@ -396,7 +394,7 @@ const TableDetalle=({data, background, textEmpresa, totalEgresosUSD, totalEgreso
                 UTILIDAD
               </td>
               <td className="fw-bold text-right text-black">
-                <div className='' >
+                <div className={`${totalVentas-totalEgresosPEN<=0?'text-change':''}`} >
                   <NumberFormatMoney amount={totalVentas-totalEgresosPEN} />
                 </div>
               </td>
