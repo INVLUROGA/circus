@@ -90,13 +90,13 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   return (
     <Dialog footer={footerTemplate} style={{ width: "40rem", height: "50rem" }} header={servSelect?.labelServ} visible={show} onHide={onCloseAgregarCarrito}>
       <div className="m-2">
-        <label className="form-label">EMPLEADO</label>
+        <label className="form-label">COLABORADOR</label>
         <Select
           onChange={(e) => {
             onInputChangeReact(e, "id_empl")
           }}
           name="id_empl"
-          placeholder={"Seleccionar el estilista"}
+          placeholder={"Seleccionar el colaborador"}
           className="react-select"
           classNamePrefix="react-select"
           options={dataCargos}

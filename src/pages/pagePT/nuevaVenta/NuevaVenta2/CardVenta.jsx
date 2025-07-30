@@ -26,7 +26,7 @@ const [DEFAULT_monto, setDEFAULT_monto] = useState(0)
 const [id_item, setid_item] = useState(0)
 const [cantidad, setcantidad] = useState(0)
 const onOpenModalAgregarCarrito = (servSelect)=>{
-  setservSelect(servSelect)
+  setservSelect({...servSelect, labelServ: servSelect.label, monto_default: servSelect.precio, cantidad: servSelect.cantidad, id: servSelect.id})
   setisOpenModalAgregarCarrito(true)
   setlabelServicio(servSelect.label)
   setDEFAULT_monto(servSelect.precio)

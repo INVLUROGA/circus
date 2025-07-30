@@ -6,6 +6,7 @@ import { useCalendar } from './hooks';
 import SidePanel from './SidePanel';
 import { PageBreadcrumb } from '@/components';
 import App from '../Calendar2/App';
+import {App as Calendar3} from '../Comandas/App';
 import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import { TabPanel, TabView } from 'primereact/tabview';
@@ -74,6 +75,10 @@ const events = [
 												localizer={localizer}
 												tipo_serv={tipo_serv}
 											/>
+										</TabPanel>
+										<TabPanel header={'¿COMANDAS?'}>
+											{/* fullcalendar control */}
+											<Calendar3/>
 										</TabPanel>
 									</TabView>
 								</Col>
