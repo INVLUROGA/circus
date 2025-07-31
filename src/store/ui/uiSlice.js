@@ -37,7 +37,10 @@ export const uiSlice = createSlice({
 			state.minutosperCita = payload;
 		},
 		onAddItemsCarrito: (state, { payload }) => {
-			state.carrito = state.carrito.filter((item) => item.uid !== payload.uid);
+
+			state.carrito = state.carrito.filter(
+				(item) => `${item.uid}-${item.id_empl}` !== `${payload.uid}-${payload.id_empl}`
+			);
 			state.carrito = [...state.carrito, payload];
 		},
 
@@ -52,7 +55,7 @@ export const uiSlice = createSlice({
 				item.id === payload.id ? { ...item, selected: payload.selected } : item
 			);
 		},
-		
+
 		RESET_ItemsCarrito: (state, { payload }) => {
 			state.carrito = [];
 		},
