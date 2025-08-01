@@ -86,9 +86,6 @@ const totalPorPagar = dataPorPagar.reduce(
   return (
 		<div className="w-100">
               <FechaRangeMES rangoFechas={RANGE_DATE} textColor={`${bgHEX}`}/>
-              {/* <div className='text-center' style={{fontSize: '55px'}}>
-                <p>FEBRERO 2025</p>
-              </div> */}
               <br/>
 			<Row>
 				<Col lg={6}>

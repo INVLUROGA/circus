@@ -312,6 +312,7 @@ export const arrayCargoEmpl = [
 	{ label: 'recepcionista', value: 28 },
 	{ label: 'JEFE DE SALON', value: 29 },
 	{ label: 'MKT COMERCIAL', value: 30 },
+	{ label: 'MANICURISTA', value: 31 },
 ];
 
 export const arrayDepartamentoEmpl = [

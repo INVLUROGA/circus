@@ -35,15 +35,15 @@ export const TodoVentas=({id_empresa})=> {
   }, [])
   const [customers, setCustomers] = useState(null);
   const [valueFilter, setvalueFilter] = useState([])
-    const [filters, setFilters] = useState({
-      
-        global: { value: null, matchMode: FilterMatchMode.CONTAINS },
-        fecha_venta: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
-        tipo_comprobante: {operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]},
-        "tb_empleado.nombres_apellidos_empl": {operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]}
-    });
-    const [loading, setLoading] = useState(true);
-    const [globalFilterValue, setGlobalFilterValue] = useState('');
+  const [filters, setFilters] = useState({
+    
+      global: { value: null, matchMode: FilterMatchMode.CONTAINS },
+      fecha_venta: { operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.DATE_IS }] },
+      tipo_comprobante: {operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]},
+      "tb_empleado.nombres_apellidos_empl": {operator: FilterOperator.AND, constraints: [{ value: null, matchMode: FilterMatchMode.CONTAINS }]}
+  });
+  const [loading, setLoading] = useState(true);
+  const [globalFilterValue, setGlobalFilterValue] = useState('');
 
     useEffect(() => {
         const fetchData = () => {
@@ -78,7 +78,7 @@ export const TodoVentas=({id_empresa})=> {
     const renderHeader = () => {
         return (
           <>
-                  <span className='font-24 text-black'>
+                  {/* <span className='font-24 text-black'>
                     CANTIDAD DE ATENCIONES TOTAL: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
                   </span> 
                   <br/>
@@ -92,7 +92,7 @@ export const TodoVentas=({id_empresa})=> {
                   <br/>
                   <span className='font-24 text-black'>
                     CANTIDAD DE CLIENTES RECURRENTES DE JUNIO: {valueFilter?.length==0?customers?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length:valueFilter?.filter(f=>f.detalleVenta_pagoVenta !== 0.0)?.length}
-                  </span>
+                  </span> */}
             <div className="flex justify-content-end">
                 <IconField iconPosition="left">
                     <InputIcon className="pi pi-search" />
@@ -141,11 +141,12 @@ export const TodoVentas=({id_empresa})=> {
   const fechaDeComprobanteBodyTemplate = (rowData)=>{
     return (
       <div className={`${rowExtensionColor(rowData, 'text-primary')}`}>
-          <span className={`text-primary ${rowExtensionColor(rowData, 'text-primary')} fw-bold`}>{FormatoDateMask(rowData.fecha_venta_v, 'dddd D [/]  ')}
+          <span className={`text-primary ${rowExtensionColor(rowData, 'text-primary')} fw-bold`}>
+            {/* {FormatoDateMask(rowData.fecha_venta_v, 'dddd D [/]  ')} */}
           {/* <span className='text-black'></span> */}
           </span>
           <span>
-            {FormatoDateMask(rowData.fecha_venta_v, ' h:mm A')}
+            {FormatoDateMask(rowData.fecha_venta_v, 'dddd DD [de] MMMM [A LAS] h:mm A')}
           </span>
       </div>
     )
@@ -260,7 +261,7 @@ const rowExtensionColor = (rowData, color_pr)=>{
     break;
 }
 }
-    const header = renderHeader();
+const header = renderHeader();
 
     return (
         <>
@@ -271,7 +272,7 @@ const rowExtensionColor = (rowData, color_pr)=>{
                   globalFilterFields={["tb_cliente.nombres_apellidos_cli", "tb_empleado.nombres_apellidos_empl", "tipo_comprobante", "numero_transac"]} header={header} emptyMessage="No customers found.">
               <Column field="id" header="Id" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} body={idBodyTemplate}/>
               {/* <Column field="id" header="Foto de" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} /> */}
-              <Column field="fecha_venta" header={<span style={{bottom: '20px', position: 'relative'}}><span className='fs-2 text-black cursor-pointer'>JUNIO</span> <br/><span>FECHA Y HORA</span></span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
+              <Column field="fecha_venta" header={<span className='text-black'>FECHA Y HORA</span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
               <Column field="tb_cliente.nombres_apellidos_cli" body={infoClienteBodyTemplate} header={<span className='text-black'>CLIENTES</span>} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
               {/* <Column field="tb_empleado.nombres_apellidos_empl" header="ASESOR COMERCIAL" body={asesorBodyTemplate} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} /> */}
               <Column header={<span className='text-black'>TOTAL</span>} body={totalVentasBodyTemplate} style={{ minWidth: '12rem' }} />
