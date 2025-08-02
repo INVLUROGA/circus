@@ -104,11 +104,8 @@ export const TodoVentas=({id_empresa})=> {
     };
 
     const totalVentasBodyTemplate = (rowData)=>{
-      // const obj = {...rowData.detalle_ventaCitasrowData.detalle_ventaCitas, ...rowData.detalle_ventaMembresia, detalle_ventaProductos}
         // Combinar los arrays en un solo array
         const combinedArray = [
-          ...rowData.detalle_ventaCitas,
-          ...rowData.detalle_ventaMembresia,
           ...rowData.detalle_ventaProductos,
           ...rowData.detalle_ventaservicios
         ];
@@ -205,7 +202,6 @@ const removeVentaBodyTemplate = (rowData)=>{
   )
 }
 const infoClienteBodyTemplate = (rowData)=>{
-  const avatarCli = rowData.tb_cliente?.tb_images[rowData.tb_cliente.tb_images.length-1]?.name_image
   return(
     <Row className='m-0'>
       <Col xxl={12}>
