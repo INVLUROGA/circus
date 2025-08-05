@@ -1,10 +1,12 @@
 import React from 'react'
 
-export const SymbolSoles = ({numero, isbottom, fontSizeS, classN, bottomClasss}) => {
+export const SymbolSoles = ({numero, isbottom, fontSizeS, classN, bottomClasss, size}) => {
   return (
     <span className=''>
-        <span className={`${fontSizeS?fontSizeS:'fs-3'} ${classN?classN:''} mr-2 position-relative`} style={{bottom: `${bottomClasss}px`}}>
+        <span className={`${fontSizeS?fontSizeS:'fs-3'} ${classN?classN:''} position-relative`} style={{bottom: `${bottomClasss}px`}}>
+          <span style={{fontSize: `${size}px`}}>
             S
+          </span>
             <span className={`${fontSizeS?fontSizeS:'fs-4'}`}>
             /
             </span>

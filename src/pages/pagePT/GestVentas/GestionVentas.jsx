@@ -4,6 +4,7 @@ import { Card, Tab, Tabs } from 'react-bootstrap'
 import TodoVentas from './VentasTotal'
 import { TabPanel, TabView } from 'primereact/tabview'
 import {App as ReporteVenta } from './ReporteVentaTotal/App'
+import {App as ReporteVenta1 } from './ReporteVentas/App'
 export const GestionVentas = () => {
   return (
     <>
@@ -20,6 +21,13 @@ export const GestionVentas = () => {
         <Card>
             <Card.Body>
                               <ReporteVenta id_empresa={599}/>
+            </Card.Body>
+        </Card>
+      </TabPanel>
+      <TabPanel header={'REPORTE POR RANGO DE FECHA'}>
+        <Card>
+            <Card.Body>
+                              <ReporteVenta1 id_empresa={599}/>
             </Card.Body>
         </Card>
       </TabPanel>

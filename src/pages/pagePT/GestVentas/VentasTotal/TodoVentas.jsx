@@ -143,7 +143,7 @@ export const TodoVentas=({id_empresa})=> {
           {/* <span className='text-black'></span> */}
           </span>
           <span>
-            {FormatoDateMask(rowData.fecha_venta_v, 'dddd DD [de] MMMM [A LAS] h:mm A')}
+            {FormatoDateMask(rowData.fecha_venta_v, 'dddd DD [de] MMMM h:mm A')}
           </span>
       </div>
     )
@@ -268,8 +268,8 @@ const header = renderHeader();
                   globalFilterFields={["tb_cliente.nombres_apellidos_cli", "tb_empleado.nombres_apellidos_empl", "tipo_comprobante", "numero_transac"]} header={header} emptyMessage="No customers found.">
               <Column field="id" header="Id" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} body={idBodyTemplate}/>
               {/* <Column field="id" header="Foto de" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} /> */}
-              <Column field="fecha_venta" header={<span className='text-black'>FECHA Y HORA</span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
-              <Column field="tb_cliente.nombres_apellidos_cli" body={infoClienteBodyTemplate} header={<span className='text-black'>CLIENTES</span>} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
+              <Column field="fecha_venta" header={<span className='text-black'>FECHA HORA</span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
+              <Column field="tb_cliente.nombres_apellidos_cli" body={infoClienteBodyTemplate} header={<span className='text-black'>NOMBRES <br/> APELLIDOS</span>} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
               {/* <Column field="tb_empleado.nombres_apellidos_empl" header="ASESOR COMERCIAL" body={asesorBodyTemplate} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} /> */}
               <Column header={<span className='text-black'>TOTAL</span>} body={totalVentasBodyTemplate} style={{ minWidth: '12rem' }} />
               <Column field="tipo_comprobante" header="COMPROBANTE" body={comprobanteBodyTemplate} filter filterPlaceholder="Buscar tipo de comprobante" style={{ minWidth: '12rem' }} />
