@@ -117,6 +117,8 @@ export const useCalendarStore = () => {
 				const endDate = new Date(startDate.getTime() + totalMinutes * 60_000);
 				return {
 					id: d.id,
+					num_Doc_cli: d.tb_cliente.numDoc_cli,
+					tel_cli: d.tb_cliente.tel_cli,
 					title: `${d.tb_cliente?.nombre_cli || ''} ${d.tb_cliente?.apMaterno_cli || ''} ${d.tb_cliente?.apPaterno_cli || ''}`,
 					start: d.fecha_inicio?.split('Z')[0],
 					end: endDate.toISOString().split('Z')[0],

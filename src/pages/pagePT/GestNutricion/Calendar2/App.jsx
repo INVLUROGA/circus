@@ -66,9 +66,13 @@ const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, 
               <img src={urlImageAvatar} className="rounded-circle" width={120} height={120} />
             </div>
             <div className='mx-2'>
-              <div className='fs-1'>{resourceTitle.split(' ')[0]}</div>
               <div className=''>{arrayCargoEmpl.find(e=>e.value===cargo_empl)?.label}</div>
-              <div className=''><span className='fs-3'>CITAS: <span className='text-ISESAC'>{eventosPasados.length}</span>/<span className='text-change'>{eventosDelRecurso.length}</span></span> </div>
+              <div className='fs-1'>{resourceTitle.split(' ')[0]}</div>
+              <div className='text-start ml-5'><span className='color-confirmada'>confirmada <span className='color-confirmada'>{eventosPasados.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-asistio'>ASISTIÓ <span className=''>{eventosPasados.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-no-asistio'>NO ASISTIÓ <span className=''>{eventosPasados.length}</span></span> </div>
+              <div className='text-start ml-5'><span className=''>PENDIENTE <span className=''>{eventosPasados.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-cancelada'>CANCELADA <span className=''>{eventosPasados.length}</span></span> </div>
             </div>
             <div>
               {/* <Button className='m-1 p-1' onClick={()=>onOpenModalCustomEvento(resource)}>Agregar evento</Button> */}
@@ -137,8 +141,6 @@ onMouseLeave={(e) => {
   title={`${e.title} — ${start.toLocaleTimeString()} to ${end.toLocaleTimeString()}`}
 >
   <SimpleBar  style={{ flex: '1 1 auto', maxHeight: '100%' }}>
-    {/* Contenido fijo arriba */}
-    {/* {`${JSON.stringify(e)}`} */}
     <div style={{ flex: '0 0 auto' }}>
       <h5 className='fw-medium font-16'><DateMask date={start} format={'hh:mm A'}/> - <DateMask date={end} format={'hh:mm A'}/> ({e.eventos.length} {e.eventos.length===1?'SERVICIO':'SERVICIOS'})</h5>
       <span className='fs-5'>{e.title}</span>
@@ -176,11 +178,10 @@ const ScheduleTable = ({
 }) => {
   // 1. Intervalo en minutos
   const [slotMinutes, setSlotMinutes] = useState(60);
-
   // 2. Dimensiones fijas
   const slotHeight = 150; // px que ocupa cada bloque de `slotMinutes`
   const minuteHeight = slotHeight / slotMinutes; // px por minuto
-  const headerHeight = 130; // altura de la parte “sticky” (selector + títulos)
+  const headerHeight = 220; // altura de la parte “sticky” (selector + títulos)
 
   // 3. Altura total del bloque de horas (scroll vertical)
   const totalMinutes = (endHour - startHour) * 60;
@@ -304,8 +305,8 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
     .padStart(2, '0')}`)
     .format('YYYY-MM-DDTHH:mm');
     
-  // 8) Llamas a onOpenModalCustomEvento enviando resource y la hora calculada
-  
+    // 8) Llamas a onOpenModalCustomEvento enviando resource y la hora calculada
+    
   onOpenModalCustomEvento({
     id_empl: resource.resourceId,
     // resourceData: resource,
@@ -314,10 +315,10 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
     id_origen: 0,
     status_cita: 0,
     fecha_fin: null,
-    id: 0
+    id: 0,
   });
 };
-
+  
   return (
     // 14. Contenedor “scrollable” (horizontal + vertical)
     <div
@@ -332,6 +333,7 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
       onMouseLeave={handleMouseLeave}
       onScroll={handleScroll}
     >
+      
       {/* 15. Wrapper que HACE scroll: TODO el contenido ancho (horas + recursos) */}
       <div
         style={{
@@ -466,7 +468,7 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
         {/* Eventos distribuidos por columnas internas */}
         {columnasDeEventos.map((columnaEventos, indexColumna) => {
           const anchoColumnaInterna = 100 / columnasDeEventos.length;
-
+          
           return columnaEventos.map((e) => {
             const start = new Date(e.start);
             const end = new Date(e.end);
@@ -564,8 +566,6 @@ function App() {
     setdataCitas(dataView)
   }, [dataView])
   const onOpenModalCustomEvento = (resort)=>{
-    console.log(resort);
-    
     setResor(resort)
     setisOpenModalCustomEvento(true)
   }
@@ -648,18 +648,21 @@ function App() {
   return (
 		<div>
 			<div className="chart-widget-list d-flex">
-				<p>
-					<i className="mdi mdi-square leyenda-confirmada"></i> Confirmada
+				{/* <p>
+					<i className="mdi mdi-square ml-4 leyenda-confirmada"></i> Confirmada
 				</p>
 				<p>
-					<i className="mdi mdi-square leyenda-cancelada"></i> Cancelada
+					<i className="mdi mdi-square ml-4 leyenda-cancelada"></i> Cancelada
 				</p>
 				<p className="mb-0">
-					<i className="mdi mdi-square leyenda-asistio"></i> Asistió
+					<i className="mdi mdi-square ml-4 leyenda-asistio"></i> Asistió
 				</p>
 				<p className="mb-0">
-					<i className="mdi mdi-square leyenda-no-asistio"></i> No asistió
+					<i className="mdi mdi-square ml-4 leyenda-no-asistio"></i> No asistió
 				</p>
+				<p className="mb-0">
+					<i className="mdi mdi-square ml-4 bg-primary"></i> PENDIENTE
+				</p> */}
 			</div>
 			<div className="d-flex align-items-center justify-content-center">
 				{/* Botón anterior */}

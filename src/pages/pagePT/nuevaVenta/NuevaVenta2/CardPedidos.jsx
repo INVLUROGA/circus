@@ -3,6 +3,7 @@ import { useNuevaVentaStore } from './useNuevaVentaStore'
 import { useDispatch } from 'react-redux'
 import { onAddItemsCarrito, RESET_ItemsCarrito } from '@/store'
 import { arrayEstados, arrayEstadosCitas } from '@/types/type'
+import { DateMask } from '@/components/CurrencyMask'
 
 export const CardPedidos = ({detalle_cli_modelo}) => {
     const { obtenerReservas, dataPedidos } = useNuevaVentaStore()
@@ -25,23 +26,26 @@ export const CardPedidos = ({detalle_cli_modelo}) => {
   return (
     <div className='p-1'>
         {
-            dataPedidos.filter(pedido=>pedido.id_estado === 500).map(pedido=>{
+            dataPedidos.filter(pedido=>pedido.id_estado === 502).map(pedido=>{
                 return (
                     <div className='m-3 card p-3 hover-border-card-primary' onClick={()=>onClickPedidos(pedido?.servicios)}>
-                        <div>
+                        {/* <div>
                             FECHA CREADA: {pedido.fecha_registro}
+                        </div> */}
+                        <div>
+                            <span className='fw-light'>CITA AGENDADA:</span> <span className='text-primary'><DateMask date={pedido.fecha_registro} format={'dddd DD [de] MMMM'}/></span> <DateMask date={pedido.fecha_registro} format={' YYYY'}/>
                         </div>
                         <div>
-                            EMPIEZA: {pedido.fecha_registro}
+                            <span className='fw-light'>HORA:</span> <DateMask date={pedido.fecha_registro} format={'hh:mm A'}/>
                         </div>
                         <div>
-                            ESTADO: {arrayEstadosCitas.find(est=>est.value === Number(pedido?.id_estado))?.label}
+                            <span className='fw-light'>ESTADO:</span> <span className='color-asistio'>{arrayEstadosCitas.find(est=>est.value === Number(pedido?.id_estado))?.label}</span>
                         </div>
                         <div>
-                            ESTILISTA: {pedido.empleado}
+                            <span className='fw-light'>ESTILISTA:</span> <span className='text-primary'>{pedido.empleado.split(' ')[0]}</span>
                         </div>
                         <div>
-                            SERVICIO: {pedido.servicios.map((s, i)=>`${s.nombre_servicio}, `)}
+                            <span className='fw-light'>SERVICIO:</span> {pedido.servicios.map((s, i)=>`${s.nombre_servicio} `)}
                         </div>
                     </div>
                 )

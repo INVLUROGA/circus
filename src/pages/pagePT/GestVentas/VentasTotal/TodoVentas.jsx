@@ -276,7 +276,7 @@ const header = renderHeader();
               <Column field="numero_transac" header="Nº DE COMPR." body={ncomprobanteBodyTemplate} filter filterPlaceholder="Search by name" style={{ maxWidth: '7rem' }} />
               <Column header="" frozen style={{ minWidth: '12rem' }} body={actionBodyTemplate} />
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={logoPdfBodyTemplate} /> */}
-              <Column header="" frozen style={{ minWidth: '2rem' }} body={removeVentaBodyTemplate} />
+              {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={removeVentaBodyTemplate} /> */}
           </DataTable>
           <PdfComprobanteVenta id_venta={idVentas} isPdfOpen={isPdfOpen}/>
           <ModalViewObservacion show={viewVentas} onHide={onModalCancelVENTAS} id={idVentas}/>

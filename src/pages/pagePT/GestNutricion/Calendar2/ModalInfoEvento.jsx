@@ -11,6 +11,7 @@ import { Button } from 'primereact/button';
 import dayjs from 'dayjs';
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 import { Loading } from '@/components/Loading';
+import { DateMask } from '@/components/CurrencyMask';
 
 export const ModalInfoEvento = ({show, onHide, resor={}}) => {
 const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmpleados, dataParametrosServicios, obtenerServiciosxEmpresa, postEventoServicioxEmpresa, isLoading, putEventoServicioxEmpresa } = useCalendarStore()
@@ -84,9 +85,9 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
     }
     
       const labelStyle = {
-    fontWeight: "bold",
+    // fontWeight: "light",
+
     width: "250px",
-    color: "#374151", // gris oscuro similar al de la imagen
     textTransform: "uppercase",
   };
 
@@ -100,26 +101,35 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
   })
   return (
     <Dialog onHide={cancelInfoEvento} visible={show} footer={footerModal} style={{width: '50rem'}}>
+        {/* {JSON.stringify(resor)} */}
         <div className='d-flex justify-content-center'>
             <div style={{ fontFamily: "Arial, sans-serif", display: "flex", flexDirection: "column", gap: "10px", maxWidth: "800px" }}>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>NOMBRE DEL CLIENTE:</span>
+                    <span style={labelStyle} className='fw-light'>NOMBRE DEL CLIENTE:</span>
                     <span style={valueStyle}>{formState.title}</span>
                 </div>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>COMIENZA:</span>
-                    <span style={valueStyle}>{formState.start}</span>
+                    <span style={labelStyle} className='fw-light'>TELEFONO DEL CLIENTE:</span>
+                    <span style={valueStyle}>{formState.tel_cli}</span>
                 </div>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>FINALIZA:</span>
-                    <span style={valueStyle}>{formState.end}</span>
+                    <span style={labelStyle} className='fw-light'>DNI DEL CLIENTE:</span>
+                    <span style={valueStyle}>{formState.num_Doc_cli}</span>
                 </div>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>ORIGEN:</span>
+                    <span style={labelStyle} className='fw-light'>COMIENZA:</span>
+                    <span style={valueStyle}><DateMask date={formState.start} format={'hh:mm A'}/></span>
+                </div>
+                <div style={{ display: "flex" }}>
+                    <span style={labelStyle} className='fw-light'>FINALIZA:</span>
+                    <span style={valueStyle}><DateMask date={formState.end} format={'hh:mm A'}/></span>
+                </div>
+                <div style={{ display: "flex" }}>
+                    <span style={labelStyle} className='fw-light'>ORIGEN:</span>
                     <span style={valueStyle}>{(dataOrigen||[]).find((op)=>op.value===id_origen)?.label}</span>
                 </div>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>ESTADO:</span>
+                    <span style={labelStyle} className='fw-light'>ESTADO:</span>
                     <span style={valueStyle}>
                         <Select
                             onChange={(e) => onInputChangeReact(e, 'id_estado')}
@@ -134,7 +144,7 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
                     </span>
                 </div>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>SERVICIOS:</span>
+                    <span style={labelStyle} className='fw-light'>SERVICIOS:</span>
                     <div className='d-flex flex-column'>
                         {
                             serviciosCitas?.map(serv=>{
@@ -146,7 +156,7 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
                     </div>
                 </div>
                 <div style={{ display: "flex" }}>
-                    <span style={labelStyle}>COMENTARIOS:</span>
+                    <span style={labelStyle} className='fw-light'>COMENTARIOS:</span>
                     <span style={valueStyle}>
                         <textarea
                         value={comentario}

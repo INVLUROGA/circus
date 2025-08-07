@@ -178,7 +178,7 @@ export default function TableClientes() {
                 {/* <Column header="Monto" filterField="monto" style={{ minWidth: '10rem' }} sortable body={montoBodyTemplate} filter/> */}
                 <Column header="Id" filterField="id_cli" style={{ minWidth: '10rem' }} sortable body={IdBodyTemplate} filter/>
                 <Column header="SOCIO" filterField="nombres_apellidos_cli" style={{ minWidth: '10rem' }} sortable body={ClientesBodyTemplate} filter/>
-                <Column header="TIPO DE SOCIO" filterField={`tipo_cliente`} style={{ minWidth: '10rem' }} sortable body={ProgramaSemanasBodyTemplate} filter/>
+                <Column header="TIPO DE CLIENTE" filterField={`tipo_cliente`} style={{ minWidth: '10rem' }} sortable body={ProgramaSemanasBodyTemplate} filter/>
                 <Column header="EMAIL" filterField={`email_cli`} style={{ minWidth: '10rem' }} sortable body={emailBodyTemplate} filter/>
                 <Column header="TELEFONO" filterField={`tel_cli`} style={{ minWidth: '10rem' }} sortable body={telefonoBodyTemplate} filter/>
                 <Column header="DISTRITO" filterField={`distrito`} style={{ minWidth: '10rem' }} sortable body={distritoBodyTemplate} filter/>

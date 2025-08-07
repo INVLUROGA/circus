@@ -62,8 +62,8 @@ export const arrayTipoCambio = [
 ];
 export const arrayEstadosCitas = [
 	{ bg: 'leyenda-confirmada', label: 'Confirmada', value: 500 },
-	{ bg: 'leyenda-asistio', label: 'Asistio', value: 502 },
-	{ bg: 'leyenda-no-asistio', label: 'No Asistio', value: 503 },
+	{ bg: 'leyenda-asistio', label: 'Asistió', value: 502 },
+	{ bg: 'leyenda-no-asistio', label: 'No Asistió', value: 503 },
 	{ bg: 'leyenda-cancelada', label: 'Cancelada', value: 501 },
 ];
 
@@ -310,7 +310,7 @@ export const arrayCargoEmpl = [
 	{ label: 'Estilista', value: 26 },
 	{ label: 'Asistente de estilista', value: 27 },
 	{ label: 'recepcionista', value: 28 },
-	{ label: 'JEFE DE SALON', value: 29 },
+	{ label: 'DIRECTOR ARTISTICO', value: 29 },
 	{ label: 'MKT COMERCIAL', value: 30 },
 	{ label: 'MANICURISTA', value: 62 },
 ];
