@@ -782,8 +782,8 @@ function App() {
         <ScheduleTable
           date={currentDate}
           onOpenModalCustomEvento={onOpenModalCustomEvento}
-          startHour={1}
-          endHour={24}
+          startHour={9}
+          endHour={21}
           resources={resourcesEmpleadosOrdenados}
           events={dataCitas}
           onOpenModalInfoEvento={onOpenModalInfoEvento}

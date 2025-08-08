@@ -48,7 +48,7 @@ export const DropWrapper = ({
       const accept = () => {
         console.log("evento modificado", {eventoModificado, startHour, minutosDesdeInicio, nuevaHora: DateMask({date: nuevaHora}), horaFin: DateMask({date: nuevaHoraFin})});
         // Puedes actualizar el evento aquí, por ejemplo:
-        putEventoServicioxEmpresa({fecha_fin: DateMask({date: nuevaHoraFin}), fecha_inicio: DateMask({date: nuevaHora}), id_empl: r.resourceId}, null, nuevaHora.toISOString(), item.id)
+        putEventoServicioxEmpresa({fecha_fin: DateMask({date: nuevaHoraFin}), fecha_inicio: DateMask({date: nuevaHora}), id_empl: r.resourceId}, null, dayjs(date), item.id)
       };
       const reject = () => {
         // Manejar el rechazo de la modificación aquí

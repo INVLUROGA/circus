@@ -76,7 +76,7 @@ export const formateo_Moneda = (current)=>{
 
 export const DateMask = ({date, defaultFormat, format}) => {
   //'D [de] MMMM [del] YYYY'
-  return dayjs(date, defaultFormat).locale('es').format(format)
+  return dayjs(date, defaultFormat).subtract(5, 'hour').locale('es').format(format)
 }
 export const DateMaskString = (date, format, defaultFormat) => {
   //'D [de] MMMM [del] YYYY'
