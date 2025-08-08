@@ -11,6 +11,8 @@ import { momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import { TabPanel, TabView } from 'primereact/tabview';
 import { Calendar2 } from '../Calendar3/Calendar2';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 export const CalendarApp = ({tipo_serv}) => {
 	const {
 		isOpen,
@@ -66,15 +68,15 @@ const events = [
 										</TabPanel>
 										<TabPanel header={'DIAS'}>
 											{/* fullcalendar control */}
-											<App
-												onDateClick={onDateClick}
-												onEventClick={onEventClick}
-												onDrop={onDrop}
-												onEventDrop={onEventDrop}
-												events={events}
-												localizer={localizer}
-												tipo_serv={tipo_serv}
-											/>
+												<App
+													onDateClick={onDateClick}
+													onEventClick={onEventClick}
+													onDrop={onDrop}
+													onEventDrop={onEventDrop}
+													events={events}
+													localizer={localizer}
+													tipo_serv={tipo_serv}
+												/>
 										</TabPanel>
 										<TabPanel header={'¿COMANDAS?'}>
 											{/* fullcalendar control */}

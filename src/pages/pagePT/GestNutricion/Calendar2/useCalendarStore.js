@@ -82,6 +82,8 @@ export const useCalendarStore = () => {
 			const { data } = await PTApi.put(`/cita/servicio-cita/${id_cita}`, {
 				formState,
 			});
+			console.log('aqui ya se actualizo!');
+
 			await obtenerEventoServicioxEmpresa(599, fecha_inicio);
 			setIsLoading(false);
 			// await obtenerArticulos(id_enterprice);

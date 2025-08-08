@@ -12,6 +12,10 @@ import { useSelector } from 'react-redux';
 import config from '@/config';
 import { ModalInfoEvento } from './ModalInfoEvento';
 import { TabPanel, TabView } from 'primereact/tabview';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DropWrapper } from './DropWrapper';
+import { getEmptyImage } from 'react-dnd-html5-backend';
 const dividirEventosPorColumna = (eventos) => {
   const columnas = [];
 
@@ -41,8 +45,11 @@ const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, 
     const ahora = dayjs(); // Fecha y hora actual
 
     const eventosPasados = eventosDelRecurso.filter(e => dayjs(e.start).isBefore(ahora));
+    const eventoConfirmadas = eventosDelRecurso.filter(e=>e.id_estado===500)
+    const eventoNoAsistio = eventosDelRecurso.filter(e=>e.id_estado===503)
+    const eventoAsistio = eventosDelRecurso.filter(e=>e.id_estado===502)
+    const eventoCancelado = eventosDelRecurso.filter(e=>e.id_estado===505)
   return (
-    
             <div
               className='bg-black text-primary'
               style={{
@@ -61,6 +68,7 @@ const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, 
                 justifyContent: 'center',
               }}
             >
+              {/* {JSON.stringify(eventosDelRecurso)} */}
           <div className='text-center d-flex align-items-center'>
             <div>
               <img src={urlImageAvatar} className="rounded-circle" width={120} height={120} />
@@ -68,11 +76,11 @@ const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, 
             <div className='mx-2'>
               <div className=''>{arrayCargoEmpl.find(e=>e.value===cargo_empl)?.label}</div>
               <div className='fs-1'>{resourceTitle.split(' ')[0]}</div>
-              <div className='text-start ml-5'><span className='color-confirmada'>confirmada <span className='color-confirmada'>{eventosPasados.length}</span></span> </div>
-              <div className='text-start ml-5'><span className='color-asistio'>ASISTIÓ <span className=''>{eventosPasados.length}</span></span> </div>
-              <div className='text-start ml-5'><span className='color-no-asistio'>NO ASISTIÓ <span className=''>{eventosPasados.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-confirmada'>confirmada <span className='color-confirmada'>{eventoConfirmadas.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-asistio'>ASISTIÓ <span className=''>{eventoAsistio.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-no-asistio'>NO ASISTIÓ <span className=''>{eventoNoAsistio.length}</span></span> </div>
               <div className='text-start ml-5'><span className=''>PENDIENTE <span className=''>{eventosPasados.length}</span></span> </div>
-              <div className='text-start ml-5'><span className='color-cancelada'>CANCELADA <span className=''>{eventosPasados.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='color-cancelada'>CANCELADA <span className=''>{eventoCancelado.length}</span></span> </div>
             </div>
             <div>
               {/* <Button className='m-1 p-1' onClick={()=>onOpenModalCustomEvento(resource)}>Agregar evento</Button> */}
@@ -105,10 +113,17 @@ title,
 onOpenModalInfoEvento,
 e})=>{
   // console.log({tiene: e});
-  
+    const [{ isDragging }, dragRef, preview] = useDrag(() => ({
+    type: 'EVENT',
+    item: { ...e }, // se pasa todo el evento como payload
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
   return (
     <div
   key={e.title}
+  ref={dragRef}
   className={`${getEstado(`${e.id_estado}`)} `}
   onClick={()=>onOpenModalInfoEvento(e)}
   style={{
@@ -119,6 +134,7 @@ e})=>{
   right: 4,
   height: height,
   background: '#99CCF8',
+  opacity: isDragging?0:1,
   borderRadius: 3,
   padding: '0 2px',
   boxSizing: 'border-box',
@@ -319,6 +335,39 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
   });
 };
   
+const [, dropRef] = useDrop(() => ({
+  accept: 'EVENT',
+  drop: (item, monitor) => {
+    // Obtener la hora según la posición del mouse
+    const clientOffset = monitor.getClientOffset();
+    if (!clientOffset) return;
+
+    // Calcular nueva hora y resource
+    const yInViewport = clientOffset.y - scrollRef.current.getBoundingClientRect().top;
+    const yContent = yInViewport + scrollRef.current.scrollTop;
+    const yHours = yContent - headerHeight;
+
+    const minutosDesdeInicio = Math.round(yHours / minuteHeight);
+    const horaInicio = startHour * 60 + minutosDesdeInicio;
+    const nuevaHora = dayjs(date).startOf('day').add(horaInicio, 'minute');
+
+    const duracionMin = dayjs(item.end).diff(dayjs(item.start), 'minute');
+    const nuevaHoraFin = nuevaHora.add(duracionMin, 'minute');
+    
+    const eventoModificado = {
+      ...item,
+      start: nuevaHora.toISOString(),
+      end: nuevaHoraFin.toISOString(),
+      id_empl: r.resourceId, // cambia el recurso si se soltó en otro
+    };
+
+    // Aquí llamas a una función para guardar o actualizar el evento
+    onOpenModalCustomEvento(eventoModificado); // o updateEvento(eventoModificado)
+  },
+  collect: (monitor) => ({
+    isOver: monitor.isOver(),
+  }),
+}));
   return (
     // 14. Contenedor “scrollable” (horizontal + vertical)
     <div
@@ -427,7 +476,7 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
   const anchoRecurso = tieneSolapamiento
     ? columnasDeEventos.length * resourceWidth
     : resourceWidth;
-
+          
   return (
     <div
       key={r.resourceId}
@@ -448,8 +497,17 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
       />
 
       {/* Zona de eventos */}
-      <div style={{ position: 'relative', height: `${timesHeight}px` }}>
-        {/* Líneas horarias */}
+      <DropWrapper
+  r={r}
+  date={date}
+  startHour={startHour}
+  minuteHeight={minuteHeight}
+  headerHeight={headerHeight}
+  onOpenModalCustomEvento={onOpenModalCustomEvento}
+  timesHeight={timesHeight}
+  scrollRef={scrollRef}
+>
+{/* Líneas horarias */}
         {timeMarks.map((m) => (
           <div
             key={m}
@@ -498,7 +556,12 @@ const minutosDesdeInicio = yHoursRounded / minuteHeight;
             );
           });
         })}
-      </div>
+</DropWrapper>
+      {/* <div 
+            ref={dropRef}
+      style={{ position: 'relative', height: `${timesHeight}px` }}>
+        
+      </div> */}
     </div>
   );
 })}
@@ -715,15 +778,17 @@ function App() {
 					▶
 				</button>
 			</div>
-			<ScheduleTable
-				date={currentDate}
-				onOpenModalCustomEvento={onOpenModalCustomEvento}
-				startHour={9}
-				endHour={21}
-				resources={resourcesEmpleadosOrdenados}
-				events={dataCitas}
-				onOpenModalInfoEvento={onOpenModalInfoEvento}
-			/>
+      <DndProvider backend={HTML5Backend}>
+        <ScheduleTable
+          date={currentDate}
+          onOpenModalCustomEvento={onOpenModalCustomEvento}
+          startHour={1}
+          endHour={24}
+          resources={resourcesEmpleadosOrdenados}
+          events={dataCitas}
+          onOpenModalInfoEvento={onOpenModalInfoEvento}
+        />
+      </DndProvider>
 			<ModalCustomEvento
 				resor={resor}
 				show={isOpenModalCustomEvento}

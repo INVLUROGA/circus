@@ -75,6 +75,7 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
         return (
             <>
             <Button className='' style={{margin: '5px'}} label='CANCELAR' onClick={cancelInfoEvento} text/>
+            <Button className='bg-success text-white' onClick={() => window.open(`https://wa.me/${formState.tel_cli}`, '_blank')} style={{margin: '5px'}} label='whatsapp' text/>
             <Button className='' style={{margin: '5px'}} label='GUARDAR' onClick={onSubmitCustomEvento}/>
             <Button className='bg-change' style={{margin: '5px'}} label='ELIMINAR' onClick={onDeleteEvento}/>
             {/* <Button className='bg-leyenda-asistio' style={{margin: '5px'}} label='ASISTIO'/>
