@@ -783,7 +783,7 @@ function App() {
           date={currentDate}
           onOpenModalCustomEvento={onOpenModalCustomEvento}
           startHour={9}
-          endHour={26}
+          endHour={21}
           resources={resourcesEmpleadosOrdenados}
           events={dataCitas}
           onOpenModalInfoEvento={onOpenModalInfoEvento}
