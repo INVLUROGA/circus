@@ -20,6 +20,7 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxEstilistas, DataVendedores:dataEstilistas } = useTerminoStore();
   const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxAsistentesEstilistas, DataVendedores:dataAsistentesEstilistas } = useTerminoStore();
   const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosxAsistentesManicuristas, DataVendedores:dataManicuristas } = useTerminoStore();
+  const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerEmpleadosJefesDeSalon, DataVendedores:dataJefesDeSalon } = useTerminoStore();
   const [montoTotal, setMontoTotal] = useState(servSelect?.monto_default); // Estado para monto calculado
   const dispatch = useDispatch()
   const { formState, id_empl, cantidad, monto_descuento, porcentaje_descuento, onInputChange, onInputChangeReact, onInputChangeFunction, onResetForm } = useForm(regAgregarCarrito);
@@ -29,6 +30,7 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
       obtenerEmpleadosxEstilistas(26, 5, 599);
       obtenerEmpleadosxAsistentesEstilistas(27, 5, 599)
       obtenerEmpleadosxAsistentesManicuristas(62, 5, 599)
+      obtenerEmpleadosJefesDeSalon(29, 5, 599)
     }
         // Si hay un empleado por defecto, lo seteamos en el formState
     if (servSelect?.id_empl) {
@@ -39,7 +41,8 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   const dataCargos = [
     ...dataEstilistas,
     ...dataAsistentesEstilistas,
-    ...dataManicuristas
+    ...dataManicuristas,
+    ...dataJefesDeSalon
   ]
     // Función para manejar cambios en cantidad y restringir valores
     const handleCantidadChange = (e) => {
