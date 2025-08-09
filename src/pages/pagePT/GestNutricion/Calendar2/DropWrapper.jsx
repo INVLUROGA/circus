@@ -34,7 +34,7 @@ export const DropWrapper = ({
       const horaInicio = startHour * 60 + minutosDesdeInicio;
 
       // Crear la hora de inicio basada en la fecha actual y los minutos desde el inicio
-      const nuevaHora = dayjs(date).startOf('day').add(horaInicio, 'minute');
+      const nuevaHora = dayjs(date).startOf('day').add(horaInicio, 'minute').subtract(5, 'hour');
 
       // Calcular la duración del evento (en minutos) y ajustar la hora de fin
       const duracionMin = dayjs(item.end).diff(dayjs(item.start), 'minute');
