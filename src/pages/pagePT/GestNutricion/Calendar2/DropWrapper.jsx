@@ -29,12 +29,14 @@ export const DropWrapper = ({
       const yContent = yInViewport + scrollRef.current.scrollTop;
       const yHours = yContent - headerHeight;
 
-      // Calcular la hora de inicio desde la parte superior del contenedor del evento
+      // Convertir la posición del "drop" (en píxeles) a minutos dentro del rango de horas
       const minutosDesdeInicio = Math.round(yHours / minuteHeight);
       const horaInicio = startHour * 60 + minutosDesdeInicio;
+
+      // Crear la hora de inicio basada en la fecha actual y los minutos desde el inicio
       const nuevaHora = dayjs(date).startOf('day').add(horaInicio, 'minute');
 
-      // Calcular la duración del evento y la nueva hora de fin
+      // Calcular la duración del evento (en minutos) y ajustar la hora de fin
       const duracionMin = dayjs(item.end).diff(dayjs(item.start), 'minute');
       const nuevaHoraFin = nuevaHora.add(duracionMin, 'minute');
 
@@ -46,10 +48,11 @@ export const DropWrapper = ({
       };
 
       const accept = () => {
-        console.log("evento modificado", {eventoModificado, startHour, minutosDesdeInicio, nuevaHora: DateMask({date: nuevaHora}), horaFin: DateMask({date: nuevaHoraFin})});
+        console.log("evento modificado", {eventoModificado, startHour, minutosDesdeInicio, nuevaHora: DateMask({date: nuevaHora}), horaFin: nuevaHoraFin.toISOString()});
         // Puedes actualizar el evento aquí, por ejemplo:
-        putEventoServicioxEmpresa({fecha_fin: DateMask({date: nuevaHoraFin}), fecha_inicio: DateMask({date: nuevaHora}), id_empl: r.resourceId}, null, dayjs(date), item.id)
+        putEventoServicioxEmpresa({fecha_fin: DateMask({date: nuevaHoraFin}), fecha_inicio: DateMask({date: nuevaHora}), id_empl: r.resourceId}, null, nuevaHora, item.id)
       };
+
       const reject = () => {
         // Manejar el rechazo de la modificación aquí
       };
@@ -64,6 +67,8 @@ export const DropWrapper = ({
       });
     },
   }));
+
+
 
   return (
     <div ref={dropRef} style={{ position: 'relative', cursor: 'pointer', height: `${timesHeight}px` }}>
