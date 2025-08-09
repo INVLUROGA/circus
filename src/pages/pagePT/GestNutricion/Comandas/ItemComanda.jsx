@@ -5,7 +5,9 @@ import React from 'react'
 import { Card } from 'react-bootstrap'
 import { makePropGetter } from 'react-table'
 
-export const ItemComanda = ({item = {nombre_cliente: '', observacion: '', colaboradores: [{nombre_empl:'', cargo: ''}], estado: '', id: 0, prodServ: [{clase: 'prod', nombre: '', monto: ''}]}}) => {
+export const ItemComanda = ({onOpenModalCustomProdComanda, onOpenModalCustomServComanda, 
+    item = {nombre_cliente: '', observacion: '', colaboradores: [{nombre_empl:'', cargo: ''}], estado: '', id: 0, prodServ: [{clase: 'prod', nombre: '', monto: ''}]}
+}) => {
   return (
     <Card>
         <Card.Header>
@@ -66,8 +68,8 @@ export const ItemComanda = ({item = {nombre_cliente: '', observacion: '', colabo
         </Card.Body>
         <Card.Footer className='d-flex flex-column'>
             <div className=''>
-                <Button label={'AGREGAR PRODUCTO'} className='m-1'/>
-                <Button label={'AGREGAR SERVICIO'} className='float-end'/>
+                <Button label={'AGREGAR PRODUCTO'} onClick={onOpenModalCustomProdComanda} className='m-1'/>
+                <Button label={'AGREGAR SERVICIO'} onClick={onOpenModalCustomServComanda} className='float-end'/>
             </div>
             <div>
                 <Button label={'AGREGAR VENTA'} className='m-1 w-100'/>

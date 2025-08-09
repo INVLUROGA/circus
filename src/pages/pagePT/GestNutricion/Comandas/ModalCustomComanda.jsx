@@ -28,71 +28,75 @@ export const ModalCustomComanda = ({onHide, show}) => {
         setisOpenModalCustomClase({prod: false, serv: true})
     }
   return (
-    <Dialog style={{width: '40rem', height: '40rem'}} onHide={onHide} visible={show} header={'AGREGAR COMANDA 1451'} position='top'>
-        <form>
-            <Row>
-                <Col xl={12} sm={12}>
-                    <div className='mb-3'>
-                        <label>CLIENTE:</label>
-                        <Select
-                            onChange={(e) => onInputChangeReact(e, 'id_cli')}
-                            name="id_cli"
-                            placeholder={'Seleccionar el cliente'}
-                            className="react-select"
-                            classNamePrefix="react-select"
-                            options={DataClientes}
-                            value={DataClientes.find(
-                                (option) => option.value === id_cli
-                            )|| 0}
-                            required
-                        />
-                    </div>
-                </Col>
-                <Col xl={12} sm={12}>
-                    <div className='mb-3'>
-                        <label>ESTADO:</label>
-                        <Select
-                            onChange={(e) => onInputChangeReact(e, 'id_estado')}
-                            name="id_estado"
-                            placeholder={'Seleccionar el estado'}
-                            className="react-select"
-                            classNamePrefix="react-select"
-                            options={arrayEstadosVenta}
-                            value={arrayEstadosVenta.find(
-                                (option) => option.value === id_estado
-                            )|| 0}
-                            required
-                        />
-                    </div>
-                </Col>
-                <Col xl={12} sm={12}>
-                    <div className='mb-3'>
-                        <label>OBSERVACION:</label>
-                        <textarea
-                            className='form-control'
-                            onChange={onInputChange}
-                            value={observacion}
-                        />
-                    </div>
-                </Col>
-                <Col xl={12} sm={12}>
-                    <div className='mb-3' >
-                        <label>PRODUCTOS:</label>
-                        <div onClick={onClickCustomModalAgregarProducto} className='border border-3 border-black text-center p-3 border-dashed cursor-pointer'>
-                            AGREGAR PRODUCTO
+    <>
+        <Dialog style={{width: '40rem', height: '40rem'}} onHide={onHide} visible={show} header={'AGREGAR COMANDA 1451'} position='top'>
+            <form>
+                <Row>
+                    <Col xl={12} sm={12}>
+                        <div className='mb-3'>
+                            <label>CLIENTE:</label>
+                            <Select
+                                onChange={(e) => onInputChangeReact(e, 'id_cli')}
+                                name="id_cli"
+                                placeholder={'Seleccionar el cliente'}
+                                className="react-select"
+                                classNamePrefix="react-select"
+                                options={DataClientes}
+                                value={DataClientes.find(
+                                    (option) => option.value === id_cli
+                                )|| 0}
+                                required
+                            />
                         </div>
-                    </div>
-                </Col>
-                <Col xl={12} sm={12}>
-                    <div className='mb-3' >
-                        <label>SERVICIOS:</label>
-                        <div onClick={onClickCustomModalAgregarServicio} className='border border-3 border-black text-center p-3 border-dashed  cursor-pointer'>
-                            AGREGAR SERVICIOS
+                    </Col>
+                    <Col xl={12} sm={12}>
+                        <div className='mb-3'>
+                            <label>ESTADO:</label>
+                            <Select
+                                onChange={(e) => onInputChangeReact(e, 'id_estado')}
+                                name="id_estado"
+                                placeholder={'Seleccionar el estado'}
+                                className="react-select"
+                                classNamePrefix="react-select"
+                                options={arrayEstadosVenta}
+                                value={arrayEstadosVenta.find(
+                                    (option) => option.value === id_estado
+                                )|| 0}
+                                required
+                            />
                         </div>
-                    </div>
-                </Col>
-            </Row>
-        </form>
-    </Dialog>
+                    </Col>
+                    <Col xl={12} sm={12}>
+                        <div className='mb-3'>
+                            <label>OBSERVACION:</label>
+                            <textarea
+                                className='form-control'
+                                onChange={onInputChange}
+                                name='observacion'
+                                value={observacion}
+                            />
+                        </div>
+                    </Col>
+                    <Col xl={12} sm={12}>
+                        <div className='mb-3' >
+                            <label>PRODUCTOS:</label>
+                            <div onClick={onClickCustomModalAgregarProducto} className='border border-3 border-black text-center p-3 border-dashed cursor-pointer'>
+                                AGREGAR PRODUCTO +
+                            </div>
+                        </div>
+                    </Col>
+                    <Col xl={12} sm={12}>
+                        <div className='mb-3' >
+                            <label>SERVICIOS:</label>
+                            <div onClick={onClickCustomModalAgregarServicio} className='border border-3 border-black text-center p-3 border-dashed  cursor-pointer'>
+                                AGREGAR SERVICIOS +
+                            </div>
+                        </div>
+                    </Col>
+                </Row>
+            </form>
+        </Dialog>
+        
+    </>
   )
 }
