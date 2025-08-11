@@ -24,13 +24,35 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
     const closeModal = ()=>{
         onHide();
     }
+    // Utils (arriba del componente)
+const pad = (n) => String(n).padStart(2, '0');
+const toInputDateTime = (d) => {
+  if (!d) return '';
+  const dt = new Date(d); // se muestra en hora local (Lima)
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+};
+// Construye ISO asumiendo que el valor es hora local Lima (-05:00)
+const toIsoFromLocalDateTime = (yyyyMmDdThhmm) =>
+  yyyyMmDdThhmm ? new Date(`${yyyyMmDdThhmm}:00-05:00`).toISOString() : null;
+        // --- arriba de tu componente (o en utils locales) ---
+    const toInputDate = (d) => (d ? new Date(d).toISOString().slice(0, 10) : '');
+    // Preserva la fecha local Lima al convertir a ISO (00:00 -05:00 => 05:00Z)
+    const toIsoFromLocalDate = (yyyyMmDd) =>
+    yyyyMmDd ? new Date(`${yyyyMmDd}T00:00:00-05:00`).toISOString() : null;
     const { obtenerVentaporId, dataVentaxID, isLoading } = useVentasStore()
     const { obtenerParametroPorEntidadyGrupo:obtenerDataOrigen, DataGeneral:dataOrigen } = useTerminoStore()
     const { putVentas } = useGestVentasStore()
     const [isProcedenciaCustom, setisProcedenciaCustom] = useState(false)
+    const [isFechaVentaCustom, setisFechaVentaCustom] = useState(false)
     const [formOrigen, setformOrigen] = useState({
         id_origen: dataVentaxID[0]?.id_origen,
       })
+      const [formFechaVenta, setformFechaVenta] = useState({
+        fecha_venta: '',
+      })
+      const handleChangeFechaVenta = (e, name) => {
+        setformFechaVenta({ fecha_venta: e.target.value });
+      };
       const handleChange = (e, name) => {
         setformOrigen({ ...formOrigen, [name]: e.value });
       };
@@ -40,6 +62,13 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
         obtenerDataOrigen('nueva-venta-circus', 'origen')
         if(id!=0)return;
     }, [id])
+      // ⚠️ Importante: solo sincroniza cuando NO estás editando
+  useEffect(() => {
+    if (isFechaVentaCustom) return; // no tocar mientras editas
+    const v = dataVentaxID?.[0];
+    setformFechaVenta({ fecha_venta: toInputDate(v?.fecha_venta) });
+  }, [dataVentaxID, isFechaVentaCustom]);
+
     const productDialogFooter = (
         <React.Fragment>
             <Button className='float-left' label="GENERAR PDF" icon="pi pi-file-pdf fs-3" outlined onClick={closeModal} />
@@ -52,9 +81,23 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
     const onCloseCustomProcedencia = ()=>{
         setisProcedenciaCustom(false)
     }
+    const onCloseCustomFechaVenta = ()=>{
+        setisFechaVentaCustom(false)
+    }
+    const onOpenCustomFechaVenta = ()=>{
+        const v = dataVentaxID?.[0];
+        setformFechaVenta({ fecha_venta: toInputDateTime(v?.fecha_venta) });
+        setisFechaVentaCustom(true);
+    }
     const onSubmitCustomProcedencia = ()=>{
-        putVentas(formOrigen.id_origen, dataVentaxID[0].id, obtenerVentaporId)
+        putVentas({id_origen: formOrigen.id_origen}, dataVentaxID[0].id, obtenerVentaporId)
         onCloseCustomProcedencia()
+    }
+    const onSubmitCustomFechaVenta = ()=>{
+        const iso = toIsoFromLocalDateTime(formFechaVenta.fecha_venta);
+        if (!iso) return onCloseCustomFechaVenta();
+        putVentas({ fecha_venta: iso }, dataVentaxID[0].id, obtenerVentaporId);
+        onCloseCustomFechaVenta();
     }
   return (
     <Dialog visible={show} style={{ width: '50rem', height: '80rem' }} breakpoints={{ '960px': '75vw', '641px': '90vw' }} header={`Venta #${id}`} modal className="p-fluid" footer={productDialogFooter} onHide={closeModal}>
@@ -73,7 +116,7 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
                         <span style={{textAlign: 'left', float: 'right', paddingRight: '40px'}}>{dataVentaxID[0]?.tb_cliente?.nombres_apellidos_cli}</span>
                     </li>
                     <li className='mb-4'>
-                        <span>Procedencia: </span>
+                        <span>Origen: </span>
                         <span className='d-flex align-items-center' style={{textAlign: 'left', float: 'right', paddingRight: '40px'}}>
                             {
                                 isProcedenciaCustom?(
@@ -109,7 +152,30 @@ export const ModalViewObservacion = ({onHide, show, data, id}) => {
                     </li>
                     <li className='mb-4'>
                         <span>Fecha en la que realizo la venta:</span>
-                        <span style={{textAlign: 'left', float: 'right', paddingRight: '40px'}}>{FormatoDateMask(dataVentaxID[0]?.fecha_venta, 'D [de] MMMM [del] YYYY')}</span>
+                        <span style={{ textAlign: 'left', float: 'right', paddingRight: '40px' }}>
+              {isFechaVentaCustom ? (
+                    <>
+                        <input
+                        type="datetime-local"
+                        name="fecha_venta"
+                        className="form-control"
+                        value={formFechaVenta?.fecha_venta ?? ''}  // "YYYY-MM-DDTHH:mm"
+                        onChange={handleChangeFechaVenta}
+                        required
+                        />
+                        <i className='pi pi-check hover-text cursor-pointer ml-4' onClick={onSubmitCustomFechaVenta}></i>
+                        <i className='pi pi-times hover-text cursor-pointer ml-4' onClick={onCloseCustomFechaVenta}></i>
+                    </>
+                    ) : (
+                    <>
+                        {FormatoDateMask(
+                        dataVentaxID[0]?.fecha_venta,
+                        'D [de] MMMM [del] YYYY [a las] h:mm A'
+                        )}
+                        <i className='pi pi-pencil hover-text cursor-pointer ml-4' onClick={onOpenCustomFechaVenta}></i>
+                    </>
+                    )}
+        </span>
                     </li>
                     <li className='mb-4'>
                         <span>Observacion:</span>

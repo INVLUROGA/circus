@@ -155,8 +155,6 @@ export const TodoVentas=({id_empresa})=> {
   const actionBodyTemplate = (rowData) => {
     return (
           <Row>
-            {
-              rowData.status_remove==1 && (
               <Col xxl={12}>
                 <Button 
                   rounded 
@@ -164,8 +162,6 @@ export const TodoVentas=({id_empresa})=> {
                   onClick={() => onModalviewVENTAS(rowData.id)} 
                   >DETALLE DE LA VENTA</Button>
               </Col>
-              )
-            }
           </Row>
     );
 };

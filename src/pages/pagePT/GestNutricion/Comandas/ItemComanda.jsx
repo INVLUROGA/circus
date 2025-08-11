@@ -1,80 +1,88 @@
 import { SymbolSoles } from '@/components/componentesReutilizables/SymbolSoles'
-import { NumberFormatMoney } from '@/components/CurrencyMask'
+import { DateMask, NumberFormatMoney } from '@/components/CurrencyMask'
 import { Button } from 'primereact/button'
 import React from 'react'
-import { Card } from 'react-bootstrap'
+import { Card, Table } from 'react-bootstrap'
 import { makePropGetter } from 'react-table'
 
-export const ItemComanda = ({onOpenModalCustomProdComanda, onOpenModalCustomServComanda, 
-    item = {nombre_cliente: '', observacion: '', colaboradores: [{nombre_empl:'', cargo: ''}], estado: '', id: 0, prodServ: [{clase: 'prod', nombre: '', monto: ''}]}
+export const ItemComanda = ({
+  onOpenModalCustomProdComanda,
+  onOpenModalCustomServComanda,
+  item = {
+    id: 0,
+    fecha_venta: new Date(),
+    nombre_cliente: '',
+    status_color: '',
+    observacion: '',
+    estado: '',
+    productos: [{ clase: 'producto', nombre: '', monto: '', colaborador: '' }],
+    servicios: [{ clase: 'servicios', nombre: '', monto: '', colaborador: '' }]
+  }
 }) => {
+  const prodSer = [...(item?.servicios ?? []), ...(item?.productos ?? [])];
+  const total = prodSer.reduce((sum, it) => sum + (Number(it?.monto) || 0), 0);
+
   return (
     <Card>
-        <Card.Header>
-            <div className='p-1 w-100 bg-success text-white text-center fs-1'>{item.estado}</div>
-        </Card.Header>
-        <Card.Body>
-            <div className='d-flex flex-column'>
-                <span className='mb-4 text-primary fs-3'>
-                    CLIENTE: 
-                    <div className='float-end text-black fs-1 text-break'>
-                    {item.nombre_cliente}
-                    </div>
-                </span>
-                <span className='mb-4 text-primary fs-3'>
-                    COLABORADORES: 
-                    {
-                        item.colaboradores?.map(colaborador=>{
-                            <span className='float-end text-black'>
-                                {colaborador.cargo} - {colaborador.nombre_empl}
-                            </span>
-                        })
-                    }
-                </span>
-                <span className='d-flex flex-column mb-4 fs-3'>
-                    <span className=' text-primary'>
-                        SERVICIOS/PRODUCTOS: 
-                    </span>
-                        {
-                            item.prodServ.map(proser=>{
-                                <span className='  text-black'>
-                                    {proser.nombre} 
-                                    <span className='float-end'>
-                                        <SymbolSoles fontSizeS={'fs-4'} numero={<NumberFormatMoney amount={proser.monto}/>}/>
-                                    </span>
-                                </span>
-                            })
-                        }
-                        <span className='float-end text-black fs-1'>
-                            TOTAL
-                            <span className='float-end'>
-                                <SymbolSoles fontSizeS={'fs-3'} numero={<NumberFormatMoney amount={60}/>}/>
-                            </span> 
-                        </span>
-                </span>
-                <span className='text-primary fs-3'>
-                    OBSERVACION: 
-                </span>
-                <span className='text-end float-end text-black fs-3'>
-                    {item.observacion}
-                </span>
-                <span className='mb-4 text-primary fs-3'>
-                    ID: 
-                    <span className='float-end text-black'>
-                    {item.id}
-                    </span>
-                </span>
+      <Card.Header>
+        <div className={`p-1 w-100 ${item?.status_color} text-white text-center fs-1`}>
+          {item?.estado}
+        </div>
+      </Card.Header>
+
+      <Card.Body>
+        <div className='d-flex flex-column'>
+          <div className='mb-4 text-primary fs-3'>
+            CLIENTE: <span className='text-black'>{item.nombre_cliente}</span>
+            <div className='float-end text-primary fs-1 text-break'>
+              FECHA:{' '}
+              <span className='text-black'>
+                <DateMask date={item?.fecha_venta} format={'dddd DD [de] MMMM [DEL] YYYY [a las] hh:mm A'} />
+              </span>
             </div>
-        </Card.Body>
-        <Card.Footer className='d-flex flex-column'>
-            <div className=''>
-                <Button label={'AGREGAR PRODUCTO'} onClick={onOpenModalCustomProdComanda} className='m-1'/>
-                <Button label={'AGREGAR SERVICIO'} onClick={onOpenModalCustomServComanda} className='float-end'/>
-            </div>
-            <div>
-                <Button label={'AGREGAR VENTA'} className='m-1 w-100'/>
-            </div>
-        </Card.Footer>
+          </div>
+
+          <div>
+            <Table striped bordered>
+              <thead className='bg-primary'>
+                <tr>
+                  <th><div className='text-white'>#</div></th>
+                  <th><div className='text-white'>clase</div></th>
+                  <th><div className='text-white'>COLABORADOR</div></th>
+                  <th><div className='text-white'>SERVICIO/PRODUCTO</div></th>
+                  <th><div className='text-white'>MONTO S/.</div></th>
+                </tr>
+              </thead>
+              <tbody>
+                {prodSer.map((proSe, i) => (
+                  <tr key={proSe.id ?? `${proSe.clase}-${i}`}>
+                    <td>{i + 1}</td>
+                    <td>{proSe.clase}</td>
+                    <td>{proSe.colaborador}</td>
+                    <td>{proSe.nombre}</td>
+                    <td><NumberFormatMoney amount={Number(proSe.monto) || 0} /></td>
+                  </tr>
+                ))}
+                <tr>
+                  <td></td><td></td><td></td>
+                  <td><div className='bg-primary fs-2 text-center'>TOTAL</div></td>
+                  <td><NumberFormatMoney amount={total} /></td>
+                </tr>
+              </tbody>
+            </Table>
+          </div>
+
+          <div className='text-primary fs-3'>OBSERVACION:</div>
+          <div className='text-end float-end text-black fs-3'>{item.observacion}</div>
+        </div>
+      </Card.Body>
+
+      <Card.Footer className='d-flex flex-column'>
+        <div>
+          <Button label='AGREGAR PRODUCTO' onClick={() => onOpenModalCustomProdComanda(item.id)} className='m-1' />
+          <Button label='AGREGAR SERVICIO' onClick={() => onOpenModalCustomServComanda(item.id)} className='float-end' />
+        </div>
+      </Card.Footer>
     </Card>
-  )
-}
+  );
+};

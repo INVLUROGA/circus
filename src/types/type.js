@@ -92,9 +92,9 @@ export const arrayEstados = [
 	{ label: 'Inactivo', value: false },
 ];
 export const arrayEstadosVenta = [
-	{ label: 'PAGADO', value: 1467 },
-	{ label: 'NO PAGADO', value: 1468 },
-	{ label: 'EN PROCESO', value: 1469 },
+	{ bg: 'bg-success', label: 'PAGADO', value: 1467 },
+	{ bg: 'bg-change', label: 'NO PAGADO', value: 1468 },
+	{ bg: 'bg-circus', label: 'EN PROCESO', value: 1469 },
 ];
 export const arrayTarjetasTemp = [
 	{ label: 'VISA', value: 54 },

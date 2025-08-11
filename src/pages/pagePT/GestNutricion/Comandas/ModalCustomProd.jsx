@@ -29,7 +29,7 @@ const regAgregarCarrito = {
 };
 
 export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
-  const { obtenerServicios, dataView, onPostServiciosVenta, obtenerProductos, dataProductos } = useComandasStore();
+  const { obtenerServicios, dataView, onPostProductosVenta, obtenerProductos, dataProductos } = useComandasStore();
 
   const {
     obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosxEstilistas,
@@ -76,7 +76,7 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
   // -------- Normalizar opciones: value siempre string; precio robusto ----------
   const servicios = useMemo(
     () =>
-      (dataView ?? []).map((o) => ({
+      (dataProductos ?? []).map((o) => ({
         ...o,
         value: toStr(o.value),
         // toma el primer campo de precio disponible
@@ -86,7 +86,7 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
           toNum(o.monto_default) ||
           0,
       })),
-    [dataView]
+    [dataProductos]
   );
 
   const estilistas = useMemo(
@@ -181,7 +181,7 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
   };
 
   const onAgregar = () => {
-    onPostProductoVenta(id_venta, {...formState, tarifa_monto: total})
+    onPostProductosVenta(id_venta, {...formState, tarifa_monto: total})
     onClose();
   };
 
@@ -198,10 +198,9 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
       />
     </div>
   );
-
   return (
     <Dialog
-      header="AGREGAR SERVICIO"
+      header={`AGREGAR PRODUCTO ${id_venta}`}
       footer={footerTemplate}
       style={{ width: '40rem', height: 'auto', maxWidth: '95vw' }}
       visible={show}
@@ -224,14 +223,14 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
       </div>
 
       <div className="m-2">
-        <label className="form-label">SERVICIO</label>
+        <label className="form-label">PRODUCTO</label>
         <Select
           name="id_producto"
-          placeholder="Seleccionar el servicio"
+          placeholder="Seleccionar el producto"
           className="react-select"
           classNamePrefix="react-select"
           options={dataProductos}
-          value={dataProductos.find((o) => o.value === toStr(id_producto)) ?? null}
+          value={dataProductos.find((o) => o.value === (id_producto)) ?? null}
           onChange={handleSelectServicio}
           isClearable
         />

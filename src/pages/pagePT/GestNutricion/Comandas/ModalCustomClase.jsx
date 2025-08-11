@@ -201,7 +201,7 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
 
   return (
     <Dialog
-      header="AGREGAR SERVICIO"
+      header={`AGREGAR SERVICIO ${id_venta}`}
       footer={footerTemplate}
       style={{ width: '40rem', height: 'auto', maxWidth: '95vw' }}
       visible={show}

@@ -6,30 +6,45 @@ import { useComandasStore } from './useComandasStore'
 import { useEffect } from 'react'
 import { useForm } from '@/hooks/useForm'
 import { arrayEstados, arrayEstadosVenta } from '@/types/type'
+import { Button } from 'primereact/button'
 
 const customcomandas = {
     id_cli: 0,
     observacion: '',
-    id_estado: ''
+    status_remove: 0
 }
 export const ModalCustomComanda = ({onHide, show}) => {
-    const { obtenerClientes, DataClientes } = useComandasStore()
+    const { obtenerClientes, DataClientes, onPostComandas } = useComandasStore()
     const [isOpenModalCustomClase, setisOpenModalCustomClase] = useState({prod: false, serv: false})
-    const { id_cli, observacion, id_estado, onInputChange, onInputChangeReact } = useForm(customcomandas)
+    const { id_cli, observacion, status_remove, onInputChange, onInputChangeReact, onResetForm } = useForm(customcomandas)
     useEffect(() => {
         if(show){
             obtenerClientes()
         }
     }, [show])
-    const onClickCustomModalAgregarProducto = ()=>{
-        setisOpenModalCustomClase({prod: true, serv: false})
+    const onClickModalAgregarComanda = ()=>{
+        onPostComandas({id_cli, observacion, status_remove, fecha_venta: new Date()})
     }
-    const onClickCustomModalAgregarServicio = ()=>{
-        setisOpenModalCustomClase({prod: false, serv: true})
+    const onClickModalCancelarComanda = ()=>{
+        onResetForm()
+        onHide?.()
     }
+    const footerButtons = (
+        <>
+            <Button
+                onClick={onClickModalCancelarComanda}
+                label='CANCELAR'
+                text
+            />
+              <Button
+                onClick={onClickModalAgregarComanda}
+                label="AGREGAR"
+              />
+        </>
+    )
   return (
     <>
-        <Dialog style={{width: '40rem', height: '40rem'}} onHide={onHide} visible={show} header={'AGREGAR COMANDA 1451'} position='top'>
+        <Dialog footer={footerButtons} style={{width: '40rem', height: '40rem'}} onHide={onHide} visible={show} header={'AGREGAR COMANDA'} position='top'>
             <form>
                 <Row>
                     <Col xl={12} sm={12}>
@@ -53,14 +68,14 @@ export const ModalCustomComanda = ({onHide, show}) => {
                         <div className='mb-3'>
                             <label>ESTADO:</label>
                             <Select
-                                onChange={(e) => onInputChangeReact(e, 'id_estado')}
-                                name="id_estado"
+                                onChange={(e) => onInputChangeReact(e, 'status_remove')}
+                                name="status_remove"
                                 placeholder={'Seleccionar el estado'}
                                 className="react-select"
                                 classNamePrefix="react-select"
                                 options={arrayEstadosVenta}
                                 value={arrayEstadosVenta.find(
-                                    (option) => option.value === id_estado
+                                    (option) => option.value === status_remove
                                 )|| 0}
                                 required
                             />
@@ -75,22 +90,6 @@ export const ModalCustomComanda = ({onHide, show}) => {
                                 name='observacion'
                                 value={observacion}
                             />
-                        </div>
-                    </Col>
-                    <Col xl={12} sm={12}>
-                        <div className='mb-3' >
-                            <label>PRODUCTOS:</label>
-                            <div onClick={onClickCustomModalAgregarProducto} className='border border-3 border-black text-center p-3 border-dashed cursor-pointer'>
-                                AGREGAR PRODUCTO +
-                            </div>
-                        </div>
-                    </Col>
-                    <Col xl={12} sm={12}>
-                        <div className='mb-3' >
-                            <label>SERVICIOS:</label>
-                            <div onClick={onClickCustomModalAgregarServicio} className='border border-3 border-black text-center p-3 border-dashed  cursor-pointer'>
-                                AGREGAR SERVICIOS +
-                            </div>
                         </div>
                     </Col>
                 </Row>
