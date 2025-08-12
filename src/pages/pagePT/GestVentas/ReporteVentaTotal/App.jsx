@@ -5,7 +5,6 @@ import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore'
 import { useVentasStore } from '@/hooks/hookApi/useVentasStore'
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import { Dialog } from 'primereact/dialog';
 import React, { useEffect, useState } from 'react'
 import { Col, Row, Modal, Button } from 'react-bootstrap';
 dayjs.extend(isoWeek);
@@ -23,11 +22,15 @@ export const App = ({ id_empresa }) => {
   const [input, setInput] = useState('');
   const [modo, setModo] = useState('comprobante');
 
-  // ---- Modal: estado ----
+  // ---- Modal: Servicios/Productos ----
   const [showResumen, setShowResumen] = useState(false);
   const [modalLabel, setModalLabel] = useState('');
   const [modalRows, setModalRows] = useState([]); // filas
   const [modalType, setModalType] = useState('servicios'); // 'servicios' | 'productos'
+
+  // ---- Modal: Clientes (resumen por cliente) ----
+  const [showClientes, setShowClientes] = useState(false);
+  const [clientesRows, setClientesRows] = useState([]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && input.trim() !== '') {
@@ -122,7 +125,7 @@ export const App = ({ id_empresa }) => {
     };
   };
 
-  // ---- Construir filas para el modal, según tipo ----
+  // ---- Construir filas para el modal Servicios/Productos ----
   const buildModalRows = (grupo, tipo = 'servicios') => {
     const rows = [];
     for (const v of grupo.ventas) {
@@ -143,7 +146,7 @@ export const App = ({ id_empresa }) => {
             ...pagosFmt,
           });
         }
-      } else if (tipo === 'productos') {
+      } else {
         for (const p of (v.detalle_ventaProductos || [])) {
           const nombreProd = p?.tb_producto?.nombre_producto || '-';
           const cant = p?.cantidad ? ` x${p.cantidad}` : '';
@@ -177,7 +180,36 @@ export const App = ({ id_empresa }) => {
     setShowResumen(true);
   };
 
+  // ---- Construir filas para el modal de Clientes ----
+  const buildClientesRows = (grupo) => {
+    const map = new Map();
+    for (const v of grupo.ventas) {
+      const nombre = (v.tb_cliente?.nombres_apellidos_cli || '').trim() || '-';
+      const servs = v.detalle_ventaservicios || [];
+      const prods = v.detalle_ventaProductos || [];
+
+      const cur = map.get(nombre) || { cliente: nombre, cantServ: 0, impServ: 0, cantProd: 0, impProd: 0 };
+      cur.cantServ += servs.length;
+      cur.impServ += servs.reduce((a, s) => a + Number(s?.tarifa_monto || 0), 0);
+      cur.cantProd += prods.length;
+      cur.impProd += prods.reduce((a, p) => a + Number(p?.tarifa_monto || 0), 0);
+      map.set(nombre, cur);
+    }
+    // ordenar por mayor importe total (serv + prod)
+    return Array.from(map.values()).sort(
+      (a, b) => (b.impServ + b.impProd) - (a.impServ + a.impProd)
+    );
+  };
+
+  const abrirResumenClientes = (grupo) => {
+    setModalLabel(grupo.label);
+    setClientesRows(buildClientesRows(grupo));
+    setShowClientes(true);
+  };
+
   const totalModal = modalRows.reduce((acc, r) => acc + r.importe, 0);
+  const totalClientesServ = clientesRows.reduce((a, r) => a + r.impServ, 0);
+  const totalClientesProd = clientesRows.reduce((a, r) => a + r.impProd, 0);
 
   return (
     <Row className="d-flex justify-content-center">
@@ -391,14 +423,13 @@ export const App = ({ id_empresa }) => {
                       </div>
                     </li>
 
-                    <li className="list-group-item h2">
-                      <div className="d-flex justify-content-between">
-                        <span className="fw-bold">COMPROBANTES VALIDOS:</span>
-                        <span className="text-end fs-1">{grupo.ventas.length}</span>
-                      </div>
-                    </li>
-
-                    <li className="list-group-item h2">
+                    {/* CLICK abre modal de CLIENTES */}
+                    <li
+                      className="list-group-item h2"
+                      title="Ver resumen por cliente"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => abrirResumenClientes(grupo)}
+                    >
                       <div className="d-flex justify-content-between" style={{ fontSize: '37px' }}>
                         <span>TOTAL Clientes:</span>
                         <span className="text-end">{grupo.clientesVistos.size}</span>
@@ -412,12 +443,15 @@ export const App = ({ id_empresa }) => {
         )}
       </Col>
 
-      {/* -------- MODAL: TABLA DETALLADA CON PAGOS -------- */}
-      <Dialog
-          footer={<><Button variant="secondary" onClick={() => setShowResumen(false)}>Cerrar</Button></>} 
-          header={<>Detalle — {modalLabel}</>} 
-          visible={showResumen} 
-          onHide={() => setShowResumen(false)} size="xl"  centered scrollable>
+      {/* -------- MODAL: TABLA DETALLADA (SERVICIOS o PRODUCTOS) -------- */}
+      <Modal show={showResumen} onHide={() => setShowResumen(false)} size="xl" centered scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Detalle — {modalType === 'servicios' ? 'Servicios' : 'Productos'} — {modalLabel}
+          </Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <div className="h5 m-0">Registros: <strong>{modalRows.length}</strong></div>
             <div className="h5 m-0">
@@ -430,20 +464,12 @@ export const App = ({ id_empresa }) => {
 
           <div className="table-responsive">
             <table className="table table-sm align-middle">
-              <thead className='bg-primary'>
+              <thead>
                 <tr>
-                  <th>
-                    <div className='' style={{width: '300px'}}>
-                      fecha de venta
-                    </div>
-                  </th>
+                  <th>Fecha de venta</th>
                   <th>Nombre del cliente</th>
                   <th>Estilista</th>
-                  <th>
-                    <div style={{width: '200px'}}>
-                      Número de boleta
-                    </div>
-                  </th>
+                  <th>Número de boleta</th>
                   <th>Servicio o Producto</th>
                   <th>Forma de pago</th>
                   <th>Tipo de tarjeta</th>
@@ -455,16 +481,16 @@ export const App = ({ id_empresa }) => {
               <tbody>
                 {modalRows.map((r, i) => (
                   <tr key={i}>
-                    <td><span className='text-primary'>{DateMaskString(r.fecha, 'dddd DD [DE] MMMM')}</span><span>{DateMaskString(r.fecha, ' YYYY')}</span></td>
-                    <td className='text-black'>{r.cliente}</td>
-                    <td className='text-primary'>{r.estilista.split(' ')[0]}</td>
-                    <td className='text-primary'>{r.boleta}</td>
-                    <td className='text-primary'>{r.concepto}</td>
+                    <td>{DateMaskString(r.fecha, 'YYYY-MM-DD HH:mm')}</td>
+                    <td>{r.cliente}</td>
+                    <td>{r.estilista}</td>
+                    <td>{r.boleta}</td>
+                    <td>{r.concepto}</td>
                     <td>{r.forma_pago}</td>
                     <td>{r.tipo_tarjeta}</td>
                     <td>{r.tarjeta}</td>
                     <td>{r.n_operacion}</td>
-                    <td className="text-end text-primary">
+                    <td className="text-end">
                       <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.importe} />} />
                     </td>
                   </tr>
@@ -477,7 +503,94 @@ export const App = ({ id_empresa }) => {
               </tbody>
             </table>
           </div>
-      </Dialog>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowResumen(false)}>Cerrar</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* -------- MODAL: RESUMEN POR CLIENTE -------- */}
+      <Modal show={showClientes} onHide={() => setShowClientes(false)} size="lg" centered scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title>Resumen por cliente — {modalLabel}</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="h6 m-0">Clientes: <strong>{clientesRows.length}</strong></div>
+            <div className="h6 m-0 d-flex gap-3">
+              <span>
+                Servicios:{' '}
+                <strong>
+                  <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesServ} />} />
+                </strong>
+              </span>
+              <span>
+                Productos:{' '}
+                <strong>
+                  <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesProd} />} />
+                </strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Nombre del cliente</th>
+                  <th className="text-end">Servicios (cant.)</th>
+                  <th className="text-end">Importe servicios</th>
+                  <th className="text-end">Productos (cant.)</th>
+                  <th className="text-end">Importe productos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientesRows.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.cliente}</td>
+                    <td className="text-end">{r.cantServ}</td>
+                    <td className="text-end">
+                      <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={r.impServ} />} />
+                    </td>
+                    <td className="text-end">{r.cantProd}</td>
+                    <td className="text-end">
+                      <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={r.impProd} />} />
+                    </td>
+                  </tr>
+                ))}
+                {clientesRows.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">Sin datos.</td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th className="text-end">Totales:</th>
+                  <th className="text-end">
+                    {clientesRows.reduce((a, r) => a + r.cantServ, 0)}
+                  </th>
+                  <th className="text-end">
+                    <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesServ} />} />
+                  </th>
+                  <th className="text-end">
+                    {clientesRows.reduce((a, r) => a + r.cantProd, 0)}
+                  </th>
+                  <th className="text-end">
+                    <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesProd} />} />
+                  </th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowClientes(false)}>Cerrar</Button>
+        </Modal.Footer>
+      </Modal>
     </Row>
   );
 };
