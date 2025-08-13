@@ -8,6 +8,7 @@ const initialState = {
 		numero_transac: '',
 		id_origen: 0,
 		observacion: '',
+		fecha_venta: null,
 	},
 	datos_pagos: [],
 	venta: {
