@@ -12,9 +12,9 @@ import { useTipoCambioStore } from '@/hooks/hookApi/useTipoCambioStore'
 import { CurrencyMask } from '@/components/CurrencyMask'
 import { InputText } from 'primereact/inputtext'
 const registerIvsG={
-    id_tipoGasto: 0,
+    id_tipoGasto: 260,
     id_gasto: 0,
-    grupo: '',
+    grupo: 'BANCOS',
     moneda: '',
     monto: '0',
     id_tipo_comprobante: 0,
@@ -80,14 +80,16 @@ export const ModalIngresosGastos = ({onHide, show, data, isLoading, onShow, show
             onInputChangeMonto,
             onInputChangeFunction
         } = useForm(data?data:registerIvsG)
+        console.log({formState});
+        
         useEffect(() => {
             if(!data){
-                onInputChangeFunction("grupo", 0)
+                onInputChangeFunction("grupo", 'BANCOS')
             }
         }, [id_tipoGasto])
         useEffect(() => {
             if(!data){
-                onInputChangeFunction("id_gasto", 0)
+                onInputChangeFunction("id_gasto", 927)
             }
         }, [id_tipoGasto, grupo])
         
@@ -175,7 +177,7 @@ export const ModalIngresosGastos = ({onHide, show, data, isLoading, onShow, show
             <Modal size='xl' onHide={onClickCancelModal} show={show}>
                 <Modal.Header>
                     <Modal.Title>
-                        {data?'Actualizar Gasto':'Registro Gasto'} <Button>ACTUALIZAR TERMINOLOGIAS</Button>
+                        {data?'Actualizar Gasto':'Registro Gasto'}
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -199,6 +201,7 @@ export const ModalIngresosGastos = ({onHide, show, data, isLoading, onShow, show
                                             placeholder={'Seleccione el tipo de gasto'}
                                             className="react-select"
                                             classNamePrefix="react-select"
+                                            isDisabled
                                             options={arrayFinanzas}
                                             value={arrayFinanzas.find(
                                                 (option) => option.value === id_tipoGasto
@@ -215,6 +218,7 @@ export const ModalIngresosGastos = ({onHide, show, data, isLoading, onShow, show
                                         <Select
                                             onChange={(e) => onInputChangeReact(e, 'grupo')}
                                             name="grupo"
+                                            isDisabled
                                             placeholder={'Seleccionar el grupo'}
                                             className="react-select"
                                             classNamePrefix="react-select"
@@ -238,6 +242,7 @@ export const ModalIngresosGastos = ({onHide, show, data, isLoading, onShow, show
                                             className="react-select"
                                             classNamePrefix="react-select"
                                             options={gastoxGrupo}
+                                            isDisabled
                                             value={gastoxGrupo.find(
                                                 (option)=>option.value === id_gasto
                                             )||0}

@@ -24,7 +24,7 @@ import sinAvatar from '@/assets/images/sinPhoto.jpg';
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
 
 
-export const TodoVentas=({id_empresa})=> {
+export const TodoVentas=({id_empresa, DataClientes})=> {
   
   locale('es')
   const { obtenerTablaVentas, dataVentas } = useVentasStore()
@@ -275,7 +275,7 @@ const header = renderHeader();
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={removeVentaBodyTemplate} /> */}
           </DataTable>
           <PdfComprobanteVenta id_venta={idVentas} isPdfOpen={isPdfOpen}/>
-          <ModalViewObservacion show={viewVentas} onHide={onModalCancelVENTAS} id={idVentas}/>
+          <ModalViewObservacion clientesOptions={DataClientes} show={viewVentas} onHide={onModalCancelVENTAS} id={idVentas}/>
         </>
     );
 }
