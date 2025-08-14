@@ -133,12 +133,12 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
         }
         return (
             <React.Fragment>
-                <Button icon="pi pi-pencil" rounded outlined className="mr-2" 
+                {/* <Button icon="pi pi-pencil" rounded outlined className="mr-2" 
                 onClick={onClickEditModalEgresos} 
                 />
                 <Button icon="pi pi-trash" rounded outlined severity="danger" 
                 onClick={confirmDeleteGastoxID} 
-                />
+                /> */}
             </React.Fragment>
         );
     }
@@ -281,6 +281,7 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
         setgastoxID(undefined)
         onOpenModalIvsG(e)
     }
+    
     return (
         <>
             {
@@ -305,7 +306,7 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
                     </div>
                     <DataTable 
                         size='small' 
-                        value={customers} 
+                        value={customers.filter(item=>item?.tb_parametros_gasto?.nombre_gasto=='openpay comision')} 
                         paginator 
                         header={header}
                         rows={10} 
