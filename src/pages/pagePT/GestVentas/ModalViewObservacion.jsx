@@ -48,12 +48,14 @@ export const ModalViewObservacion = ({
 
   // ------- Toggles de edición -------
   const [editOrigen, setEditOrigen] = useState(false);
+  const [editncomprobante, setEditncomprobante] = useState(false);
   const [editFechaVenta, setEditFechaVenta] = useState(false);
   const [editCliente, setEditCliente] = useState(false);
 
   // ------- Formularios -------
   const [formOrigen, setFormOrigen] = useState({ id_origen: null });
   const [formFechaVenta, setFormFechaVenta] = useState({ fecha_venta: '' }); // input datetime-local
+  const [formNComprobante, setFormNComprobante] = useState({ numero_transac: '' }); // input datetime-local
   const [formCliente, setFormCliente] = useState({ id_cli: null });
 
   // ------- Carga inicial -------
@@ -92,6 +94,7 @@ export const ModalViewObservacion = ({
     setFormFechaVenta({ fecha_venta: toInputDateTime(v?.fecha_venta) });
     setEditFechaVenta(true);
   };
+  
   const cerrarEditFechaVenta = () => setEditFechaVenta(false);
   const onChangeFechaVenta = (e) => setFormFechaVenta({ fecha_venta: e.target.value });
   const submitFechaVenta = () => {
@@ -114,6 +117,22 @@ export const ModalViewObservacion = ({
     putVentas({ id_cli: formCliente.id_cli }, dataVentaxID[0].id, obtenerVentaporId);
     cerrarEditCliente();
   };
+  
+  // ------- NUMERO DE COMPROBANTE -------
+  const abrirEditNComprobante = () => {
+    const v = dataVentaxID?.[0];
+    setFormNComprobante({ numero_transac: v.numero_transac});
+    setEditncomprobante(true);
+  };
+  
+  const cerrarEditNComprobante = () => setEditncomprobante(false);
+  const onChangeNComprobante = (e) => setFormNComprobante({ numero_transac: e.target.value });
+  const submitNComprobante = () => {
+    if (!formNComprobante.numero_transac) return cerrarEditNComprobante();
+    putVentas({ numero_transac: formNComprobante.numero_transac }, dataVentaxID[0].id, obtenerVentaporId);
+    cerrarEditNComprobante();
+  };
+
 
   // ------- Footer -------
   const footer = (
@@ -214,7 +233,26 @@ export const ModalViewObservacion = ({
               {/* Comprobante */}
               <li className="mb-4 d-flex justify-content-between">
                 <span>{arrayFacturas.find(e => e.value === venta?.id_tipoFactura)?.label ?? 'Comprobante'}:</span>
-                <span style={{ paddingRight: 40 }}>{venta?.numero_transac ?? '—'}</span>
+                {/* <span style={{ paddingRight: 40 }}>{venta?.numero_transac ?? '—'}</span> */}
+                {editncomprobante ? (
+                    <>
+                      <input
+                        name="numero_transac"
+                        className="form-control"
+                        value={formNComprobante.numero_transac ?? ''}
+                        onChange={onChangeNComprobante}
+                        required
+                        style={{ minWidth: 220 }}
+                      />
+                      <i className="pi pi-check hover-text cursor-pointer ml-4" onClick={submitNComprobante} />
+                      <i className="pi pi-times hover-text cursor-pointer ml-4" onClick={cerrarEditNComprobante} />
+                    </>
+                  ) : (
+                    <>
+                      {formNComprobante.numero_transac ?? '—'}
+                      <i className="pi pi-pencil hover-text cursor-pointer ml-4" onClick={abrirEditNComprobante} />
+                    </>
+                  )}
               </li>
 
               {/* Fecha de venta (editable) */}

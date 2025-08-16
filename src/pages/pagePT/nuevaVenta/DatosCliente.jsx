@@ -56,7 +56,7 @@ const DatosCliente = ({dataCliente}) => {
             numero_transac: numero_transac, 
             id_origen: id_origen, 
             observacion: observacion,
-			fecha_venta: fecha_venta
+			// fecha_venta: fecha_venta
 			// email_cli: clienteSelect?.email_cli, 
 			// label_cli: clienteSelect?.label, 
 			// label_empl: EmpleadoSelect?.label, 
@@ -166,18 +166,6 @@ const DatosCliente = ({dataCliente}) => {
 												className='form-control'
 												placeholder='numero de comprobante'
 												value={numero_transac}
-												onChange={onInputChange}
-											/>
-										</div>
-										</Col>
-										<Col xl={12} sm={12}>
-										<div className='mb-2'>
-											<input
-												name='fecha_venta'
-												id='fecha_venta'
-												className='form-control'
-												type='date'
-												value={fecha_venta}
 												onChange={onInputChange}
 											/>
 										</div>
