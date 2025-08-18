@@ -50,7 +50,7 @@ export const DetalleItemProSer = ({ dataView, onOpenModalAgregarCarrito }) => {
       <div className='d-flex mb-3'>
         <input
           type='text'
-          className='form-control mx-2'
+          className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13 mx-2'
           placeholder='BUSCAR PRODUCTOS Y SERVICIOS'
           value={searchTerm}
           onChange={handleSearchChange}

@@ -52,7 +52,7 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
     <>
     <Card style={{height: '100%'}}>
         <Card.Header>
-            <h1>Carrito</h1>
+            <h1>Carrito <i className='pi pi-shopping-cart fs-1'></i></h1>
         </Card.Header>
         <Card.Body>
           <ScrollPanel style={{ width: '100%', height: '60vh' }} className="custombar2 m-0">

@@ -9,10 +9,6 @@ import { onSetRangeDate } from '@/store/data/dataSlice';
 import Swal from 'sweetalert2';
 import dayjs from 'dayjs';
 
-const regsFechas = {
-fec_desde: new Date(new Date().getFullYear(), 8, 16),
-fec_hasta: new Date(),
-}
 
 export const FechaRangeMES = ({ rangoFechas, textColor }) => {
   const dispatch = useDispatch();
@@ -37,16 +33,6 @@ export const FechaRangeMES = ({ rangoFechas, textColor }) => {
     }
   }, [rangoFechas]);
 
-  const onChangeDesde = (e) => {
-    const newDesde = dayjs(e.target.value + '-01').startOf('month').toDate();
-    setDateRange(prev => ({ ...prev, fec_desde: newDesde }));
-  };
-
-  const onChangeHasta = (e) => {
-    const newHasta = dayjs(e.target.value + '-01').endOf('month').toDate();
-    setDateRange(prev => ({ ...prev, fec_hasta: newHasta }));
-  };
-
   const onClickActualizar = () => {
     dispatch(onSetRangeDate([
       dayjs(dateRange.fec_desde).startOf('day').toISOString(),
@@ -56,13 +42,13 @@ export const FechaRangeMES = ({ rangoFechas, textColor }) => {
   };
 
   return (
-    <div className="text-center d-flex align-items-center justify-content-center gap-4 flex-wrap">
+    <div className="d-flex align-items-center justify-content-center gap-4 flex-wrap">
       {!mostrarInputs ? (
         <p
-          style={{ color: textColor, fontWeight: 'bold', cursor: 'pointer', fontSize: '45px' }}
+          style={{ color: textColor, fontWeight: 'bold', cursor: 'pointer', fontSize: '25px' }}
           onClick={() => setMostrarInputs(true)}
         >
-          {dayjs(dateRange.fec_desde).format('D [de] MMMM [del] YYYY')} - {dayjs(dateRange.fec_hasta).format('D [de] MMMM [del] YYYY')}
+          {dayjs(dateRange.fec_desde).format('dddd D [de] MMMM [del] YYYY')} <br/> {dayjs(dateRange.fec_hasta).format('dddd D [de] MMMM [del] YYYY')}
           {/* {dayjs(dateRange.fec_desde).format('MMMM YYYY').toUpperCase()} - {dayjs(dateRange.fec_hasta).format('MMMM YYYY').toUpperCase()} */}
         </p>
       ) : (
@@ -120,10 +106,13 @@ export const FechaRangeMES = ({ rangoFechas, textColor }) => {
 
       <div>
         <Button
-          style={{ backgroundColor: textColor, borderColor: textColor }}
+          style={{ backgroundColor: textColor, borderColor: textColor, width: '200px', height: '60px', textAlign: 'center' }}
+
           onClick={onClickActualizar}
         >
-          Actualizar
+          <div className='w-100'>
+            Actualizar
+          </div>
         </Button>
       </div>
     </div>

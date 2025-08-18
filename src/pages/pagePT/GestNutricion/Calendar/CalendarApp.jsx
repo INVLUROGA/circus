@@ -54,7 +54,7 @@ const events = [
 ];
 	return (
 		<>
-			<PageBreadcrumb title={tipo_serv=='NUTRI'?"Agendas citas nutricionista": "Agenda citas estilistas"} subName="Apps" />
+			<PageBreadcrumb title={'Agenda citas estilistas'} subName="Apps" />
 
 			<Row>
 				<Col>
@@ -63,10 +63,10 @@ const events = [
 							<Row>
 								<Col xl={12}>
 									<TabView>
-										<TabPanel header={'CALENDARIO POR ESTILISTA'}>
+										{/* <TabPanel header={'CALENDARIO POR ESTILISTA'}>
 											<Calendar2/>
-										</TabPanel>
-										<TabPanel header={'DIAS'}>
+										</TabPanel> */}
+										<TabPanel header={'Agenda citas estilistas'}>
 											{/* fullcalendar control */}
 												<App
 													onDateClick={onDateClick}
@@ -78,7 +78,7 @@ const events = [
 													tipo_serv={tipo_serv}
 												/>
 										</TabPanel>
-										<TabPanel header={'¿COMANDAS?'}>
+										<TabPanel header={'COMANDAS'}>
 											{/* fullcalendar control */}
 											<Calendar3/>
 										</TabPanel>

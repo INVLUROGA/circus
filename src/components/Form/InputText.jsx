@@ -21,7 +21,7 @@ export const InputSelect = ({...props}) => {
   return (
     <div className="border-3 border-primary rounded" style={{ width: '200px', height: '60px' }}>
         <select className="form-select" {...props}>
-                <option value="comprobante">Por comprobante</option>
+                <option value="comprobante">COMPROBANTES</option>
                 <option value="dia">Por día</option>
                 <option value="semana">Por semana</option>
                 <option value="mes">Por mes</option>

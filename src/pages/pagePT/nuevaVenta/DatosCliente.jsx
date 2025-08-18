@@ -21,8 +21,9 @@ function formatoNumero(num) {
   return (num < 0 ? '-' : '') + abs;
 }
 
-const DatosCliente = ({dataCliente}) => {
+const DatosCliente = ({dataCliente, setNombreCliente}) => {
 	const dispatch = useDispatch()
+	  const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerRecepcionistas, DataVendedores:dataRecepcionista } = useTerminoStore();
 	const {obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores, DataVendedores} = useTerminoStore()
 	const {obtenerParametroPorEntidadyGrupo:obtenerDataOrigenCircus, DataGeneral:dataOrigenCircus} = useTerminoStore()
 	const { dataComprobante, obtenerVentasxComprobantes } = useVentasStore()
@@ -42,7 +43,7 @@ const DatosCliente = ({dataCliente}) => {
 		onInputChangeReact, onInputChange } = useForm(dataCliente)
 	useEffect(() => {
 		obtenerParametrosClientes()
-		
+		obtenerRecepcionistas(63, 5, 599)
 		obtenerParametrosVendedores()
 		obtenerDataOrigenCircus('nueva-venta-circus', 'origen')
 	}, [])
@@ -92,6 +93,7 @@ const DatosCliente = ({dataCliente}) => {
 		const dataCli = DataClientes.find(
             (option) => option.label === e.value
         )
+		setNombreCliente(`${e?.label.split('|')[1]}`)
 		onInputChangeFunction('id_cli', e.value)
 	}
 	const onChangeTipoDeComprobante = (e)=>{
@@ -113,10 +115,67 @@ const DatosCliente = ({dataCliente}) => {
 											<div className='mb-2'>
 											<Select
 												onChange={(e) => inputChangeClientes(e)}
+												name="id_empl"
+												placeholder={'Seleccionar COLABORADOR'}
+												styles={{
+												input: (provided) => ({
+													...provided,
+													color: "#EEBE00",
+													fontWeight: "bold",
+												}),
+												dropdownIndicator: (provided) => ({
+													...provided,
+													color: "#EEBE00",
+												}),
+												indicatorSeparator: (provided) => ({
+													...provided,
+													backgroundColor: "#EEBE00",
+												}),
+												control: (provided) => ({
+													...provided,
+													borderColor: "#EEBE00",
+													color: "#EEBE00",
+												}),
+							}}
+											className="border-2 rounded-3 border-primary outline-none"
+												// classNamePrefix="react-select"
+												options={dataRecepcionista}
+												
+												value={dataRecepcionista.find(
+													(option) => option.value === id_empl
+												)|| 0}
+												required
+											/>
+											</div>
+										</Col>
+										<Col xl={12} sm={12}>
+											<div className='mb-2'>
+											<Select
+												onChange={(e) => inputChangeClientes(e)}
 												name="id_cli"
-												placeholder={'Seleccionar el cliente'}
-												className="react-select"
-												classNamePrefix="react-select"
+												placeholder={'Seleccionar cliente'}
+                    styles={{
+                      input: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                        fontWeight: "bold",
+                      }),
+                      dropdownIndicator: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                      }),
+                      indicatorSeparator: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#EEBE00",
+                      }),
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: "#EEBE00",
+                        color: "#EEBE00",
+                      }),
+  }}
+                  className="border-2 rounded-3 border-primary outline-none"
+												// classNamePrefix="react-select"
 												options={DataClientes}
 												value={DataClientes.find(
 													(option) => option.value === id_cli
@@ -130,9 +189,29 @@ const DatosCliente = ({dataCliente}) => {
 											<Select
 												onChange={(e) => onInputChangeReact(e, 'id_origen')}
 												name="id_origen"
-												placeholder={'De donde nos conoce el cliente'}
-												className="react-select"
-												classNamePrefix="react-select"
+												placeholder={'ORIGEN'}
+                    styles={{
+                      input: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                        fontWeight: "bold",
+                      }),
+                      dropdownIndicator: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                      }),
+                      indicatorSeparator: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#EEBE00",
+                      }),
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: "#EEBE00",
+                        color: "#EEBE00",
+                      }),
+  }}
+                  className="border-2 rounded-3 border-primary outline-none"
+												// classNamePrefix="react-select"
 												options={dataOrigenCircus}
 												value={dataOrigenCircus.find(
 													(option) => option.value === id_origen
@@ -147,8 +226,43 @@ const DatosCliente = ({dataCliente}) => {
 												onChange={(e) => onChangeTipoDeComprobante(e)}
 												name="id_tipo_transaccion"
 												placeholder={'Tipo de comprobante'}
-												className="react-select"
-												classNamePrefix="react-select"
+                    styles={{
+                    //   option: (provided) => ({
+                    //     ...provided,
+                    //     color: "#EEBE00",
+                    //     fontWeight: "bold",
+                    //   }),
+                      singleValue: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                        fontWeight: "bold",
+                      }),
+                    //   placeholder: (provided) => ({
+                    //     ...provided,
+                    //     color: "#EEBE00",
+                    //     fontWeight: "bold",
+                    //   }),
+                      input: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                        fontWeight: "bold",
+                      }),
+                      dropdownIndicator: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                      }),
+                      indicatorSeparator: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#EEBE00",
+                      }),
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: "#EEBE00",
+                        color: "#EEBE00",
+                      }),
+  }}
+                  className="border-2 rounded-3 border-primary outline-none"
+												// classNamePrefix="react-select"
 												options={arrayFacturas}
 												value={arrayFacturas.find(
 													(option) => option.value === id_tipo_transaccion
@@ -160,10 +274,10 @@ const DatosCliente = ({dataCliente}) => {
 										<Col xl={12} sm={12}>
 										<div className='mb-2'>
 											<input
-												type=''
+												type='text'
 												name='numero_transac'
 												id='numero_transac'
-												className='form-control'
+												className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13'
 												placeholder='numero de comprobante'
 												value={numero_transac}
 												onChange={onInputChange}
@@ -175,8 +289,8 @@ const DatosCliente = ({dataCliente}) => {
 											<textarea
 												name='observacion'
 												id='observacion'
-												className='form-control'
-												placeholder='Observacion general de venta'
+												className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13'
+												placeholder='Observaciones'
 												value={observacion}
 												onChange={onInputChange}
 											/>

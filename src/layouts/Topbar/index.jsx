@@ -111,7 +111,11 @@ const Topbar = ({ topbarDark, toggleMenu, navOpen }) => {
 					</strong>
 						<ModuloDropdown/>
 						{section_item && (
-						<h3  className="text-uppercase fw-bolder text-primary d-flex justify-content-center align-items-center"><span className='fs-1 text-black'> / </span><div className='mx-2'> {section_item} </div><span className='fs-1 text-black'> / </span><div className='mx-2'> {RANGE_DATE[0] instanceof Date ?dayjs(RANGE_DATE[0]).format('dddd DD [DE] MMMM [DEL] YYYY'): RANGE_DATE[0]} <br/> {dayjs(RANGE_DATE[1]).format('dddd DD [DE] MMMM YYYY')}</div> 
+						<h3  className="text-uppercase fw-bolder text-primary d-flex justify-content-center align-items-center">
+							<span className='fs-1 text-black'> / </span>
+							<div className='mx-2'> {section_item} </div>
+							<span className='fs-1 text-black'> / </span>
+							<div className='mx-2'> {RANGE_DATE[0] ?dayjs(RANGE_DATE[0]).format('dddd DD [DE] MMMM [DEL] YYYY'): RANGE_DATE[0]} <br/> {dayjs(RANGE_DATE[1]).format('dddd DD [DE] MMMM YYYY')}</div> 
 						</h3>
 						)}
 				</div>	

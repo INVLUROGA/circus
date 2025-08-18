@@ -8,7 +8,7 @@ export const dataSlice = createSlice({
 		dataRes: [],
 		BASE64_FIRMA: null,
 		section_item: null,
-		RANGE_DATE: [new Date(2024, 8, 16), new Date()],
+		RANGE_DATE: [new Date(2025, 1, 1), new Date()],
 		MULTI_DATE: [],
 	},
 	reducers: {

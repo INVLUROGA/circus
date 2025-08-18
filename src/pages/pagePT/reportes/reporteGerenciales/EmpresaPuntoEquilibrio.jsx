@@ -11,7 +11,7 @@ function agruparPorCategoria(data) {
   const map = new Map();
 
   data?.forEach(item => {
-    const id_param = item.serv.circus_servicio.tb_parametro.label_param;
+    const id_param = item.serv?.circus_servicio?.tb_parametro?.label_param;
 
     if (!map.has(id_param)) {
       map.set(id_param, []);

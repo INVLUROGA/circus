@@ -13,7 +13,7 @@ import { CurrencyMask } from '@/components/CurrencyMask'
 import { InputText } from 'primereact/inputtext'
 const registerIvsG={
     id_tipoGasto: 260,
-    id_gasto: 0,
+    id_gasto: 927,
     grupo: 'BANCOS',
     moneda: '',
     monto: '0',
@@ -43,7 +43,7 @@ export const ModalIngresosGastos = ({onHide, show, data, isLoading, onShow, show
     const [loadingRegister, setloadingRegister] = useState(false)
     const { obtenerParametrosGastosFinanzas } = useGf_GvStore()
     useEffect(() => {
-      obtenerParametrosGastosFinanzas()
+      obtenerParametrosGastosFinanzas()                             
     }, [])
     const {dataParametrosGastos} = useSelector(e=>e.finanzas)
     const { obtenerParametroPorEntidadyGrupo: obtenerParametroTipoComprobante, DataGeneral: DataTipoComprobante } = useTerminoStore()

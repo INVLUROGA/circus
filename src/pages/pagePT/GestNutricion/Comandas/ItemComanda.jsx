@@ -33,24 +33,23 @@ export const ItemComanda = ({
       <Card.Body>
         <div className='d-flex flex-column'>
           <div className='mb-4 text-primary fs-3'>
-            CLIENTE: <span className='text-black'>{item.nombre_cliente}</span>
-            <div className='float-end text-primary fs-1 text-break'>
+            CLIENTE: <span className='text-black'>{item.nombre_cliente}</span> / <DateMask date={item?.fecha_venta} format={'dddd DD [de] MMMM [DEL] YYYY [a las] hh:mm A'} />
+            {/* <div className='float-end text-primary fs-1 text-break'>
               FECHA:{' '}
               <span className='text-black'>
-                <DateMask date={item?.fecha_venta} format={'dddd DD [de] MMMM [DEL] YYYY [a las] hh:mm A'} />
               </span>
-            </div>
+            </div> */}
           </div>
-
+              {JSON.stringify(prodSer)}
           <div>
             <Table striped bordered>
-              <thead className='bg-primary'>
+              <thead className='bg-primary fs-3'>
                 <tr>
                   <th><div className='text-white'>#</div></th>
                   <th><div className='text-white'>clase</div></th>
                   <th><div className='text-white'>COLABORADOR</div></th>
                   <th><div className='text-white'>SERVICIO/PRODUCTO</div></th>
-                  <th><div className='text-white'>MONTO S/.</div></th>
+                  <th><div className='text-white'>MONTO <br/> S/.</div></th>
                 </tr>
               </thead>
               <tbody>

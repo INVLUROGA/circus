@@ -33,103 +33,6 @@ export const ReporteAsistencia = ({uid_empl, avatarImage}) => {
       obtenerParametroPorEntidadyGrupo_PERIODO('EMPLEADO', 'PERIODO_ASISTENCIA')
 	  obtenerPlanillaxEmpl(uid_empl)
     }, [])
-	console.log(dataPlanillaxEmpl, "plani");
-	
-    var dd = {
-		content: [
-			// {
-			//   text: 'CHANGE',
-			//   alignment: 'center',
-			//   style: 'header'
-			// },
-			{
-				text: 'REPORTE DE ASISTENCIAS',
-				alignment: 'center',
-				style: 'header',
-			},
-			'\n',
-			{
-				columns: [
-					{
-						style: 'header_info',
-						text: ['EMPRESA: INVERSIONES LUROGA \n', 'UBICACION: TARATA'],
-					},
-					{
-						style: 'header_info',
-						text: ['COLABORADOR: ALVARO SALAZAR \n', 'DEPARTAMENTO: VENTAS'],
-					},
-					{
-						style: 'header_info',
-						text: ['PERIODO DESDE: 17/02/2024 \n', 'PERIODO HASTA: 17/03/2024'],
-					},
-				],
-			},
-			{
-				style: 'tableExample',
-				color: '#444',
-				table: {
-					widths: [200, 'auto', 'auto'],
-		headerRows: 2,
-		// keepWithHeaderRows: 1,
-		body: [
-			[
-				{ text: 'FECHA', style: 'tableHeader', alignment: 'center' },
-				{
-					text: 'HORARIO',
-					style: 'tableHeader',
-					colSpan: 2,
-					alignment: 'center',
-				},
-				{}, // Celda vacía para completar el colSpan
-			],
-		],
-				},
-			},
-		],
-		styles: {
-			tableExample: {
-				// fontSize: 10
-				// margin: [0, 5, 0, 15]
-			},
-			header_info: {
-				fontSize: 10,
-			},
-			subTitle: {
-				fontSize: 12,
-				bold: true,
-				margin: [4, 10, 0, 7],
-			},
-			subSubTitle: {
-				fontSize: 12,
-				bold: true,
-			},
-			header: {
-				fontSize: 14,
-				bold: true,
-			},
-			subHeader: {
-				fontSize: 13,
-			},
-			quote: {
-				italics: true,
-			},
-			small: {
-				fontSize: 8,
-			},
-		},
-	};
-    const onClickGenerarPdf = ()=>{
-      const formData = new FormData();
-      const pdfGenerator = pdfMake.createPdf(dd)
-      pdfGenerator.getBlob((blob)=>{
-        // Crear un archivo para el FormData con el PDF generado
-        // formData.append('file', blob, `historial-clinico-${dataCli.id_cli}.pdf`);
-        // const url = URL.createObjectURL(blob)
-        // seturl(url)
-        // startRegisterClinico(formState, formStateAntPatNutr, formData, dataCli.id_cli)
-        pdfGenerator.download()
-      })
-    }
 	const onClickModalReporteAsistencia = (id_p, uid_emp)=>{
 		setidPlanilla(id_p)
 		setuidEmpleado(uid_emp)
@@ -170,9 +73,7 @@ export const ReporteAsistencia = ({uid_empl, avatarImage}) => {
 									<td><a onClick={()=>onClickModalReporteAsistencia(p.id, p.uid_empleado)} className='text-primary border-bottom-2 cursor-pointer'>VER</a></td>
 									<td><a className='text-primary border-bottom-2 cursor-pointer'>VER</a></td>
 								</tr>
-							))
-							}
-                            
+							))}
                         </tbody>
                     </Table>
                         <ModalAgregarNomina uid_empl={uid_empl} dataPeriodoParamSelect={dataPeriodoParamSelect} show={isOpenModalAgregarNomina} onHide={onCloseModalNomina}/>

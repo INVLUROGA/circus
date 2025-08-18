@@ -99,31 +99,36 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   return (
     <Dialog footer={footerTemplate} style={{ width: "40rem", height: "50rem" }} header={servSelect?.labelServ} visible={show} onHide={onCloseAgregarCarrito}>
       <div className="m-2">
-        <label className="form-label">COLABORADOR</label>
+        {/* <label className="form-label">COLABORADOR</label> */}
         <Select
           onChange={(e) => {
             onInputChangeReact(e, "id_empl")
           }}
           name="id_empl"
           placeholder={"Seleccionar el colaborador"}
-          className="react-select"
-          classNamePrefix="react-select"
+          className="border-2 rounded-3 border-primary outline-none"
+          // classNamePrefix="react-select"
           options={dataCargos}
           value={dataCargos.find((option) => option.value === (id_empl)) || null}
           required
         />
       </div>
       <div className="m-2">
-        <label className="form-label">CANTIDAD</label>
-        <input value={cantidad} max={4} name="cantidad" onChange={handleCantidadChange} type="number" className="form-control" />
+        {/* <label className="form-label">CANTIDAD</label> */}
+        <input placeholder='CANTIDAD' value={cantidad} max={4} name="cantidad" onChange={handleCantidadChange} type="number"
+                          className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13 p-2'
+         />
       </div>
       <div className="m-2">
-        <label className="form-label">DESCUENTO EN S/.</label>
-        <input className="form-control" id="monto_descuento" name="monto_descuento" value={monto_descuento} onChange={(e) => onInputChange(e)} required />
+        {/* <label className="form-label">DESCUENTO EN S/.</label> */}
+        <input placeholder='DESCUENTO EN S/.' className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13 p-2'
+ id="monto_descuento" name="monto_descuento" value={monto_descuento} onChange={(e) => onInputChange(e)} required />
       </div>
       <div className="m-2">
-        <label className="form-label">DESCUENTO EN %</label>
-        <input type="number" value={porcentaje_descuento} name="porcentaje_descuento" onChange={onInputChange} className="form-control" />
+        {/* <label className="form-label">DESCUENTO EN %</label> */}
+        <input placeholder='DESCUENTO EN %'
+                          className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13 p-2'
+        type="number" value={porcentaje_descuento} name="porcentaje_descuento" onChange={onInputChange} />
       </div>
     </Dialog>
   );

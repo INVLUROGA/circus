@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import React, { useEffect, useState } from 'react'
 import { Col, Row, Modal, Button } from 'react-bootstrap';
+import Select from 'react-select';
 dayjs.extend(isoWeek);
 
 export const App = ({ id_empresa }) => {
@@ -247,15 +248,34 @@ export const App = ({ id_empresa }) => {
               </div>
             </Col>
             <Col lg={12}>
-              <div style={{ width: '240px' }}>
-                <select className="form-select" style={{ fontWeight: 'bold' }} value={modo} onChange={(e) => setModo(e.target.value)}>
-                  <option value="comprobante">Por comprobante</option>
-                  <option value="dia">Por día</option>
-                  <option value="semana">Por semana</option>
-                  <option value="mes">Por mes</option>
-                  <option value="anio">Por año</option>
-                </select>
-              </div>
+              <Select
+                  onChange={(e) => setModo(e.value)}
+                  // name="id_empl"
+                  placeholder={''}
+                    styles={{
+                      dropdownIndicator: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                      }),
+                      indicatorSeparator: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#EEBE00",
+                      }),
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: "#EEBE00",
+                        color: "#EEBE00",
+                      }),
+  }}
+                  className="border-2 rounded-3 border-primary outline-none w-100"
+                  // classNamePrefix="react-select"
+                  defaultInputValue='comprobante'
+                  options={[{value: 'comprobante', label: 'comprobantes'}, {value: 'dia', label: 'por dia'}, {value: 'semana', label: 'por semana'}, {value: 'mes', label: 'por mes'}, {value: 'anio', label: 'por año'},]}
+                  // value={[{value: 'comprobante', label: 'comprobantes'}, {value: 'dia', label: 'por dia'}, {value: 'semana', label: 'por semana'}, {value: 'mes', label: 'por mes'}, {value: 'anio', label: 'por año'},].find(
+                  //   (option) => option.value === id_empl
+                  // )|| 0}
+                  required
+                />
             </Col>
           </Row>
         </div>
@@ -268,8 +288,8 @@ export const App = ({ id_empresa }) => {
               const sumaMontoServicios = (venta.detalle_ventaservicios || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
               const sumaMontoProductos = (venta.detalle_ventaProductos || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
               return (
-                <div className="mb-4 shadow" key={venta.id}>
-                  <div className="card-body fs-3">
+                <div className="shadow" key={venta.id}>
+                  <div className="card-body fs-3" style={{marginTop: '100px'}}>
                     <h1 className="text-center fw-bold mb-3">
                       {(venta.tb_cliente?.nombres_apellidos_cli || '').trim()}
                     </h1>
@@ -294,7 +314,7 @@ export const App = ({ id_empresa }) => {
 
                     <div>
                       {(venta?.detalleVenta_pagoVenta || []).map((e, i) => (
-                        <div key={i} className="timeline-item-info border border-4 p-2 border-gray">
+                        <div key={i} className=" border border-4 p-2 border-primary">
                           <span className="mb-1 d-block fs-4">
                             <span>
                               <span className="fw-light">OPERADOR: </span>{e.parametro_forma_pago?.label_param}<br />
@@ -303,10 +323,13 @@ export const App = ({ id_empresa }) => {
                             {e.parametro_tarjeta ? (<><span className="fw-light">TARJETA: </span>{e.parametro_tarjeta.label_param}</>) : null}
                             {e.n_operacion ? (<><br/><span className="fw-light">OPERACIÓN: </span>{e.n_operacion}</>) : null}
                           </span>
-                          <span className="d-block fs-3">
+                          <span className="d-block fs-4">
                             <span className="fw-light">MONTO PARCIAL: </span>
                             <span className="fw-bold text-primary">
-                              <SymbolSoles isbottom bottomClasss={'10'} size={20} numero={FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param == 535 ? '$' : 'S/.')} />
+                              <SymbolSoles 
+                                  isbottom 
+                                  bottomClasss={'10'}  
+                                  fontSizeS={'font-10'} numero={FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param == 535 ? '$' : 'S/.')} />
                             </span>
                           </span>
                         </div>
@@ -322,7 +345,7 @@ export const App = ({ id_empresa }) => {
                               {(s.empleado_servicio?.nombres_apellidos_empl || '-').split(' ')[0]}
                             </div>
                             <div className="d-flex flex-row justify-content-between">
-                              <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
+                              <div className="text-primary mx-1" style={{ width: '100%', fontSize: '25px' }}>
                                 {s.circus_servicio?.nombre_servicio}
                               </div>
                               <div className="text-end mx-1" style={{ width: '150px' }}>

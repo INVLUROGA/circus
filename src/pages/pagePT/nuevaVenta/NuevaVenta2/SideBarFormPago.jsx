@@ -119,25 +119,25 @@ export const SideBarFormPago = ({show, onHide}) => {
             <h3 className='mb-4'>Registrar Pago</h3>
             <form onSubmit={submitFormaPago}>
                       <div className='mb-4'>
-                        <label>N operacion*:</label>
+                        {/* <label>N operacion*:</label> */}
                         <input 
                           type='text' 
-                          className='form-control'
+                          className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-17 p-1'
                           id='n_operacion'
                           name='n_operacion'
+                          placeholder={'N operacion'}
                           value={n_operacion}
                           onChange={onInputChange}
                           required
                           />
                       </div>
                       <div className='mb-4'>
-                        <label>Forma de pago*:</label>
+                        {/* <label>Forma de pago*:</label> */}
                             <Select
                             onChange={(e) => onInputChangeReact(e, 'id_forma_pago')}
                             name={'id_forma_pago'}
-                            placeholder={'Seleccionar la forma de pago'}
-                            className="react-select"
-                            classNamePrefix="react-select"
+                            placeholder={'forma de pago'}
+                            className="border-2 rounded-3 border-primary outline-none"
                             options={formaPago}
 
                             value={formaPago.find(e=>e.value===id_forma_pago) || 0}
@@ -152,8 +152,8 @@ export const SideBarFormPago = ({show, onHide}) => {
                                 onChange={(e) => onInputChangeReact(e, 'id_tipo_tarjeta')}
                                 name={'id_tipo_tarjeta'}
                                 placeholder={'Seleccionar el tipo de tarjeta'}
-                                className="react-select"
-                                classNamePrefix="react-select"
+                                className="border-2 rounded-3 border-primary outline-none"
+                                // classNamePrefix="react-select"
                                 options={tipoTarjeta}
                                 value={tipoTarjeta.find(e=>e.value===id_tipo_tarjeta) || 0}
                                 required
@@ -170,8 +170,8 @@ export const SideBarFormPago = ({show, onHide}) => {
                                 onChange={(e) => onInputChangeReact(e, 'id_tarjeta')}
                                 name={'id_tarjeta'}
                                 placeholder={'Seleccionar tarjeta'}
-                                className="react-select"
-                                classNamePrefix="react-select"
+                                className="border-2 rounded-3 border-primary outline-none"
+                                // classNamePrefix="react-select"
                                 options={tarjetas}
                                 value={tarjetas.find(e=>e.value===id_tarjeta) || 0}
                                 required
@@ -197,11 +197,12 @@ export const SideBarFormPago = ({show, onHide}) => {
                         </>
                         }
                       <div className='mb-4'>
-                        <label>Monto de pago:</label>
+                        {/* <label>Monto de pago:</label> */}
                         <input 
-                          className='form-control'
+                          className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-17'
                           id='monto_pago'
                           name='monto_pago'
+                          placeholder='MONTO DE PAGO'
                           value={monto_pago}
                           onChange={e=>onInputChange(CurrencyMask(e))}
                           required

@@ -121,6 +121,7 @@ export const useComandasStore = () => {
 		try {
 			setisLoading(true);
 			const { data } = await PTApi.get('/venta/comanda/599');
+
 			const dataAlter = data?.comandas.map((comanda) => {
 				return {
 					id: comanda.id,
@@ -137,7 +138,7 @@ export const useComandasStore = () => {
 						return {
 							clase: 'servicio',
 							nombre: serv?.circus_servicio?.nombre_servicio,
-							monto: serv?.circus_servicio?.precio,
+							monto: serv?.tarifa_monto,
 							colaborador: serv?.empleado_servicio?.nombres_apellidos_empl,
 						};
 					}),
@@ -145,7 +146,7 @@ export const useComandasStore = () => {
 						return {
 							clase: 'producto',
 							nombre: serv?.tb_producto?.nombre_producto,
-							monto: serv?.tb_producto?.prec_venta,
+							monto: serv?.tarifa_monto,
 							colaborador: serv?.empleado_producto?.nombres_apellidos_empl,
 						};
 					}),

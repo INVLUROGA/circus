@@ -191,7 +191,7 @@ const AppMenu = ({ menuItems }) => {
           return (
             <React.Fragment key={index.toString()}>
               {item.isTitle ? (
-                <li className="side-nav-title">{item.label}</li>
+                <li className={`side-nav-title ${(item.label==='Ventas' || item.label==='gastos')?'fs-3':''}`}>{item.label==='VENTAS'?item.label:item.label}</li>
               ) : (
                 <React.Fragment>
                   {item.children ? (

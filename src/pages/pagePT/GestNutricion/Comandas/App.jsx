@@ -43,7 +43,7 @@ export const App = () => {
   return (
     <>
     <Button label='AGREGAR COMANDA' onClick={onOpenModalCustomComanda}/>
-    <Select
+    {/* <Select
       name="id_estado"
       placeholder="ESTADO"
       className="react-select"
@@ -51,7 +51,7 @@ export const App = () => {
       options={arrayEstadosVenta}
       onChange={onChangeEstadoComanda}
       isClearable
-    />
+    /> */}
     <Row>
         {
             isLoading?(

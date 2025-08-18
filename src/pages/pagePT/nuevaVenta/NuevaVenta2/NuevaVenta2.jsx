@@ -36,9 +36,7 @@ export const NuevaVenta2 = () => {
   return (
     <>
       <PageBreadcrumb title="Nueva venta" subName="ventas" />
-    {dataView.length===0?(
-      <AperturaCaja/>
-    ):(
+    
     <Container fluid>
           <Row>
             {/* Tercera columna con dos secciones */}
@@ -46,16 +44,16 @@ export const NuevaVenta2 = () => {
               <CardCliente dataCliente={detalle_cli_modelo}/>
             </Col>
             {/* Primera columna */}
-            <Col md={4}>
+            <Col md={5}>
             
                   <TabView>
-                    <TabPanel header={'PEDIDOS'}>
+                    <TabPanel header={'SERVICIOS REALIZADOS'}>
                       <CardPedidos dataVenta={venta} detalle_cli_modelo={detalle_cli_modelo} datos_pagos={datos_pagos} funToast={showToastVenta}/>
                     </TabPanel>
                     <TabPanel header={'PRODUCTOS Y SERVICIOS'}>
                       <CardVenta dataVenta={venta} detalle_cli_modelo={detalle_cli_modelo} datos_pagos={datos_pagos} funToast={showToastVenta}/>
                     </TabPanel>
-                    <TabPanel header={'PAGOS'}>
+                    <TabPanel header={'PAGAR'}>
                       <CardPagos dataPagos={datos_pagos} venta={carrito} detalle_cli_modelo={detalle_cli_modelo}/>
                     </TabPanel>
                   </TabView>
@@ -67,14 +65,13 @@ export const NuevaVenta2 = () => {
             </Card> */}
             </Col>
             {/* Segunda columna */}
-            <Col md={5}>
+            <Col md={4}>
               <CardCarrito carrito={carrito} dataPagos={datos_pagos} detalle_cli_modelo={detalle_cli_modelo}/>
             </Col>
             {/* <Col md={12} className="d-flex flex-column">
             </Col> */}
           </Row>
         </Container>
-    )}
 		<Toast ref={refToast}/>
     </>
   )

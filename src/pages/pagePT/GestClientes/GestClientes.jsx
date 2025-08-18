@@ -33,7 +33,7 @@ export const GestClientes = () => {
 						<Card.Body>
 							<Row className="mb-2">
 								<Col sm={5}>
-									<Button label='Agregar socio' icon={'mdi mdi-plus-circle'} onClick={onModalRegClienteOpen}/>
+									<Button label='Agregar cliente' icon={'mdi mdi-plus-circle'} onClick={onModalRegClienteOpen}/>
 								</Col>
 							</Row>
 							<TableClientes/>
