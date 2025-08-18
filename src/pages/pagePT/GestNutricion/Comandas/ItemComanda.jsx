@@ -33,14 +33,13 @@ export const ItemComanda = ({
       <Card.Body>
         <div className='d-flex flex-column'>
           <div className='mb-4 text-primary fs-3'>
-            CLIENTE: <span className='text-black'>{item.nombre_cliente}</span> / <DateMask date={item?.fecha_venta} format={'dddd DD [de] MMMM [DEL] YYYY [a las] hh:mm A'} />
+            CLIENTE: <span className='text-black'>{item.nombre_cliente}</span> / <span className='text-black'><DateMask date={item?.fecha_venta} format={'dddd DD [de] MMMM [DEL] YYYY [a las] hh:mm A'} /></span>
             {/* <div className='float-end text-primary fs-1 text-break'>
               FECHA:{' '}
               <span className='text-black'>
               </span>
             </div> */}
           </div>
-              {JSON.stringify(prodSer)}
           <div>
             <Table striped bordered>
               <thead className='bg-primary fs-3'>
@@ -55,17 +54,17 @@ export const ItemComanda = ({
               <tbody>
                 {prodSer.map((proSe, i) => (
                   <tr key={proSe.id ?? `${proSe.clase}-${i}`}>
-                    <td>{i + 1}</td>
-                    <td>{proSe.clase}</td>
-                    <td>{proSe.colaborador}</td>
-                    <td>{proSe.nombre}</td>
-                    <td><NumberFormatMoney amount={Number(proSe.monto) || 0} /></td>
+                    <td><div className='fs-3'>{i + 1}</div></td>
+                    <td><div className='fs-3'>{proSe.clase}</div></td>
+                    <td><div className='fs-3'>{proSe.colaborador}</div></td>
+                    <td><div className='fs-3'>{proSe.nombre}</div></td>
+                    <td><div className='fs-3 text-end'><NumberFormatMoney amount={Number(proSe.monto) || 0} /></div></td>
                   </tr>
                 ))}
                 <tr>
                   <td></td><td></td><td></td>
-                  <td><div className='bg-primary fs-2 text-center'>TOTAL</div></td>
-                  <td><NumberFormatMoney amount={total} /></td>
+                  <td><div className='bg-primary fs-1 text-center'>TOTAL</div></td>
+                  <td><div className='fs-2 text-end'><NumberFormatMoney amount={total} /></div></td>
                 </tr>
               </tbody>
             </Table>

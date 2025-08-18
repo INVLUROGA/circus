@@ -266,10 +266,10 @@ export const App = ({ id_empresa }) => {
                         borderColor: "#EEBE00",
                         color: "#EEBE00",
                       }),
-  }}
+                    }}
                   className="border-2 rounded-3 border-primary outline-none w-100"
                   // classNamePrefix="react-select"
-                  defaultInputValue='comprobante'
+                  defaultValue={{ value: 'comprobante', label: 'comprobantes' }}
                   options={[{value: 'comprobante', label: 'comprobantes'}, {value: 'dia', label: 'por dia'}, {value: 'semana', label: 'por semana'}, {value: 'mes', label: 'por mes'}, {value: 'anio', label: 'por año'},]}
                   // value={[{value: 'comprobante', label: 'comprobantes'}, {value: 'dia', label: 'por dia'}, {value: 'semana', label: 'por semana'}, {value: 'mes', label: 'por mes'}, {value: 'anio', label: 'por año'},].find(
                   //   (option) => option.value === id_empl
@@ -411,6 +411,19 @@ export const App = ({ id_empresa }) => {
                 <div className="card-body">
                   <h1 className="text-center fw-bold mb-4 text-uppercase text-primary">{grupo.label}</h1>
                   <ul className="list-group list-group-flush">
+                    
+                    {/* CLICK abre modal de CLIENTES */}
+                    <li
+                      className="list-group-item h2"
+                      title="Ver resumen por cliente"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => abrirResumenClientes(grupo)}
+                    >
+                      <div className="d-flex justify-content-between" style={{ fontSize: '37px' }}>
+                        <span>TOTAL Clientes:</span>
+                        <span className="text-end">{grupo.clientesVistos.size}</span>
+                      </div>
+                    </li>
                     <li className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
                       <div className="d-flex justify-content-between">
                         <span>Total vendido: </span>
@@ -446,18 +459,6 @@ export const App = ({ id_empresa }) => {
                       </div>
                     </li>
 
-                    {/* CLICK abre modal de CLIENTES */}
-                    <li
-                      className="list-group-item h2"
-                      title="Ver resumen por cliente"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => abrirResumenClientes(grupo)}
-                    >
-                      <div className="d-flex justify-content-between" style={{ fontSize: '37px' }}>
-                        <span>TOTAL Clientes:</span>
-                        <span className="text-end">{grupo.clientesVistos.size}</span>
-                      </div>
-                    </li>
                   </ul>
                 </div>
               </div>
@@ -476,45 +477,47 @@ export const App = ({ id_empresa }) => {
 
         <Modal.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <div className="h5 m-0">Registros: <strong>{modalRows.length}</strong></div>
-            <div className="h5 m-0">
+            <div className="h2 m-0">VENTAS: <strong className=''>{modalRows.length}</strong></div>
+            <div className="h2 m-0">
               Total:{' '}
               <strong>
-                <SymbolSoles size={18} bottomClasss={'6'} numero={<NumberFormatMoney amount={totalModal} />} />
+                <SymbolSoles size={25} bottomClasss={'15'} numero={<NumberFormatMoney amount={totalModal} />} />
               </strong>
             </div>
           </div>
 
           <div className="table-responsive">
-            <table className="table table-sm align-middle">
-              <thead>
+            <table className="table table-sm align-middle table-striped">
+              <thead className='bg-primary'>
                 <tr>
-                  <th>Fecha de venta</th>
-                  <th>Nombre del cliente</th>
-                  <th>Estilista</th>
-                  <th>Número de boleta</th>
-                  <th>Servicio o Producto</th>
-                  <th>Forma de pago</th>
-                  <th>Tipo de tarjeta</th>
-                  <th>Tarjeta</th>
-                  <th>Operación</th>
-                  <th className="text-end">Importe</th>
+                  <th><div className='text-white fs-4'>Fecha de venta</div></th>
+                  <th><div className='text-white fs-4'>Nombre del cliente</div></th>
+                  <th><div className='text-white fs-4'>Estilista</div></th>
+                  <th><div className='text-white fs-4'>Número de boleta</div></th>
+                  <th><div className='text-white fs-4'>Servicio o Producto</div></th>
+                  <th><div className='text-white fs-4'>Forma de pago</div></th>
+                  <th><div className='text-white fs-4'>Tipo de tarjeta</div></th>
+                  <th><div className='text-white fs-4'>Tarjeta</div></th>
+                  <th><div className='text-white fs-4'>Operación</div></th>
+                  <th className="text-end"><div className='text-white fs-4'>Importe</div></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody >
                 {modalRows.map((r, i) => (
                   <tr key={i}>
-                    <td>{DateMaskString(r.fecha, 'YYYY-MM-DD HH:mm')}</td>
-                    <td>{r.cliente}</td>
-                    <td>{r.estilista}</td>
-                    <td>{r.boleta}</td>
-                    <td>{r.concepto}</td>
-                    <td>{r.forma_pago}</td>
-                    <td>{r.tipo_tarjeta}</td>
-                    <td>{r.tarjeta}</td>
-                    <td>{r.n_operacion}</td>
+                    <td><div className='fs-4 mx-2'>{DateMaskString(r.fecha, 'dddd DD [de] MMMM [DEL] YYYY [A LAS] HH:mm')}</div></td>
+                    <td><div className='fs-4 mx-2 text-primary'>{r.cliente}</div></td>
+                    <td><div className='fs-4 mx-2'>{r.estilista}</div></td>
+                    <td><div className='fs-4 mx-2 text-primary'>{r.boleta}</div></td>
+                    <td><div className='fs-4 mx-2'>{r.concepto}</div></td>
+                    <td><div className='fs-4 mx-2'>{r.forma_pago}</div></td>
+                    <td><div className='fs-4 mx-2'>{r.tipo_tarjeta}</div></td>
+                    <td><div className='fs-4 mx-2'>{r.tarjeta}</div></td>
+                    <td><div className='fs-4 mx-2'>{r.n_operacion}</div></td>
                     <td className="text-end">
-                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.importe} />} />
+                      <div className='fs-4'>
+                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.importe} />} />
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -15,7 +15,7 @@ import { Tag } from 'primereact/tag';
 import { TriStateCheckbox } from 'primereact/tristatecheckbox';
 import { ModalViewObservacion } from '../ModalViewObservacion';
 import { arrayFacturas, arrayOrigenDeCliente } from '@/types/type';
-import { DateMaskString, FormatoDateMask, MoneyFormatter } from '@/components/CurrencyMask';
+import { DateMaskString, FormatoDateMask, MoneyFormatter, NumberFormatMoney } from '@/components/CurrencyMask';
 import dayjs from 'dayjs';
 import { Col, Row } from 'react-bootstrap';
 import { PdfComprobanteVenta } from './PdfComprobanteVenta';
@@ -121,7 +121,7 @@ export const TodoVentas=({id_empresa, DataClientes})=> {
       return(
           <div style={{fontSize: '25px'}} className={`flex align-items-center ${rowExtensionColor(rowData, 'text-black fw-bold')} gap-2`}>
             
-              <span>{<MoneyFormatter  amount={sumaTotal}/> }</span>
+              <span>{<NumberFormatMoney amount={sumaTotal}/> }</span>
           </div>
       )
     }
@@ -148,7 +148,9 @@ export const TodoVentas=({id_empresa, DataClientes})=> {
           {/* <span className='text-black'></span> */}
           </span>
           <span>
-            {FormatoDateMask(rowData.fecha_venta_v, 'dddd DD [de] MMMM h:mm A')}
+            {FormatoDateMask(rowData.fecha_venta_v, 'dddd DD [de] MMMM ')}
+            <br/>
+            {FormatoDateMask(rowData.fecha_venta_v, 'hh:mm A')}
           </span>
       </div>
     )
@@ -165,7 +167,7 @@ export const TodoVentas=({id_empresa, DataClientes})=> {
                   rounded 
                   className=" p-1 border-0 text-decoration-underline" 
                   onClick={() => onModalviewVENTAS(rowData.id)} 
-                  >DETALLE DE LA VENTA</Button>
+                  >DETALLE <br/> VENTA</Button>
               </Col>
           </Row>
     );
@@ -206,10 +208,10 @@ const infoClienteBodyTemplate = (rowData)=>{
   return(
     <Row className='m-0'>
       <Col xxl={12}>
-      <div className='d-flex justify-content-between align-items-center'>
-        {/* <span className='text-primary fw-bold'>{rowData.tb_cliente.nombres_apellidos_cli}</span> */}
-        {/* <img width={90} height={80} className='border-circle' src={rowData.tb_cliente?.tb_images?.length>0?`${config.API_IMG.AVATAR_CLI}${avatarCli}`:sinAvatar}/> */}
-        <span className={`${rowExtensionColor(rowData, 'text-black')} fw-bold ml-2`} style={{width: '190px'}}>{rowData.tb_cliente?.nombres_apellidos_cli}</span>
+      <div className=''>
+        {/* {JSON.stringify(rowData.tb_cliente, 2, null)} */}
+        <div className={`${rowExtensionColor(rowData, 'text-black')} fw-bold`}>{rowData.tb_cliente?.nombre_cli}</div>
+        <div className={`${rowExtensionColor(rowData, 'text-black')} fw-bold bg-danger`}>{rowData.tb_cliente?.apPaterno_cli} {rowData.tb_cliente?.apMaterno_cli}</div>
       </div>
       </Col>
     </Row>
@@ -261,7 +263,7 @@ const rowExtensionColor = (rowData, color_pr)=>{
 const origenBodyTemplate = (rowData)=>{
   return (
     <>
-    {rowData?.origenDetalle}
+    {rowData?.origenDetalle=='OTROS'?'WHATSAPP':rowData?.origenDetalle}
     </>
   )
 }
@@ -273,16 +275,16 @@ const header = renderHeader();
                   onValueChange={valueFiltered}
                   rowClassName={rowClassName}
                         stripedRows paginator rows={10} dataKey="id" filters={filters} loading={loading}
-                  globalFilterFields={["tb_cliente.nombres_apellidos_cli", "tb_empleado.nombres_apellidos_empl", "tipo_comprobante", "numero_transac"]} header={header} emptyMessage="No customers found.">
+                  globalFilterFields={["tb_cliente.nombres_apellidos_cli", "tb_empleado.nombres_apellidos_empl", "tipo_comprobante", "numero_transac", "origenDetalle"]} header={header} emptyMessage="No customers found.">
               <Column field="id" header={<span className='text-black fs-2'>ID</span>} filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} body={idBodyTemplate}/>
               {/* <Column field="id" header="Foto de" filter filterPlaceholder="Search by name" style={{ minWidth: '5rem' }} /> */}
-              <Column field="fecha_venta" header={<span className='text-black  fs-2'>FECHA HORA</span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
+              <Column field="fecha_venta" header={<span className='text-black  fs-2'>FECHA <br/> HORA</span>} filterPlaceholder="BUSCAR FECHA" style={{ minWidth: '8rem' }} body={fechaDeComprobanteBodyTemplate}/>
               <Column field="tb_cliente.nombres_apellidos_cli" body={infoClienteBodyTemplate} header={<span className='text-black fs-2'>NOMBRES <br/> APELLIDOS</span>} filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} />
               {/* <Column field="tb_empleado.nombres_apellidos_empl" header="ASESOR COMERCIAL" body={asesorBodyTemplate} filter filterPlaceholder="Search by name" style={{ minWidth: '12rem' }} /> */}
-              <Column header={<span className='text-black fs-2'>TOTAL</span>} body={totalVentasBodyTemplate} style={{ minWidth: '12rem' }} />
-              <Column field="tipo_comprobante" header={<span className='fs-2'>COMPROBANTE</span>} body={comprobanteBodyTemplate} filterPlaceholder="Buscar tipo de comprobante" style={{ minWidth: '12rem' }} />
-              <Column field="numero_transac" header={<span className='fs-2'>Nº DE COMPR.</span>} body={ncomprobanteBodyTemplate} filterPlaceholder="Search by name" style={{ maxWidth: '7rem' }} />
-              <Column header={<span className='fs-2'>ORIGEN</span>} body={origenBodyTemplate} filterPlaceholder="Search by name" style={{ maxWidth: '7rem' }} />
+              <Column header={<span className='text-black fs-2'>TOTAL <br/>S/.</span>} body={totalVentasBodyTemplate} style={{ minWidth: '12rem' }} />
+              <Column field="tipo_comprobante" header={<span className='fs-2'>COMPR.</span>} body={comprobanteBodyTemplate} filterPlaceholder="Buscar tipo de comprobante" style={{ minWidth: '10rem' }} />
+              <Column field="numero_transac" header={<span className='fs-2'>Nº DE COMPR.</span>} body={ncomprobanteBodyTemplate} filterPlaceholder="Search by name" style={{ maxWidth: '10rem' }} />
+              <Column header={<span className='fs-2'>ORIGEN</span>} body={origenBodyTemplate} filterPlaceholder="Search by name" style={{ maxWidth: '10rem' }} />
               <Column header="" frozen style={{ minWidth: '12rem' }} body={actionBodyTemplate} />
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={logoPdfBodyTemplate} /> */}
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={removeVentaBodyTemplate} /> */}

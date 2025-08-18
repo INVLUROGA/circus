@@ -189,7 +189,7 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
     <div className="d-flex align-items-center justify-content-between w-100">
       <h3 className="m-0">
         TOTAL:{' '}
-        <SymbolSoles isbottom numero={<NumberFormatMoney amount={total} />} />
+        <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={total} />} />
       </h3>
       <Button
         label="AGREGAR"
@@ -214,8 +214,27 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
         <Select
           name="id_empl"
           placeholder="Seleccionar el colaborador"
-          className="react-select"
-          classNamePrefix="react-select"
+											className="border-2 rounded-3 border-primary outline-none"
+                       styles={{
+            input: (provided) => ({
+													...provided,
+													color: "#EEBE00",
+													fontWeight: "bold",
+												}),
+												dropdownIndicator: (provided) => ({
+													...provided,
+													color: "#EEBE00",
+												}),
+												indicatorSeparator: (provided) => ({
+													...provided,
+													backgroundColor: "#EEBE00",
+												}),
+												control: (provided) => ({
+													...provided,
+													borderColor: "#EEBE00",
+													color: "#EEBE00",
+												}),
+          }}
           options={dataCargos}
           value={dataCargos.find((o) => o.value === toStr(id_empl)) ?? null}
           onChange={handleSelectEmpleado}
@@ -228,8 +247,28 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
         <Select
           name="id_servicio"
           placeholder="Seleccionar el servicio"
-          className="react-select"
-          classNamePrefix="react-select"
+          
+											className="border-2 rounded-3 border-primary outline-none"
+          styles={{
+            input: (provided) => ({
+													...provided,
+													color: "#EEBE00",
+													fontWeight: "bold",
+												}),
+												dropdownIndicator: (provided) => ({
+													...provided,
+													color: "#EEBE00",
+												}),
+												indicatorSeparator: (provided) => ({
+													...provided,
+													backgroundColor: "#EEBE00",
+												}),
+												control: (provided) => ({
+													...provided,
+													borderColor: "#EEBE00",
+													color: "#EEBE00",
+												}),
+          }}
           options={servicios}
           value={servicios.find((o) => o.value === toStr(id_servicio)) ?? null}
           onChange={handleSelectServicio}
@@ -237,7 +276,7 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
         />
         <small className="text-muted d-block mt-1">
           Precio unitario:{' '}
-          <SymbolSoles isbottom numero={<NumberFormatMoney amount={precioUnit} />} />
+          <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={precioUnit} />} />
         </small>
       </div>
 
@@ -249,7 +288,7 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
           step={1}
           value={qty}
           onChange={handleCantidad}
-          className="form-control"
+												className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13'
         />
       </div>
 
@@ -261,14 +300,14 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
           step="0.01"
           value={dSoles}
           onChange={handleDescSoles}
-          className="form-control"
+												className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13'
           // habilitado si hay servicio seleccionado, sin depender de subTotal
           disabled={!id_servicio}
         />
         <small className="text-muted">
           Subtotal:{' '}
-          <SymbolSoles isbottom numero={<NumberFormatMoney amount={subTotal} />} /> — Máx. descuento:{' '}
-          <SymbolSoles isbottom numero={<NumberFormatMoney amount={subTotal} />} />
+          <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={subTotal} />} /> — Máx. descuento:{' '}
+          <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={subTotal} />} />
         </small>
       </div>
 
@@ -281,7 +320,7 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
           step="0.01"
           value={dPorc}
           onChange={handleDescPorc}
-          className="form-control"
+												className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13'
           // habilitado si hay servicio seleccionado
           disabled={!id_servicio}
         />
@@ -291,15 +330,15 @@ export const ModalCustomClase = ({ show, onHide, id_venta=16735 }) => {
         <div className="d-flex justify-content-between">
           <span>
             Subtotal:{' '}
-            <SymbolSoles isbottom numero={<NumberFormatMoney amount={subTotal} />} />
+            <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={subTotal} />} />
           </span>
           <span>
             Descuento:{' '}
-            <SymbolSoles isbottom numero={<NumberFormatMoney amount={dSoles} />} /> ({dPorc}%)
+            <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={dSoles} />} /> ({dPorc}%)
           </span>
           <strong>
             Total:{' '}
-            <SymbolSoles isbottom numero={<NumberFormatMoney amount={total} />} />
+            <SymbolSoles bottomClasss={'10'}  size={20} numero={<NumberFormatMoney amount={total} />} />
           </strong>
         </div>
       </div>
