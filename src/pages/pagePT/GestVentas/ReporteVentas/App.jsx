@@ -4,12 +4,18 @@ import { InputText } from '@/components/Form/InputText';
 import { FechaRangeMES } from '@/components/RangeCalendars/FechaRange';
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore'
 import { useVentasStore } from '@/hooks/hookApi/useVentasStore'
-import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Col, Row } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
+// imports
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(isoWeek);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('America/Lima'); // <-- todo a hora local Lima
 
 export const App = ({ id_empresa }) => {
   const { obtenerTablaVentas, dataVentas } = useVentasStore();
@@ -57,16 +63,108 @@ export const App = ({ id_empresa }) => {
 
     return palabras.every((palabra) => textoVenta.includes(palabra));
   };
+// -------------------- FECHAS RANGO (LOCAL y RÁPIDO) --------------------
+const [tsStart, tsEnd] = useMemo(() => {
+  const s = dayjs.tz(RANGE_DATE?.[0]).startOf('day').valueOf();
+  const e = dayjs.tz(RANGE_DATE?.[1]).endOf('day').valueOf();
+  return [s, e];
+}, [RANGE_DATE]);
 
-  const ventasFiltradas = dataVentas
-    .filter(ventaCoincide)
-    .filter((venta) => {
-      const fechaVenta = new Date(venta.fecha_venta);
-      const desde = new Date(RANGE_DATE[0]);
-      const hasta = new Date(RANGE_DATE[1]);
-      
-      return fechaVenta >= desde && fechaVenta <= hasta;
-    });
+// -------------------- ÍNDICE DE TEXTO (búsqueda rápida) --------------------
+const textoVentaCache = useMemo(() => {
+  const normalizar = (t) => (t || '')
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  const map = new Map();
+  for (const v of dataVentas || []) {
+    const partes = [
+      normalizar(v.tb_cliente?.nombres_apellidos_cli),
+      normalizar(v.numero_transac),
+      ...(v.detalle_ventaservicios || []).map((s) =>
+        normalizar(`${s.circus_servicio?.nombre_servicio} ${s.empleado_servicio?.nombres_apellidos_empl} ${s.tarifa_monto}`)
+      ),
+    ];
+    map.set(v.id, partes.join(' '));
+  }
+  return map;
+}, [dataVentas]);
+
+// -------------------- FILTRO VENTAS (local + rápido) --------------------
+const ventasFiltradas = useMemo(() => {
+  const terms = palabras.map((p) =>
+    p.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  );
+
+  const pasaBuscador = (v) => {
+    if (terms.length === 0) return true;
+    const txt = textoVentaCache.get(v.id) || '';
+    // `every` para que todas las palabras estén
+    for (let i = 0; i < terms.length; i++) {
+      if (!txt.includes(terms[i])) return false;
+    }
+    return true;
+  };
+
+  const pasaFecha = (v) => {
+    const t = dayjs.tz(v.fecha_venta).valueOf(); // local
+    return t >= tsStart && t <= tsEnd;
+  };
+
+  return (dataVentas || []).filter((v) => pasaBuscador(v) && pasaFecha(v));
+}, [dataVentas, textoVentaCache, palabras, tsStart, tsEnd]);
+
+// -------------------- FECHA INICIO (para nuevos vs recurrentes) --------------------
+const startDate = useMemo(() => tsStart, [tsStart]); // usamos timestamp directo
+
+// -------------------- PRIMERA COMPRA HISTÓRICA POR CLIENTE --------------------
+const firstPurchaseByClient = useMemo(() => {
+  const map = new Map(); // id_cli -> timestamp
+  for (const v of dataVentas || []) {
+    const id = v?.id_cli;
+    if (!id) continue;
+    const t = dayjs.tz(v.fecha_venta).valueOf();
+    const prev = map.get(id);
+    if (prev === undefined || t < prev) map.set(id, t);
+  }
+  return map;
+}, [dataVentas]);
+
+// -------------------- RESUMEN MONTOS/CANTIDADES --------------------
+const resumen = useMemo(() => {
+  let cantServicios = 0, cantProductos = 0, sumaServicios = 0, sumaProductos = 0;
+  for (const v of ventasFiltradas) {
+    const serv = v?.detalle_ventaservicios || [];
+    const prod = v?.detalle_ventaProductos || [];
+    cantServicios += serv.length;
+    cantProductos += prod.length;
+    for (const it of serv) sumaServicios += (it?.tarifa_monto || 0);
+    for (const it of prod) sumaProductos += (it?.tarifa_monto || 0);
+  }
+  return { cantServicios, cantProductos, sumaServicios, sumaProductos };
+}, [ventasFiltradas]);
+
+// -------------------- MÉTRICAS CLIENTES --------------------
+const clientesStats = useMemo(() => {
+  const countsInRange = new Map(); // id_cli -> compras en el rango
+  for (const v of ventasFiltradas) {
+    const id = v?.id_cli;
+    if (!id) continue;
+    countsInRange.set(id, (countsInRange.get(id) || 0) + 1);
+  }
+
+  let nuevos = 0, recurrentes = 0, repetidos = 0;
+  for (const [id, cnt] of countsInRange.entries()) {
+    const firstTs = firstPurchaseByClient.get(id);
+    if (firstTs !== undefined && firstTs >= startDate) nuevos++;
+    else recurrentes++;
+    if (cnt >= 2) repetidos++;
+  }
+  return { nuevos, recurrentes, repetidos };
+}, [ventasFiltradas, firstPurchaseByClient, startDate]);
+console.log({resumen});
 
   return (
     <div className="container py-1">
@@ -113,6 +211,85 @@ export const App = ({ id_empresa }) => {
           </div>
         </div>
       </div>
+      
+{/* Chips */}
+<div className="mt-2 d-flex flex-wrap justify-content-center mb-3">
+  {palabras.map((palabra, idx) => (
+    <span
+      key={idx}
+      className="badge bg-primary text-light me-2 mb-2"
+      style={{ paddingRight: '0.6em', display: 'flex', alignItems: 'center' }}
+    >
+      {palabra}
+      <button
+        type="button"
+        className="btn-close btn-close-white btn-sm ms-2"
+        onClick={() => eliminarPalabra(idx)}
+        style={{ fontSize: '0.6rem' }}
+      />
+    </span>
+  ))}
+</div>
+
+{/* --- RESUMEN (nuevo) --- */}
+<div className="border rounded-3 p-3 mb-4 shadow-sm bg-light">
+  <div className="row g-3 text-center">
+    <div className="col-6 col-md-3">
+      <div className="fw-bold text-secondary">CANT. SERVICIOS</div>
+      <div className="fs-4">{resumen.cantServicios}</div>
+    </div>
+    <div className="col-6 col-md-3">
+      <div className="fw-bold text-secondary">CANT. PRODUCTOS</div>
+      <div className="fs-4">{resumen.cantProductos}</div>
+    </div>
+    <div className="col-6 col-md-3">
+      <div className="fw-bold text-secondary">IMP. SERVICIOS</div>
+      <div className="fs-4 text-primary">
+        <SymbolSoles
+          size={20}
+          bottomClasss={'8'}
+          numero={<NumberFormatMoney amount={resumen.sumaServicios} />}
+        />
+      </div>
+    </div>
+    <div className="col-6 col-md-3">
+      <div className="fw-bold text-secondary">IMP. PRODUCTOS</div>
+      <div className="fs-4 text-primary">
+        <SymbolSoles
+          size={20}
+          bottomClasss={'8'}
+          numero={<NumberFormatMoney amount={resumen.sumaProductos} />}
+        />
+      </div>
+    </div>
+    {/* --- RESUMEN DE CLIENTES (nuevo) --- */}
+    <div className="border rounded-3 p-3 mb-4 shadow-sm bg-light">
+      <div className="row g-3 text-center">
+        <div className="col-12 col-md-4">
+          <div className="fw-bold text-secondary">CLIENTES NUEVOS</div>
+          <div className="fs-4">{clientesStats.nuevos}</div>
+        </div>
+        <div className="col-12 col-md-4">
+          <div className="fw-bold text-secondary">CLIENTES RECURRENTES</div>
+          <div className="fs-4">{clientesStats.recurrentes}</div>
+        </div>
+        <div className="col-12 col-md-4">
+          <div className="fw-bold text-secondary">CLIENTES REPETIDOS (RANGO)</div>
+          <div className="fs-4">{clientesStats.repetidos}</div>
+        </div>
+      </div>
+    </div>
+    {/* --- RESUMEN DE CLIENTES (nuevo) --- */}
+    <div className="border rounded-3 p-3 mb-4 shadow-sm bg-light">
+      <div className="row g-3 text-center">
+        <div className="col-12 col-md-4">
+          <div className="fw-bold text-secondary">VENTAS</div>
+          <div className="fs-4">{ventasFiltradas.length}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
         </Col>
         <Col lg={7}>
       <div className=''>

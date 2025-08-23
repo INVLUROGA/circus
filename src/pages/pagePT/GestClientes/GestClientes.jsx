@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useUsuarioStore } from '@/hooks/hookApi/useUsuarioStore';
 import TableClientes from './TableClientes';
 import { Button } from 'primereact/button';
+import { TabPanel, TabView } from 'primereact/tabview';
 
 
 export const GestClientes = () => {
@@ -28,18 +29,31 @@ export const GestClientes = () => {
     			<PageBreadcrumb title="GESTION DE CLIENTES" subName="E-commerce" />
                 
 			<Row>
-				<Col xs={12}>
-					<Card>
-						<Card.Body>
-							<Row className="mb-2">
-								<Col sm={5}>
-									<Button label='Agregar cliente' icon={'mdi mdi-plus-circle'} onClick={onModalRegClienteOpen}/>
-								</Col>
-							</Row>
-							<TableClientes/>
-						</Card.Body>
-					</Card>
-				</Col>
+				<TabView>
+					<TabPanel header={'CLIENTES'}>
+						<Col xs={12}>
+							<Card>
+								<Card.Body>
+									<Row className="mb-2">
+										<Col sm={5}>
+											<Button label='Agregar cliente' icon={'mdi mdi-plus-circle'} onClick={onModalRegClienteOpen}/>
+										</Col>
+									</Row>
+									<TableClientes/>
+								</Card.Body>
+							</Card>
+						</Col>
+					</TabPanel>
+					<TabPanel header={'REPORTE'}>
+						<Col xs={12}>
+							<Card>
+								<Card.Body>
+									
+								</Card.Body>
+							</Card>
+						</Col>
+					</TabPanel>
+				</TabView>
             <ModalCliente show={showModalCliente} onHide={onModalRegClienteClose}/>
 			</Row>
     </>

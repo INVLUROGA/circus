@@ -16,7 +16,7 @@ import { confirmDialog } from 'primereact/confirmdialog';
 import { helperFunctions } from '@/common/helpers/helperFunctions';
 import { arrayCargoEmpl, arrayFinanzas } from '@/types/type';
 import dayjs from 'dayjs';
-import { FormatoDateMask, FUNMoneyFormatter, MoneyFormatter } from '@/components/CurrencyMask';
+import { FormatoDateMask, FUNMoneyFormatter, MoneyFormatter, NumberFormatMoney } from '@/components/CurrencyMask';
 import utc from 'dayjs/plugin/utc';
 import { Skeleton } from 'primereact/skeleton';
 import { Col, Modal, Row } from 'react-bootstrap';
@@ -180,14 +180,22 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
     
     const montoBodyTemplate = (rowData) => {
         return (
-            <div className="flex align-items-center gap-2">
-                <span className={rowData.moneda === 'PEN'?'':'text-success fw-bold'}>
-                        {rowData.moneda === 'PEN' ? <SymbolSoles fontSizeS={'font-15'}/> : <SymbolDolar fontSizeS={'font-15'}/>}
+            <div className="text-end w-50">
                     {highlightText(
                         FUNMoneyFormatter(rowData.monto, ''),
                         globalFilterValue
                     )}
-                </span>
+            </div>
+        );
+    };
+
+        const montoVentaBodyTemplate = (rowData) => {
+        return (
+            <div className="text-end w-50">
+                {/* {JSON.stringify(rowData.monto_venta_cliente)} */}
+                <NumberFormatMoney
+                amount={rowData.monto_venta_cliente}
+                />
             </div>
         );
     };
@@ -195,7 +203,8 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
     const descripcionBodyTemplate = (rowData) => {
         return (
             <div className="flex align-items-center gap-2">
-                <span>{highlightText(rowData.descripcion, globalFilterValue)}</span>
+                {/* {JSON.stringify(rowData?.descripcion?.split(' ').shift(), 2, null)} */}
+                <span>{highlightText(`${rowData.descripcion}`, globalFilterValue)}</span>
             </div>
         );
     };
@@ -209,7 +218,7 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
     }
     const fecPagoBodyTemplate = (rowData)=>{
         return (
-            <div className="flex align-items-center gap-2">
+            <div className="flex align-items-center gap-2 text-primary">
                 
                 {/* <span>{formatDate(rowData.fec_pago) }</span> */}
                 <span>{FormatoDateMask(rowData.fec_pago, 'dddd D [de] MMMM [del] YYYY') }</span>
@@ -219,7 +228,6 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
     const fecComprobanteBodyTemplate = (rowData)=>{
         return (
             <div className="flex align-items-center gap-2">
-                
                 {/* <span>{formatDate(rowData.fec_pago) }</span> */}
                 <span>{new Date(rowData.fec_comprobante).getFullYear()===1900? '': FormatoDateMask(rowData.fec_comprobante, 'dddd D [de] MMMM [del] YYYY')}</span>
             </div>
@@ -326,18 +334,19 @@ export default function AdvancedFilterDemo({showToast, id_enterprice}) {
                         onValueChange={valueFiltered}
                         >
                 <Column header="Id" field='id' filterField="id" sortable style={{ width: '1rem' }} filter body={IdBodyTemplate}/>
-                <Column header="Fecha registro" field='fec_registro' filterField="fec_registro" sortable dataType="date" style={{ width: '3rem' }} body={fecRegistroBodyTemplate} filter filterElement={dateFilterTemplate} />
-                <Column header="Fecha pago" field='fec_pago' filterField="fec_pago" sortable dataType="date" style={{ width: '3rem' }} body={fecPagoBodyTemplate} filter filterElement={dateFilterTemplate} />
-                <Column header="Fecha de comprobante" field='fec_comprobante' filterField="fec_comprobante" style={{ minWidth: '10rem' }} sortable body={fecComprobanteBodyTemplate} dataType="date" filter filterElement={dateFilterTemplate}/>
-                <Column header="Tipo de gasto" field='tipo_gasto' filterField='tipo_gasto' style={{ minWidth: '10rem' }} sortable body={tipoGastosBodyTemplate} filter/>
-                <Column header="Gasto" field='tb_parametros_gasto.nombre_gasto' filterField="tb_parametros_gasto.nombre_gasto" sortable style={{ minWidth: '10rem' }} body={tipoGastoBodyTemplate} filter />
-                <Column header="Grupo" field='tb_parametros_gasto.grupo' filterField="tb_parametros_gasto.grupo" style={{ minWidth: '10rem' }} sortable body={grupoBodyTemplate} filter/>
-                <Column header={<>MONTO</>} field='monto' filterField="monto" style={{ minWidth: '10rem' }} sortable body={montoBodyTemplate} filter/>
+                <Column header="Fecha pago cliente" field='fec_pago' filterField="fec_pago" sortable dataType="date" style={{ width: '3rem' }} body={fecPagoBodyTemplate} filter filterElement={dateFilterTemplate} />
+                {/* <Column header="Tipo de gasto" field='tipo_gasto' filterField='tipo_gasto' style={{ minWidth: '10rem' }} sortable body={tipoGastosBodyTemplate} filter/> */}
+                {/* <Column header="Gasto" field='tb_parametros_gasto.nombre_gasto' filterField="tb_parametros_gasto.nombre_gasto" sortable style={{ minWidth: '10rem' }} body={tipoGastoBodyTemplate} filter /> */}
+                {/* <Column header="Grupo" field='tb_parametros_gasto.grupo' filterField="tb_parametros_gasto.grupo" style={{ minWidth: '10rem' }} sortable body={grupoBodyTemplate} filter/> */}
+                <Column header={<>VENTA CLIENTE<br/><div className='text-center'>S/.</div></>} field='monto' filterField="monto" style={{ minWidth: '10rem' }} sortable body={montoVentaBodyTemplate} filter/>
+                <Column header={<>COMISION OPENPAY <br/> <div className='text-center'>S/.</div></>} field='monto' filterField="monto" style={{ minWidth: '10rem' }} sortable body={montoBodyTemplate} filter/>
                 <Column header="descripcion" field='descripcion' filterField="descripcion" style={{ minWidth: '10rem' }} sortable body={descripcionBodyTemplate} filter/>
                 <Column header="Proveedor" field='tb_Proveedor.razon_social_prov' filterField="tb_Proveedor.razon_social_prov" style={{ minWidth: '10rem' }} sortable showFilterMatchModes={false} filterMenuStyle={{ width: '14rem' }}  
                 body={proveedorBodyTemplate} filter />
+                <Column header="Fecha registro colaborador" field='fec_registro' filterField="fec_registro" sortable dataType="date" style={{ width: '3rem' }} body={fecRegistroBodyTemplate} filter filterElement={dateFilterTemplate} />
+                <Column header="Fecha de comprobante" field='fec_comprobante' filterField="fec_comprobante" style={{ minWidth: '10rem' }} sortable body={fecComprobanteBodyTemplate} dataType="date" filter filterElement={dateFilterTemplate}/>
 
-                <Column header="Action" filterField="id" style={{ minWidth: '10rem' }} frozen alignFrozen="right" body={actionBodyTemplate}/>
+                {/* <Column header="Action" filterField="id" style={{ minWidth: '10rem' }} frozen alignFrozen="right" body={actionBodyTemplate}/> */}
             </DataTable>
             
             <ModalIngresosGastos id_enterprice={id_enterprice} show={isOpenModalEgresos} onShow={onOpenModalIvsG} onHide={onCloseModalIvsG} data={gastoxID} showToast={showToast} isLoading={isLoading}/>

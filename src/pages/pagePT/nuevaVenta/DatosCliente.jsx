@@ -96,6 +96,12 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 		setNombreCliente(`${e?.label.split('|')[1]}`)
 		onInputChangeFunction('id_cli', e.value)
 	}
+	const inputChangeEmpl = (e)=>{
+		const dataRecepc = dataRecepcionista.find(
+            (option) => option.label === e.value
+        )
+		onInputChangeFunction('id_empl', e.value)
+	}
 	const onChangeTipoDeComprobante = (e)=>{
 		// obtenerVentasxComprobantes(e.value)
 		obtenerVentasxComprobantes(e?.value)
@@ -114,7 +120,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 										<Col xl={12} sm={12}>
 											<div className='mb-2'>
 											<Select
-												onChange={(e) => inputChangeClientes(e)}
+												onChange={(e) => inputChangeEmpl(e)}
 												name="id_empl"
 												placeholder={'Seleccionar COLABORADOR'}
 												styles={{

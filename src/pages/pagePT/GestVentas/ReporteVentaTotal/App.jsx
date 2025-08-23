@@ -1,13 +1,13 @@
-import { SymbolSoles } from '@/components/componentesReutilizables/SymbolSoles';  
+import { SymbolSoles } from '@/components/componentesReutilizables/SymbolSoles';
 import { DateMaskString, FUNMoneyFormatter, NumberFormatMoney } from '@/components/CurrencyMask';
 import { InputText } from '@/components/Form/InputText';
-import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore'
-import { useVentasStore } from '@/hooks/hookApi/useVentasStore'
+import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
+import { useVentasStore } from '@/hooks/hookApi/useVentasStore';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
-import React, { useEffect, useState } from 'react'
-import { Col, Row, Modal, Button } from 'react-bootstrap';
-import Select from 'react-select';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Col, Row, Modal, Button, Form } from 'react-bootstrap';
+
 dayjs.extend(isoWeek);
 
 export const App = ({ id_empresa }) => {
@@ -23,15 +23,34 @@ export const App = ({ id_empresa }) => {
   const [input, setInput] = useState('');
   const [modo, setModo] = useState('comprobante');
 
-  // ---- Modal: Servicios/Productos ----
+  // ---- Modal: estado ----
   const [showResumen, setShowResumen] = useState(false);
   const [modalLabel, setModalLabel] = useState('');
-  const [modalRows, setModalRows] = useState([]); // filas
-  const [modalType, setModalType] = useState('servicios'); // 'servicios' | 'productos'
 
-  // ---- Modal: Clientes (resumen por cliente) ----
-  const [showClientes, setShowClientes] = useState(false);
-  const [clientesRows, setClientesRows] = useState([]);
+  // servicios
+  const [serviciosRaw, setServiciosRaw] = useState([]); // guardamos los servicios crudos del grupo
+  const [groupBy, setGroupBy] = useState('servicio-empleado'); // 'servicio-empleado' | 'servicio'
+
+  // productos
+  const [productosRaw, setProductosRaw] = useState([]);
+  const [groupByProd, setGroupByProd] = useState('producto-empleado'); // 'producto-empleado' | 'producto'
+  const [showResumenProd, setShowResumenProd] = useState(false);
+
+  // ---- Sorting para ranking colaboradores (servicios y productos) ----
+  const [sortServBy, setSortServBy] = useState('total');      // 'total' | 'promedio' | 'colaborador'
+  const [sortServDir, setSortServDir] = useState('desc');     // 'asc' | 'desc'
+  const [sortProdBy, setSortProdBy] = useState('total');
+  const [sortProdDir, setSortProdDir] = useState('desc');
+
+  const toggleSort = (scope, by) => {
+    if (scope === 'serv') {
+      setSortServDir((prev) => (sortServBy === by ? (prev === 'asc' ? 'desc' : 'asc') : 'desc'));
+      setSortServBy(by);
+    } else {
+      setSortProdDir((prev) => (sortProdBy === by ? (prev === 'asc' ? 'desc' : 'asc') : 'desc'));
+      setSortProdBy(by);
+    }
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && input.trim() !== '') {
@@ -110,107 +129,132 @@ export const App = ({ id_empresa }) => {
 
   const resumenes = ['comprobante'].includes(modo) ? [] : agruparPorModo();
 
-  // ---- Helper: formatear pagos de una venta (concatena si hay varios) ----
-  const formatearPagos = (venta) => {
-    const pagos = venta?.detalleVenta_pagoVenta || [];
-    const join = (arr) => arr.filter(Boolean).join(' / ');
-    const formas = join(pagos.map(p => p?.parametro_forma_pago?.label_param || ''));
-    const tiposTarjeta = join(pagos.map(p => p?.parametro_tipo_tarjeta?.label_param || ''));
-    const tarjetas = join(pagos.map(p => p?.parametro_tarjeta?.label_param || ''));
-    const operaciones = join(pagos.map(p => p?.n_operacion || ''));
-    return {
-      forma_pago: formas || '-',
-      tipo_tarjeta: tiposTarjeta || '-',
-      tarjeta: tarjetas || '-',
-      n_operacion: operaciones || '-',
-    };
+  // ---- Helpers de modal ----
+  const aggregateServicios = (servs = [], mode = 'servicio-empleado') => {
+    const map = new Map();
+    for (const s of servs) {
+      const servicio = s?.circus_servicio?.nombre_servicio || '-';
+      const empleado = s?.empleado_servicio?.nombres_apellidos_empl || '-';
+      const key = mode === 'servicio' ? servicio : `${servicio}||${empleado}`;
+      const cur = map.get(key) || { servicio, empleado: mode === 'servicio' ? '—' : empleado, cantidad: 0, total: 0 };
+      cur.cantidad += 1;
+      cur.total += Number(s?.tarifa_monto || 0);
+      map.set(key, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
   };
 
-  // ---- Construir filas para el modal Servicios/Productos ----
-  const buildModalRows = (grupo, tipo = 'servicios') => {
-    const rows = [];
-    for (const v of grupo.ventas) {
-      const fechaVenta = v.fecha_venta;
-      const cliente = (v.tb_cliente?.nombres_apellidos_cli || '').trim();
-      const boleta = v.numero_transac;
-      const pagosFmt = formatearPagos(v);
-
-      if (tipo === 'servicios') {
-        for (const s of (v.detalle_ventaservicios || [])) {
-          rows.push({
-            fecha: fechaVenta,
-            cliente,
-            estilista: s?.empleado_servicio?.nombres_apellidos_empl || '-',
-            boleta,
-            concepto: s?.circus_servicio?.nombre_servicio || '-',
-            importe: Number(s?.tarifa_monto || 0),
-            ...pagosFmt,
-          });
-        }
-      } else {
-        for (const p of (v.detalle_ventaProductos || [])) {
-          const nombreProd = p?.tb_producto?.nombre_producto || '-';
-          const cant = p?.cantidad ? ` x${p.cantidad}` : '';
-          rows.push({
-            fecha: fechaVenta,
-            cliente,
-            estilista: p?.empleado_producto?.nombres_apellidos_empl || '-',
-            boleta,
-            concepto: `${nombreProd}${cant}`,
-            importe: Number(p?.tarifa_monto || 0),
-            ...pagosFmt,
-          });
-        }
-      }
+  const aggregateProductos = (prods = [], mode = 'producto-empleado') => {
+    const map = new Map();
+    for (const p of prods) {
+      const producto = p?.tb_producto?.nombre_producto || '-';
+      const empleado = p?.empleado_producto?.nombres_apellidos_empl || '-';
+      const key = mode === 'producto' ? producto : `${producto}||${empleado}`;
+      const cur = map.get(key) || { producto, empleado: mode === 'producto' ? '—' : empleado, cantidad: 0, total: 0 };
+      cur.cantidad += 1; // líneas (cámbialo a Number(p?.cantidad||0) si quieres por unidades)
+      cur.total += Number(p?.tarifa_monto || 0);
+      map.set(key, cur);
     }
-    rows.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-    return rows;
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  };
+
+  // === Ranking por producto (quién vendió más por producto)
+  const getTopVendedoresPorProducto = (prods = []) => {
+    const byProd = new Map(); // producto -> Map(empleado -> stats)
+    for (const p of prods) {
+      const producto = p?.tb_producto?.nombre_producto || '-';
+      const empleado = p?.empleado_producto?.nombres_apellidos_empl || '-';
+      const unidades = Number(p?.cantidad ?? 0) || 1;
+      const importe = Number(p?.tarifa_monto || 0);
+
+      if (!byProd.has(producto)) byProd.set(producto, new Map());
+      const mapEmp = byProd.get(producto);
+      const cur = mapEmp.get(empleado) || { empleado, unidades: 0, importe: 0 };
+      cur.unidades += unidades;
+      cur.importe += importe;
+      mapEmp.set(empleado, cur);
+    }
+
+    const res = [];
+    for (const [producto, mapEmp] of byProd.entries()) {
+      const arr = Array.from(mapEmp.values());
+      arr.sort((a, b) => b.importe - a.importe || b.unidades - a.unidades);
+      const totalImporte = arr.reduce((s, x) => s + x.importe, 0);
+      const totalUnidades = arr.reduce((s, x) => s + x.unidades, 0);
+      const top = arr[0] || { empleado: '—', unidades: 0, importe: 0 };
+      res.push({ producto, totalImporte, totalUnidades, top, ranking: arr });
+    }
+    res.sort((a, b) => b.totalImporte - a.totalImporte || b.totalUnidades - a.totalUnidades);
+    return res;
+  };
+
+  // === NUEVO: Ranking de colaboradores (monto, promedio, colaborador)
+  const rankColaboradores = (items = [], getEmpleado, getImporte, getCantidad = () => 1) => {
+    const map = new Map();
+    for (const it of items) {
+      const empleado = getEmpleado(it) || '—';
+      const importe = Number(getImporte(it) || 0);
+      const cant = Number(getCantidad(it) || 0) || 1;
+      const cur = map.get(empleado) || { colaborador: empleado, cantidad: 0, total: 0 };
+      cur.cantidad += cant;
+      cur.total += importe;
+      map.set(empleado, cur);
+    }
+    return Array.from(map.values()).map((x) => ({
+      ...x,
+      promedio: x.cantidad ? x.total / x.cantidad : 0,
+    }));
+  };
+
+  const sortRows = (rows, by, dir) => {
+    const mul = dir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (by === 'colaborador') return a.colaborador.localeCompare(b.colaborador) * mul;
+      return ((a[by] || 0) - (b[by] || 0)) * mul;
+    });
   };
 
   const abrirResumenServicios = (grupo) => {
-    setModalType('servicios');
+    const servicios = grupo.ventas.flatMap((v) => v.detalle_ventaservicios || []);
+    setServiciosRaw(servicios);
     setModalLabel(grupo.label);
-    setModalRows(buildModalRows(grupo, 'servicios'));
     setShowResumen(true);
   };
 
   const abrirResumenProductos = (grupo) => {
-    setModalType('productos');
+    const productos = grupo.ventas.flatMap((v) => v.detalle_ventaProductos || []);
+    setProductosRaw(productos);
     setModalLabel(grupo.label);
-    setModalRows(buildModalRows(grupo, 'productos'));
-    setShowResumen(true);
+    setShowResumenProd(true);
   };
 
-  // ---- Construir filas para el modal de Clientes ----
-  const buildClientesRows = (grupo) => {
-    const map = new Map();
-    for (const v of grupo.ventas) {
-      const nombre = (v.tb_cliente?.nombres_apellidos_cli || '').trim() || '-';
-      const servs = v.detalle_ventaservicios || [];
-      const prods = v.detalle_ventaProductos || [];
+  // ---- Derivados del modal (servicios) ----
+  const cantidadServicios = serviciosRaw.length;
+  const totalServicios = serviciosRaw.reduce((s, x) => s + Number(x?.tarifa_monto || 0), 0);
+  const itemsResumen = aggregateServicios(serviciosRaw, groupBy);
 
-      const cur = map.get(nombre) || { cliente: nombre, cantServ: 0, impServ: 0, cantProd: 0, impProd: 0 };
-      cur.cantServ += servs.length;
-      cur.impServ += servs.reduce((a, s) => a + Number(s?.tarifa_monto || 0), 0);
-      cur.cantProd += prods.length;
-      cur.impProd += prods.reduce((a, p) => a + Number(p?.tarifa_monto || 0), 0);
-      map.set(nombre, cur);
-    }
-    // ordenar por mayor importe total (serv + prod)
-    return Array.from(map.values()).sort(
-      (a, b) => (b.impServ + b.impProd) - (a.impServ + a.impProd)
-    );
-  };
+  // ---- Derivados ranking colaboradores ----
+  const rankingServBase = useMemo(
+    () => rankColaboradores(
+      serviciosRaw,
+      (s) => s?.empleado_servicio?.nombres_apellidos_empl,
+      (s) => s?.tarifa_monto,
+      () => 1
+    ),
+    [serviciosRaw]
+  );
+  const rankingProdBase = useMemo(
+    () => rankColaboradores(
+      productosRaw,
+      (p) => p?.empleado_producto?.nombres_apellidos_empl,
+      (p) => p?.tarifa_monto,
+      () => 1 // cámbialo a: (p) => Number(p?.cantidad||0) si quieres promedio por unidad
+    ),
+    [productosRaw]
+  );
 
-  const abrirResumenClientes = (grupo) => {
-    setModalLabel(grupo.label);
-    setClientesRows(buildClientesRows(grupo));
-    setShowClientes(true);
-  };
-
-  const totalModal = modalRows.reduce((acc, r) => acc + r.importe, 0);
-  const totalClientesServ = clientesRows.reduce((a, r) => a + r.impServ, 0);
-  const totalClientesProd = clientesRows.reduce((a, r) => a + r.impProd, 0);
+  const rankingServ = useMemo(() => sortRows(rankingServBase, sortServBy, sortServDir), [rankingServBase, sortServBy, sortServDir]);
+  const rankingProd = useMemo(() => sortRows(rankingProdBase, sortProdBy, sortProdDir), [rankingProdBase, sortProdBy, sortProdDir]);
 
   return (
     <Row className="d-flex justify-content-center">
@@ -248,34 +292,15 @@ export const App = ({ id_empresa }) => {
               </div>
             </Col>
             <Col lg={12}>
-              <Select
-                  onChange={(e) => setModo(e.value)}
-                  // name="id_empl"
-                  placeholder={''}
-                    styles={{
-                      dropdownIndicator: (provided) => ({
-                        ...provided,
-                        color: "#EEBE00",
-                      }),
-                      indicatorSeparator: (provided) => ({
-                        ...provided,
-                        backgroundColor: "#EEBE00",
-                      }),
-                      control: (provided) => ({
-                        ...provided,
-                        borderColor: "#EEBE00",
-                        color: "#EEBE00",
-                      }),
-                    }}
-                  className="border-2 rounded-3 border-primary outline-none w-100"
-                  // classNamePrefix="react-select"
-                  defaultValue={{ value: 'comprobante', label: 'comprobantes' }}
-                  options={[{value: 'comprobante', label: 'comprobantes'}, {value: 'dia', label: 'por dia'}, {value: 'semana', label: 'por semana'}, {value: 'mes', label: 'por mes'}, {value: 'anio', label: 'por año'},]}
-                  // value={[{value: 'comprobante', label: 'comprobantes'}, {value: 'dia', label: 'por dia'}, {value: 'semana', label: 'por semana'}, {value: 'mes', label: 'por mes'}, {value: 'anio', label: 'por año'},].find(
-                  //   (option) => option.value === id_empl
-                  // )|| 0}
-                  required
-                />
+              <div style={{ width: '240px' }}>
+                <select className="form-select" style={{ fontWeight: 'bold' }} value={modo} onChange={(e) => setModo(e.target.value)}>
+                  <option value="comprobante">Por comprobante</option>
+                  <option value="dia">Por día</option>
+                  <option value="semana">Por semana</option>
+                  <option value="mes">Por mes</option>
+                  <option value="anio">Por año</option>
+                </select>
+              </div>
             </Col>
           </Row>
         </div>
@@ -288,8 +313,8 @@ export const App = ({ id_empresa }) => {
               const sumaMontoServicios = (venta.detalle_ventaservicios || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
               const sumaMontoProductos = (venta.detalle_ventaProductos || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
               return (
-                <div className="shadow" key={venta.id}>
-                  <div className="card-body fs-3" style={{marginTop: '100px'}}>
+                <div className="mb-4 shadow" key={venta.id}>
+                  <div className="card-body fs-3">
                     <h1 className="text-center fw-bold mb-3">
                       {(venta.tb_cliente?.nombres_apellidos_cli || '').trim()}
                     </h1>
@@ -314,22 +339,23 @@ export const App = ({ id_empresa }) => {
 
                     <div>
                       {(venta?.detalleVenta_pagoVenta || []).map((e, i) => (
-                        <div key={i} className=" border border-4 p-2 border-primary">
+                        <div key={i} className="timeline-item-info border border-4 p-2 border-gray">
                           <span className="mb-1 d-block fs-4">
                             <span>
                               <span className="fw-light">OPERADOR: </span>{e.parametro_forma_pago?.label_param}<br />
                             </span>
                             {e.parametro_tipo_tarjeta ? (<><span className="fw-light">TIPO DE TARJETA:</span> {e.parametro_tipo_tarjeta.label_param}<br /></>) : null}
                             {e.parametro_tarjeta ? (<><span className="fw-light">TARJETA: </span>{e.parametro_tarjeta.label_param}</>) : null}
-                            {e.n_operacion ? (<><br/><span className="fw-light">OPERACIÓN: </span>{e.n_operacion}</>) : null}
                           </span>
-                          <span className="d-block fs-4">
+                          <span className="d-block fs-3">
                             <span className="fw-light">MONTO PARCIAL: </span>
                             <span className="fw-bold text-primary">
-                              <SymbolSoles 
-                                  isbottom 
-                                  bottomClasss={'10'}  
-                                  fontSizeS={'font-10'} numero={FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param == 535 ? '$' : 'S/.')} />
+                              <SymbolSoles
+                                isbottom
+                                bottomClasss={'10'}
+                                size={20}
+                                numero={FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param == 535 ? '$' : 'S/.')}
+                              />
                             </span>
                           </span>
                         </div>
@@ -345,7 +371,7 @@ export const App = ({ id_empresa }) => {
                               {(s.empleado_servicio?.nombres_apellidos_empl || '-').split(' ')[0]}
                             </div>
                             <div className="d-flex flex-row justify-content-between">
-                              <div className="text-primary mx-1" style={{ width: '100%', fontSize: '25px' }}>
+                              <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
                                 {s.circus_servicio?.nombre_servicio}
                               </div>
                               <div className="text-end mx-1" style={{ width: '150px' }}>
@@ -375,7 +401,7 @@ export const App = ({ id_empresa }) => {
                                 {(s.empleado_producto?.nombres_apellidos_empl || '-').split(' ')[0]}
                               </div>
                               <div className="text-end mx-1" style={{ width: '150px' }}>
-                                <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} /> 
+                                <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} /> - 
                               </div>
                               <div className="text-end mx-1" style={{ width: 'auto' }}>
                                 {s.tb_producto?.nombre_producto} - {s.cantidad} unidad
@@ -387,7 +413,7 @@ export const App = ({ id_empresa }) => {
                           <div className="d-flex flex-row">
                             <div className="mx-1" style={{ width: '200px', fontSize: '25px' }}>TOTAL VENTA:</div>
                             <div className="text-end mx-1 align-content-center" style={{ width: '150px', fontSize: '27px' }}>
-                              <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoProductos} />} />
+                              <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoProductos} />} /> <span className="opacity-0">-</span>
                             </div>
                           </div>
                         </li>
@@ -405,20 +431,17 @@ export const App = ({ id_empresa }) => {
           resumenes.map((grupo, idx) => {
             const servicios = grupo.ventas.flatMap((v) => v.detalle_ventaservicios || []);
             const productos = grupo.ventas.flatMap((v) => v.detalle_ventaProductos || []);
-            const total = servicios.reduce((sum, s) => sum + (s?.tarifa_monto || 0), 0) + productos.reduce((sum, p) => sum + (p?.tarifa_monto || 0), 0);
+
+            const totalServiciosImporte = servicios.reduce((sum, s) => sum + Number(s?.tarifa_monto || 0), 0);
+            const totalProductosImporte = productos.reduce((sum, p) => sum + Number(p?.tarifa_monto || 0), 0);
+            const total = totalServiciosImporte + totalProductosImporte;
+
             return (
               <div key={idx} className="card mb-4 shadow">
                 <div className="card-body">
                   <h1 className="text-center fw-bold mb-4 text-uppercase text-primary">{grupo.label}</h1>
                   <ul className="list-group list-group-flush">
-                    
-                    {/* CLICK abre modal de CLIENTES */}
-                    <li
-                      className="list-group-item h2"
-                      title="Ver resumen por cliente"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => abrirResumenClientes(grupo)}
-                    >
+                    <li className="list-group-item h2">
                       <div className="d-flex justify-content-between" style={{ fontSize: '37px' }}>
                         <span>TOTAL Clientes:</span>
                         <span className="text-end">{grupo.clientesVistos.size}</span>
@@ -433,29 +456,78 @@ export const App = ({ id_empresa }) => {
                       </div>
                     </li>
 
-                    {/* CLICK abre modal de SERVICIOS */}
+                    {/* CLICK abre modal de servicios */}
                     <li
                       className="list-group-item h2"
-                      title="Ver detalle de servicios"
+                      title="Ver vista resumen de servicios"
                       style={{ cursor: 'pointer' }}
                       onClick={() => abrirResumenServicios(grupo)}
                     >
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span>CANTIDAD DE Servicios:</span>
+                        <div className="text-end">
+                          <div className="fs-1">{servicios.length}</div>
+                        </div>
+                      </div>
+                    </li>
+                    <li className="list-group-item h2">
                       <div className="d-flex justify-content-between">
-                        <span>TOTAL Servicios vendidos:</span>
-                        <span className="text-end fs-1">{servicios.length}</span>
+                        <span className="fw-bold">VENTA DE SERVICIOS:</span>
+                        <span className="text-end fs-1">
+                            <SymbolSoles size={25} bottomClasss={'20'} numero={<NumberFormatMoney amount={totalServiciosImporte} />} />
+                        </span>
                       </div>
                     </li>
 
-                    {/* CLICK abre modal de PRODUCTOS */}
+                    {/* CLICK abre modal de productos */}
                     <li
                       className="list-group-item h2"
-                      title="Ver detalle de productos"
-                      style={{ cursor: 'pointer', backgroundColor: '#F8F8FA' }}
+                      style={{ backgroundColor: '#F8F8FA', cursor: 'pointer' }}
+                      title="Ver vista resumen de productos"
                       onClick={() => abrirResumenProductos(grupo)}
                     >
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span>CANTIDAD DE PRODUCTOS:</span>
+                        <div className="text-end">
+                          <div className="fs-1">{productos.length}</div>
+                        </div>
+                      </div>
+                    </li>
+                    
+                    <li className="list-group-item h2">
                       <div className="d-flex justify-content-between">
-                        <span>TOTAL Productos vendidos:</span>
-                        <span className="text-end fs-1">{productos.length}</span>
+                        <span className="fw-bold">VENTA DE PRODUCTOS:</span>
+                        <span className="text-end fs-1">
+                            <SymbolSoles size={25} bottomClasss={'20'} numero={<NumberFormatMoney amount={totalProductosImporte} />} />
+                        </span>
+                      </div>
+                    </li>
+
+                    <li className="list-group-item h2">
+                      <div className="d-flex justify-content-between">
+                        <span className="fw-bold">COMPROBANTES VALIDOS:</span>
+                        <span className="text-end fs-1">{grupo.ventas.length}</span>
+                      </div>
+                    </li>
+
+                    <li className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
+                      <div className="d-flex justify-content-between">
+                        <span className="text-primary">Clientes nuevos:</span>
+                        <span className="text-end fs-1">{grupo.clientesNuevos.size}</span>
+                      </div>
+                    </li>
+
+                    <li className="list-group-item h2">
+                      <div className="d-flex justify-content-between">
+                        <span className="text-primary">Clientes recurrentes:</span>
+                        <span className="fs-1">{grupo.clientesRecurrentes.size}</span>
+                      </div>
+                    </li>
+
+                    <li className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
+                      <div className="d-flex justify-content-between">
+                        <span className="text-primary">Clientes por recurrencia en el mes:</span>
+                        <span className="fs-1">{encontrarRepetidos(grupo.ventas).cantidadRep}</span>
                       </div>
                     </li>
 
@@ -467,64 +539,108 @@ export const App = ({ id_empresa }) => {
         )}
       </Col>
 
-      {/* -------- MODAL: TABLA DETALLADA (SERVICIOS o PRODUCTOS) -------- */}
+      {/* -------- MODAL: VISTA RESUMEN DETALLE DE SERVICIOS -------- */}
       <Modal show={showResumen} onHide={() => setShowResumen(false)} size="xl" centered scrollable>
         <Modal.Header closeButton>
-          <Modal.Title>
-            Detalle — {modalType === 'servicios' ? 'Servicios' : 'Productos'} — {modalLabel}
-          </Modal.Title>
+          <Modal.Title>Resumen de servicios — {modalLabel}</Modal.Title>
+          <div className="ms-auto d-flex align-items-center">
+            <Form.Check
+              type="switch"
+              id="switch-agrupacion"
+              label={groupBy === 'servicio' ? 'Agrupar: Servicio' : 'Agrupar: Servicio + Colaborador'}
+              checked={groupBy === 'servicio'}
+              onChange={(e) => setGroupBy(e.target.checked ? 'servicio' : 'servicio-empleado')}
+            />
+          </div>
         </Modal.Header>
 
         <Modal.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <div className="h2 m-0">VENTAS: <strong className=''>{modalRows.length}</strong></div>
-            <div className="h2 m-0">
-              Total:{' '}
+            <div className="h4 m-0">Total servicios: <strong>{cantidadServicios}</strong></div>
+            <div className="h4 m-0">
+              Total vendido:{' '}
               <strong>
-                <SymbolSoles size={25} bottomClasss={'15'} numero={<NumberFormatMoney amount={totalModal} />} />
+                <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={totalServicios} />} />
               </strong>
             </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="table table-sm align-middle table-striped">
-              <thead className='bg-primary'>
+          {/* Tabla servicios agregados */}
+          <div className="table-responsive mb-4">
+            <table className="table table-sm align-middle">
+              <thead>
                 <tr>
-                  <th><div className='text-white fs-4'>Fecha de venta</div></th>
-                  <th><div className='text-white fs-4'>Nombre del cliente</div></th>
-                  <th><div className='text-white fs-4'>Estilista</div></th>
-                  <th><div className='text-white fs-4'>Número de boleta</div></th>
-                  <th><div className='text-white fs-4'>Servicio o Producto</div></th>
-                  <th><div className='text-white fs-4'>Forma de pago</div></th>
-                  <th><div className='text-white fs-4'>Tipo de tarjeta</div></th>
-                  <th><div className='text-white fs-4'>Tarjeta</div></th>
-                  <th><div className='text-white fs-4'>Operación</div></th>
-                  <th className="text-end"><div className='text-white fs-4'>Importe</div></th>
+                  <th>#</th>
+                  <th>Servicio</th>
+                  <th>Colaborador</th>
+                  <th className="text-end">Cantidad</th>
+                  <th className="text-end">Total</th>
+                  <th className="text-end">Promedio</th>
                 </tr>
               </thead>
-              <tbody >
-                {modalRows.map((r, i) => (
+              <tbody>
+                {itemsResumen.map((it, i) => (
                   <tr key={i}>
-                    <td><div className='fs-4 mx-2'>{DateMaskString(r.fecha, 'dddd DD [de] MMMM [DEL] YYYY [A LAS] HH:mm')}</div></td>
-                    <td><div className='fs-4 mx-2 text-primary'>{r.cliente}</div></td>
-                    <td><div className='fs-4 mx-2'>{r.estilista}</div></td>
-                    <td><div className='fs-4 mx-2 text-primary'>{r.boleta}</div></td>
-                    <td><div className='fs-4 mx-2'>{r.concepto}</div></td>
-                    <td><div className='fs-4 mx-2'>{r.forma_pago}</div></td>
-                    <td><div className='fs-4 mx-2'>{r.tipo_tarjeta}</div></td>
-                    <td><div className='fs-4 mx-2'>{r.tarjeta}</div></td>
-                    <td><div className='fs-4 mx-2'>{r.n_operacion}</div></td>
+                    <td>{i + 1}</td>
+                    <td>{it.servicio}</td>
+                    <td>{it.empleado}</td>
+                    <td className="text-end">{it.cantidad}</td>
                     <td className="text-end">
-                      <div className='fs-4'>
-                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.importe} />} />
-                      </div>
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total} />} />
+                    </td>
+                    <td className="text-end">
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total / it.cantidad} />} />
                     </td>
                   </tr>
                 ))}
-                {modalRows.length === 0 && (
+                {itemsResumen.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="text-center py-4">Sin datos.</td>
+                    <td colSpan={6} className="text-center py-4">Sin servicios en el rango.</td>
                   </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* === NUEVO: Ranking de Colaborador (SERVICIOS) con botones de orden === */}
+          <h5 className="fw-bold d-flex align-items-center justify-content-between">
+            Ranking de colaboradores (Servicios)
+            <div className="btn-group btn-group-sm">
+              <Button variant={sortServBy==='total' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','total')}>Monto</Button>
+              <Button variant={sortServBy==='promedio' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','promedio')}>Promedio</Button>
+              <Button variant={sortServBy==='colaborador' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','colaborador')}>Colaborador</Button>
+              <Button variant="outline-secondary" onClick={() => setSortServDir(d => d==='asc' ? 'desc' : 'asc')}>
+                {sortServDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
+              </Button>
+            </div>
+          </h5>
+          <div className="table-responsive">
+            <table className="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Colaborador</th>
+                  <th className="text-end">Monto</th>
+                  <th className="text-end">Cantidad</th>
+                  <th className="text-end">Promedio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankingServ.map((r, i) => (
+                  <tr key={r.colaborador + i}>
+                    <td>{i + 1}</td>
+                    <td>{r.colaborador}</td>
+                    <td className="text-end">
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.total} />} />
+                    </td>
+                    <td className="text-end">{r.cantidad}</td>
+                    <td className="text-end">
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.promedio} />} />
+                    </td>
+                  </tr>
+                ))}
+                {rankingServ.length === 0 && (
+                  <tr><td colSpan={5} className="text-center py-4">Sin datos.</td></tr>
                 )}
               </tbody>
             </table>
@@ -536,92 +652,166 @@ export const App = ({ id_empresa }) => {
         </Modal.Footer>
       </Modal>
 
-      {/* -------- MODAL: RESUMEN POR CLIENTE -------- */}
-      <Modal show={showClientes} onHide={() => setShowClientes(false)} size="lg" centered scrollable>
+      {/* -------- MODAL: VISTA RESUMEN DETALLE DE PRODUCTOS -------- */}
+      <Modal show={showResumenProd} onHide={() => setShowResumenProd(false)} size="xl" centered scrollable>
         <Modal.Header closeButton>
-          <Modal.Title>Resumen por cliente — {modalLabel}</Modal.Title>
+          <Modal.Title>Resumen de productos — {modalLabel}</Modal.Title>
+          <div className="ms-auto d-flex align-items-center">
+            <Form.Check
+              type="switch"
+              id="switch-agrupacion-prod"
+              label={groupByProd === 'producto' ? 'Agrupar: Producto' : 'Agrupar: Producto + Colaborador'}
+              checked={groupByProd === 'producto'}
+              onChange={(e) => setGroupByProd(e.target.checked ? 'producto' : 'producto-empleado')}
+            />
+          </div>
         </Modal.Header>
 
         <Modal.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
-            <div className="h6 m-0">Clientes: <strong>{clientesRows.length}</strong></div>
-            <div className="h6 m-0 d-flex gap-3">
-              <span>
-                Servicios:{' '}
-                <strong>
-                  <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesServ} />} />
-                </strong>
-              </span>
-              <span>
-                Productos:{' '}
-                <strong>
-                  <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesProd} />} />
-                </strong>
-              </span>
+            <div className="h4 m-0">Total productos: <strong>{productosRaw.length}</strong></div>
+            <div className="h4 m-0">
+              Total vendido:{' '}
+              <strong>
+                <SymbolSoles
+                  size={20}
+                  bottomClasss={'8'}
+                  numero={<NumberFormatMoney amount={productosRaw.reduce((s, x) => s + Number(x?.tarifa_monto || 0), 0)} />}
+                />
+              </strong>
             </div>
           </div>
 
+          {/* Tabla 1: Productos agregados */}
+          <div className="table-responsive mb-4">
+            <table className="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th>Colaborador</th>
+                  <th className="text-end">Cantidad</th>
+                  <th className="text-end">Total</th>
+                  <th className="text-end">Promedio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aggregateProductos(productosRaw, groupByProd).map((it, i) => (
+                  <tr key={i}>
+                    <td>{i + 1}</td>
+                    <td>{it.producto}</td>
+                    <td>{it.empleado}</td>
+                    <td className="text-end">{it.cantidad}</td>
+                    <td className="text-end">
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total} />} />
+                    </td>
+                    <td className="text-end">
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total / it.cantidad} />} />
+                    </td>
+                  </tr>
+                ))}
+                {productosRaw.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4">Sin productos en el rango.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tabla 2 — Top vendedor por producto */}
+          <h5 className="fw-bold">Top vendedor por producto</h5>
+          <div className="table-responsive mb-4">
+            <table className="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th>Top vendedor (por importe)</th>
+                  <th className="text-end">Importe del top</th>
+                  <th className="text-end">Unidades del top</th>
+                  <th className="text-end">% del producto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {getTopVendedoresPorProducto(productosRaw).map((row, i) => {
+                  const pct = row.totalImporte > 0 ? (row.top.importe / row.totalImporte) * 100 : 0;
+                  return (
+                    <tr key={row.producto + i}>
+                      <td>{i + 1}</td>
+                      <td>{row.producto}</td>
+                      <td>{row.top.empleado}</td>
+                      <td className="text-end">
+                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={row.top.importe} />} />
+                      </td>
+                      <td className="text-end">{row.top.unidades}</td>
+                      <td className="text-end">{pct.toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+                {productosRaw.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="text-center py-4">Sin datos para ranking.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* === NUEVO: Ranking de Colaborador (PRODUCTOS) con botones de orden === */}
+          <h5 className="fw-bold d-flex align-items-center justify-content-between">
+            Ranking de colaboradores (Productos)
+            <div className="btn-group btn-group-sm">
+              <Button variant={sortProdBy==='total' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('prod','total')}>Monto</Button>
+              <Button variant={sortProdBy==='promedio' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('prod','promedio')}>Promedio</Button>
+              <Button variant={sortProdBy==='colaborador' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('prod','colaborador')}>Colaborador</Button>
+              <Button variant="outline-secondary" onClick={() => setSortProdDir(d => d==='asc' ? 'desc' : 'asc')}>
+                {sortProdDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
+              </Button>
+            </div>
+          </h5>
           <div className="table-responsive">
             <table className="table table-sm align-middle">
               <thead>
                 <tr>
-                  <th>Nombre del cliente</th>
-                  <th className="text-end">Servicios (cant.)</th>
-                  <th className="text-end">Importe servicios</th>
-                  <th className="text-end">Productos (cant.)</th>
-                  <th className="text-end">Importe productos</th>
+                  <th>#</th>
+                  <th>Colaborador</th>
+                  <th className="text-end">Monto</th>
+                  <th className="text-end">Cantidad</th>
+                  <th className="text-end">Promedio</th>
                 </tr>
               </thead>
               <tbody>
-                {clientesRows.map((r, i) => (
-                  <tr key={i}>
-                    <td>{r.cliente}</td>
-                    <td className="text-end">{r.cantServ}</td>
+                {rankingProd.map((r, i) => (
+                  <tr key={r.colaborador + i}>
+                    <td>{i + 1}</td>
+                    <td>{r.colaborador}</td>
                     <td className="text-end">
-                      <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={r.impServ} />} />
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.total} />} />
                     </td>
-                    <td className="text-end">{r.cantProd}</td>
+                    <td className="text-end">{r.cantidad}</td>
                     <td className="text-end">
-                      <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={r.impProd} />} />
+                      <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.promedio} />} />
                     </td>
                   </tr>
                 ))}
-                {clientesRows.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center py-4">Sin datos.</td>
-                  </tr>
+                {rankingProd.length === 0 && (
+                  <tr><td colSpan={5} className="text-center py-4">Sin datos.</td></tr>
                 )}
               </tbody>
-              <tfoot>
-                <tr>
-                  <th className="text-end">Totales:</th>
-                  <th className="text-end">
-                    {clientesRows.reduce((a, r) => a + r.cantServ, 0)}
-                  </th>
-                  <th className="text-end">
-                    <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesServ} />} />
-                  </th>
-                  <th className="text-end">
-                    {clientesRows.reduce((a, r) => a + r.cantProd, 0)}
-                  </th>
-                  <th className="text-end">
-                    <SymbolSoles size={14} bottomClasss={'4'} numero={<NumberFormatMoney amount={totalClientesProd} />} />
-                  </th>
-                </tr>
-              </tfoot>
             </table>
           </div>
         </Modal.Body>
 
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowClientes(false)}>Cerrar</Button>
+          <Button variant="secondary" onClick={() => setShowResumenProd(false)}>Cerrar</Button>
         </Modal.Footer>
       </Modal>
     </Row>
   );
 };
 
-// ---- Util para recurrencia de clientes (si lo necesitas) ----
+// ---- Util para recurrencia de clientes ----
 const encontrarRepetidos = (data = []) => {
   const counts = {};
   const idCliMap = {};

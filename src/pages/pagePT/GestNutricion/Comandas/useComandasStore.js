@@ -12,6 +12,7 @@ export const useComandasStore = () => {
 	const [isLoading, setisLoading] = useState(false);
 	const [dataView, setdataView] = useState([]);
 	const [dataProductos, setdataProductos] = useState([]);
+	const [dataServicios, setdataServicios] = useState([]);
 	const dispatch = useDispatch();
 	const obtenerServicios = async () => {
 		const { data } = await PTApi.get('/circus/obtener-servicios');
@@ -25,9 +26,11 @@ export const useComandasStore = () => {
 				precio: serv.precio || 0,
 				duracion: serv.duracion || 0,
 				uid: serv.uid || '',
+				precio_compra: serv.precio_compra,
 			};
 		});
 		setdataView(dataAlter);
+		setdataServicios(dataAlter);
 	};
 	const obtenerProductos = async () => {
 		const { data } = await PTApi.get('/circus/obtener-productos/599');
@@ -41,6 +44,7 @@ export const useComandasStore = () => {
 				precio: serv.prec_venta || 0,
 				duracion: '' || 0,
 				uid: `producto${serv.id}` || '',
+				precio_compra: serv.prec_compra,
 			};
 		});
 		console.log({ prod: data.productos, dataAlter });
@@ -121,6 +125,7 @@ export const useComandasStore = () => {
 		try {
 			setisLoading(true);
 			const { data } = await PTApi.get('/venta/comanda/599');
+			console.log({ coms: data.comandas });
 
 			const dataAlter = data?.comandas.map((comanda) => {
 				return {
@@ -139,7 +144,10 @@ export const useComandasStore = () => {
 							clase: 'servicio',
 							nombre: serv?.circus_servicio?.nombre_servicio,
 							monto: serv?.tarifa_monto,
+							precio: serv?.circus_servicio?.precio,
 							colaborador: serv?.empleado_servicio?.nombres_apellidos_empl,
+							nombre_colaborador: serv.empleado_servicio?.nombre_empl?.split(' ')[0],
+							apellido_paterno_colaborador: serv.empleado_servicio?.apPaterno_empl,
 						};
 					}),
 					productos: comanda?.detalle_ventaProductos?.map((serv) => {
@@ -147,7 +155,10 @@ export const useComandasStore = () => {
 							clase: 'producto',
 							nombre: serv?.tb_producto?.nombre_producto,
 							monto: serv?.tarifa_monto,
+							precio: serv?.tb_producto?.prec_venta,
 							colaborador: serv?.empleado_producto?.nombres_apellidos_empl,
+							nombre_colaborador: serv.empleado_producto?.nombre_empl?.split(' ')[0],
+							apellido_paterno_colaborador: serv.empleado_producto?.apPaterno_empl,
 						};
 					}),
 				};
@@ -166,6 +177,7 @@ export const useComandasStore = () => {
 		}
 	};
 	return {
+		dataServicios,
 		isLoading,
 		obtenerComandas,
 		onPostProductosVenta,

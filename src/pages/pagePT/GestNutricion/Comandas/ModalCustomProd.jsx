@@ -69,7 +69,6 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
       obtenerEmpleadosxAsistentesEstilistas(27, 5, 599);
       obtenerEmpleadosxAsistentesManicuristas(62, 5, 599);
       obtenerEmpleadosJefesDeSalon(29, 5, 599);
-      obtenerProductos()
     }
   }, [show]);
 
@@ -214,26 +213,6 @@ export const ModalCustomProd = ({ show, onHide, id_venta=16735 }) => {
           name="id_empl"
           placeholder="Seleccionar el colaborador"
 											className="border-2 rounded-3 border-primary outline-none"
-                       styles={{
-            input: (provided) => ({
-													...provided,
-													color: "#EEBE00",
-													fontWeight: "bold",
-												}),
-												dropdownIndicator: (provided) => ({
-													...provided,
-													color: "#EEBE00",
-												}),
-												indicatorSeparator: (provided) => ({
-													...provided,
-													backgroundColor: "#EEBE00",
-												}),
-												control: (provided) => ({
-													...provided,
-													borderColor: "#EEBE00",
-													color: "#EEBE00",
-												}),
-          }}
           options={dataCargos}
           value={dataCargos.find((o) => o.value === toStr(id_empl)) ?? null}
           onChange={handleSelectEmpleado}

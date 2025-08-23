@@ -28,8 +28,18 @@ const onSubmitVenta = ()=>{
     const { id_servicio, ...valor } = prod;
     return {
       ...valor, 
-      id_producto: prod.id_servicio}})
-		startRegisterVenta({dataVenta: {detalle_venta_servicio: carritoItems.filter(item=>item.tipo==='servicio'), detalle_venta_productos: productos}, datos_pagos: dataPagos, detalle_cli_modelo})
+      id_producto: prod.id_servicio
+    }
+  })
+  const servicios = carritoItems.filter(item=>item.tipo==='servicio').map(prod=>{
+    const { id_servicio, ...valor } = prod;
+    return {
+      ...valor, 
+      id_servicio: prod.id_servicio
+    }
+  })
+
+		startRegisterVenta({dataVenta: {detalle_venta_servicio: servicios, detalle_venta_productos: productos}, datos_pagos: dataPagos, detalle_cli_modelo})
     // dispatch(onreset)
 		dispatch(RESET_STATE_VENTA())
     dispatch(RESET_ItemsCarrito())
