@@ -35,7 +35,6 @@ const GestionProspectos = lazy(()=> import('../pages/pagePT/GestProspectos'))
 const GestionExtensionMembresia = lazy(()=> import('../pages/pagePT/GestExtensionMembresia'))
 const GestionAuditoria = lazy(()=> import('../pages/pagePT/Auditoria'))
 const GestionComision = lazy(()=> import('../pages/pagePT/GestComision'))
-const ServFitology = lazy(()=> import('../pages/pagePT/ServFitology'))
 const ServNutricion = lazy(()=> import('../pages/pagePT/ServNutricion'))
 const ReportePorProgramas = lazy(()=>import('../pages/pagePT/reportes/ventasPrograma'))
 const ReporteTotalVentas = lazy(()=>import('../pages/pagePT/reportes/totalVentas'))
@@ -65,20 +64,15 @@ const RecursosHumanoReportes = lazy(()=>import('../pages/pagePT/RecursosHumanos'
 const ReportePorMarcacion = lazy(()=> import('../pages/pagePT/reportes/reporteCliente'))
 const ReporteSeguimiento = lazy(()=>import('../pages/pagePT/reportes/reporteSeguimiento'))
 const GestionComercial = lazy(()=>import('../pages/pagePT/GestComercial'))
-const ReporteSesionesxMem = lazy(()=>import('../pages/pagePT/reportes/reporteSesionesxMem'))
 const ResultadoChange = lazy(()=>import('../pages/pagePT/reportes/resultadoChange'))
 const ReporteDeAsistenciaRH = lazy(()=> import('../pages/pagePT/reportes/reporteAsistenciaRH'));
 const ReporteDeGestionComercial = lazy(()=>import('../pages/pagePT/reportes/reporteGestionComercial'))
 const GestionJornada = lazy(()=>import('../pages/pagePT/GestJornada'))
 const ResumenComparativo = lazy(()=>import('../pages/pagePT/reportes/resumenComparativo'))
-// const ReporteDemograficoCliente = lazy(()=>import('../pages/pagePT/reportes/reporteDemograficoCliente'))
-const ReporteDemograficoxMembresia = lazy(()=>import('../pages/pagePT/reportes/reporteDemograficoxMembresia'))
-const VentasTransferencias = lazy(()=>import('../pages/pagePT/VentasTransferencias'))
 const ClientesxVentasDeMembresia = lazy(()=>import('../pages/pagePT/MembresiaxCliente'))
 const GestionCambioPrograma = lazy(()=>import('../pages/pagePT/GestionCambioPrograma'))
 const ResumenComparativoAnual = lazy(()=>import('../pages/pagePT/reportes/resumenComparativoAnual'))
 const SeguimientoxMesView = lazy(()=>import('../pages/pagePT/reportes/SeguimientoxMes'))
-const FacturacionPublicidad = lazy(()=>import('../pages/pagePT/FacturacionPublicidad'))
 const ResumenDemograficoxPrograma = lazy(()=>import('../pages/pagePT/reportes/resumenDemograficoComparativo'))
 const ViewAdquision = lazy(()=>import('../pages/pagePT/reportes/lineaMkt/adquision'))
 const ViewRenovacion = lazy(()=>import('../pages/pagePT/reportes/lineaMkt/renovacion'))
@@ -88,7 +82,10 @@ const GeneradorFechas = lazy(()=>import('../pages/pagePT/generadorFechas/Generad
 const EntradaArticulosForm = lazy(()=>import('../pages/pagePT/EntradaInventarioForm'))
 const TransferenciasArticulos = lazy(()=>import('../pages/pagePT/TransferenciaEmpresaInventario'))
 const ArticulosNuevos = lazy(()=>import('../pages/pagePT/GestArticulosChorrillos'))
-
+const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo'))
+const DetalleComprobantes = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantes'))
+const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantesRangoFecha'))
+const GestionComanda = lazy(()=>import('../pages/pagePT/GestionComandas'))
 /**
  * routes import
  */
@@ -131,7 +128,6 @@ export default function ProtectedRoutes() {
 						sections.find(e=>e.url==='/agregar-articulos-chorrillos')&&
                         <Route path='agregar-articulos-chorrillos' element={<ArticulosNuevos/>}/>
 					}
-					
 					{
 						sections.find(e=>e.url==='/transferencia-inventario')&&
                         <Route path='transferencia-inventario' element={<TransferenciasArticulos/>}/>
@@ -318,6 +314,22 @@ export default function ProtectedRoutes() {
 					{
 						sections.find(e=>e.url==='/gestion-ventas')&&
                         <Route path='gestion-ventas' element={<GestionVenta/>}/>
+					}
+					{
+						sections.find(e=>e.url==='/resumen-ejecutivo')&&
+                        <Route path='resumen-ejecutivo' element={<ResumenEjecutivo/>}/>
+					}
+					{
+						sections.find(e=>e.url==='/detalle-comprobantes')&&
+                        <Route path='detalle-comprobantes' element={<DetalleComprobantes/>}/>
+					}
+					{
+						sections.find(e=>e.url==='/comprobantes-rango-fecha')&&
+                        <Route path='comprobantes-rango-fecha' element={<DetalleRangoFecha/>}/>
+					}
+					{
+						sections.find(e=>e.url==='/gestion-comandas')&&
+                        <Route path='gestion-comandas' element={<GestionComanda/>}/>
 					}
 					{sections.find(e=>e.url==='/gestion-auth-usuario')&&
 					<Route path='gestion-auth-usuario' element={<GestionUsuario/>}/>

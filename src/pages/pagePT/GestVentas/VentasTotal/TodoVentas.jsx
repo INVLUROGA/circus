@@ -211,7 +211,7 @@ const infoClienteBodyTemplate = (rowData)=>{
       <div className=''>
         {/* {JSON.stringify(rowData.tb_cliente, 2, null)} */}
         <div className={`${rowExtensionColor(rowData, 'text-black')} fw-bold`}>{rowData.tb_cliente?.nombre_cli}</div>
-        <div className={`${rowExtensionColor(rowData, 'text-black')} fw-bold bg-danger`}>{rowData.tb_cliente?.apPaterno_cli} {rowData.tb_cliente?.apMaterno_cli}</div>
+        <div className={`${rowExtensionColor(rowData, 'text-black')} fw-bold`}>{rowData.tb_cliente?.apPaterno_cli} {rowData.tb_cliente?.apMaterno_cli}</div>
       </div>
       </Col>
     </Row>

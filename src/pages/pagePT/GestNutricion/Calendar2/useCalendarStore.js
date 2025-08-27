@@ -119,8 +119,8 @@ export const useCalendarStore = () => {
 				const endDate = new Date(startDate.getTime() + totalMinutes * 60_000);
 				return {
 					id: d.id,
-					num_Doc_cli: d.tb_cliente.numDoc_cli,
-					tel_cli: d.tb_cliente.tel_cli,
+					num_Doc_cli: d.tb_cliente?.numDoc_cli,
+					tel_cli: d.tb_cliente?.tel_cli,
 					title: `${d.tb_cliente?.nombre_cli || ''} ${d.tb_cliente?.apMaterno_cli || ''} ${d.tb_cliente?.apPaterno_cli || ''}`,
 					start: d.fecha_inicio?.split('Z')[0],
 					end: endDate.toISOString().split('Z')[0],
@@ -130,11 +130,11 @@ export const useCalendarStore = () => {
 							duracion: servicios?.parametro_servicio?.duracion || '',
 						};
 					}),
-					id_empl: d.id_empl,
+					id_empl: d?.id_empl,
 					comentario: d?.comentario,
-					id_origen: d.id_origen,
-					id_asistencia: d.id_asistencia,
-					id_estado: d.id_estado,
+					id_origen: d?.id_origen,
+					id_asistencia: d?.id_asistencia,
+					id_estado: d?.id_estado,
 				};
 			});
 			dispatch(onSetDataView(dataCitas));

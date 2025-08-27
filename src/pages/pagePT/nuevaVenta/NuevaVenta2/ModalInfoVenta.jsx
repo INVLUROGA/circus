@@ -38,7 +38,6 @@ const onSubmitVenta = ()=>{
       id_servicio: prod.id_servicio
     }
   })
-
 		startRegisterVenta({dataVenta: {detalle_venta_servicio: servicios, detalle_venta_productos: productos}, datos_pagos: dataPagos, detalle_cli_modelo})
     // dispatch(onreset)
 		dispatch(RESET_STATE_VENTA())

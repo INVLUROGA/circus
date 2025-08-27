@@ -2,7 +2,7 @@ import React from 'react'
 
 export const InputText = ({...props}) => {
   return (
-    <div className="border-3 border-primary rounded" style={{ width: '200px', height: '60px' }}>
+    <div className="border-3 border-primary rounded bg-white d-flex" style={{ width: '200px', height: '60px' }}>
         <input
             {...props}
             className="border-0 outline-none"

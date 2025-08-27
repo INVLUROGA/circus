@@ -290,8 +290,11 @@ td, th {
   background-color: #17a700;
 }
 
+.border-color-ISESAC{
+  border-color: #17a700 !important;
+}
 .text-ISESAC{
-  color: #17a700;
+  color: #17a700 !important;
 }
 .text-circus{
   color: #EEBE00;
@@ -397,14 +400,14 @@ button{
 .btn{
   border-radius: 5px !important;
 }
-th:first-child {
-  border-top-left-radius: 11px;
-  border-bottom-left-radius: 11px;
-}
-th:last-child {
-  border-top-right-radius: 11px;
-  border-bottom-right-radius: 11px;
-}
+// th:first-child {
+//   border-top-left-radius: 11px;
+//   border-bottom-left-radius: 11px;
+// }
+// th:last-child {
+//   border-top-right-radius: 11px;
+//   border-bottom-right-radius: 11px;
+// }
 .bg-greenISESAC{
   background-color: #17a700;
 }

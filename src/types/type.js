@@ -92,7 +92,7 @@ export const arrayEstados = [
 	{ label: 'Inactivo', value: false },
 ];
 export const arrayEstadosVenta = [
-	{ bg: 'bg-success', label: 'PAGADO', value: 1467 },
+	{ bg: 'bg-greenISESAC', label: 'PAGADO', value: 1467 },
 	{ bg: 'bg-change', label: 'NO PAGADO', value: 1468 },
 	{ bg: 'bg-circus', label: 'EN PROCESO', value: 1469 },
 ];

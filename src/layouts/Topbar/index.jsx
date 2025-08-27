@@ -143,7 +143,7 @@ const Topbar = ({ topbarDark, toggleMenu, navOpen }) => {
 							userImage={userImage}
 							menuItems={profileMenus}
 							username={usuarioObtenido.usuario_user?usuarioObtenido.usuario_user:'unnamed'}
-							userTitle={`Rol: ${usuarioObtenido.rol_user?arrayRoles.find(e=>e.value===usuarioObtenido.rol_user).label:'SIN ROLE'}`}
+							userTitle={`Rol: ${rolexUsuario(usuarioObtenido.rol_user)}`}
 						/>
 					</li>
 				</ul>
@@ -151,5 +151,17 @@ const Topbar = ({ topbarDark, toggleMenu, navOpen }) => {
 		</div>
 	);
 };
+
+function rolexUsuario(role) {
+	if(role){
+		if(role===8){
+			return 'ADMINISTRACION'
+		}else{
+			return role
+		}
+	}else{
+		return 'SIN ROLE'
+	}
+}
 
 export default Topbar;
