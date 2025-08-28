@@ -82,7 +82,7 @@ const GeneradorFechas = lazy(()=>import('../pages/pagePT/generadorFechas/Generad
 const EntradaArticulosForm = lazy(()=>import('../pages/pagePT/EntradaInventarioForm'))
 const TransferenciasArticulos = lazy(()=>import('../pages/pagePT/TransferenciaEmpresaInventario'))
 const ArticulosNuevos = lazy(()=>import('../pages/pagePT/GestArticulosChorrillos'))
-const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo'))
+// const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo/'))
 const DetalleComprobantes = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantes'))
 const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantesRangoFecha'))
 const GestionComanda = lazy(()=>import('../pages/pagePT/GestionComandas'))
@@ -307,10 +307,10 @@ export default function ProtectedRoutes() {
 						sections.find(e=>e.url==='/gestion-ventas')&&
                         <Route path='gestion-ventas' element={<GestionVenta/>}/>
 					}
-					{
+					{/* {
 						sections.find(e=>e.url==='/resumen-ejecutivo')&&
                         <Route path='resumen-ejecutivo' element={<ResumenEjecutivo/>}/>
-					}
+					} */}
 					{
 						sections.find(e=>e.url==='/detalle-comprobantes')&&
                         <Route path='detalle-comprobantes' element={<DetalleComprobantes/>}/>

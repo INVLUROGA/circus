@@ -6,7 +6,6 @@ import { TabPanel, TabView } from 'primereact/tabview'
 import {App as ReporteVenta } from './ReporteVentaTotal/App'
 import {App as ReporteVenta1 } from './ReporteVentas/App'
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore'
-import { App as ResumenEjecutivo } from '../reportes/resumenEjecutivo/App'
 export const GestionVentas = () => {
     const {obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores, DataVendedores} = useTerminoStore()
     useEffect(() => {
