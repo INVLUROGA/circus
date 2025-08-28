@@ -98,15 +98,9 @@ export default function ProtectedRoutes() {
 		settings.layout.type == ThemeSettings.layout.type.vertical
 			? VerticalLayout
 			: HorizontalLayout;
-
-	// const {status} = useSelector(u=>u.auth)
-	
 	const { status, checkAuthToken } = useAuthStore()
 	// const {obtenerModulos} = useRoleStore()
 	const { sections } = useSelector(e=>e.rutas)
-	// useEffect(() => {
-	// 	obtenerModulos()
-	// }, [])
 	useEffect(() => {checkAuthToken()}, [])
 	if (status === 'checking') {
 		return(
@@ -115,8 +109,6 @@ export default function ProtectedRoutes() {
 			</div>
 		)
 	}
-	// console.log(sections.find(e=>e.url==='/reporte-admin/reporte-utilidad-programa'));
-	
 	return (
 	<ReactRoutes>
 		{
