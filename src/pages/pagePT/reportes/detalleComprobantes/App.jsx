@@ -8,6 +8,8 @@ import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Col, Row, Modal, Button, Form } from 'react-bootstrap';
+import { normalizarVentasExcel } from './desestructurarData';
+import { Dialog } from 'primereact/dialog';
 
 dayjs.extend(isoWeek);
 
@@ -23,6 +25,9 @@ export const App = ({ id_empresa }) => {
   const [palabras, setPalabras] = useState([]);
   const [input, setInput] = useState('');
   const [modo, setModo] = useState('comprobante');
+  // filtro en modal de servicios
+const [filtroServ, setFiltroServ] = useState('');
+
 
   // ---- Modal: estado ----
   const [showResumen, setShowResumen] = useState(false);
@@ -543,19 +548,7 @@ export const App = ({ id_empresa }) => {
         </Col>
 
         {/* -------- MODAL: VISTA RESUMEN DETALLE DE SERVICIOS -------- */}
-        <Modal show={showResumen} onHide={() => setShowResumen(false)} size="xl" centered scrollable>
-          <Modal.Header closeButton>
-            <Modal.Title>Resumen de servicios — {modalLabel}</Modal.Title>
-            <div className="ms-auto d-flex align-items-center">
-              <Form.Check
-                type="switch"
-                id="switch-agrupacion"
-                label={groupBy === 'servicio' ? 'Agrupar: Servicio' : 'Agrupar: Servicio + Colaborador'}
-                checked={groupBy === 'servicio'}
-                onChange={(e) => setGroupBy(e.target.checked ? 'servicio' : 'servicio-empleado')}
-              />
-            </div>
-          </Modal.Header>
+        <Dialog header={`Resumen de servicios — ${modalLabel}`} visible={showResumen} onHide={() => setShowResumen(false)} style={{width: '120rem'}} centered scrollable>
 
           <Modal.Body>
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -567,93 +560,152 @@ export const App = ({ id_empresa }) => {
                 </strong>
               </div>
             </div>
-
-            {/* Tabla servicios agregados */}
-            <div className="table-responsive mb-4">
-              <table className="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Servicio</th>
-                    <th>Colaborador</th>
-                    <th className="text-end">Cantidad</th>
-                    <th className="text-end">Total</th>
-                    <th className="text-end">Promedio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {itemsResumen.map((it, i) => (
-                    <tr key={i}>
-                      <td>{i + 1}</td>
-                      <td>{it.servicio}</td>
-                      <td>{it.empleado}</td>
-                      <td className="text-end">{it.cantidad}</td>
-                      <td className="text-end">
-                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total} />} />
-                      </td>
-                      <td className="text-end">
-                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total / it.cantidad} />} />
-                      </td>
-                    </tr>
-                  ))}
-                  {itemsResumen.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="text-center py-4">Sin servicios en el rango.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* === NUEVO: Ranking de Colaborador (SERVICIOS) con botones de orden === */}
-            <h5 className="fw-bold d-flex align-items-center justify-content-between">
-              Ranking de colaboradores (Servicios)
-              <div className="btn-group btn-group-sm">
-                <Button variant={sortServBy==='total' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','total')}>Monto</Button>
-                <Button variant={sortServBy==='promedio' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','promedio')}>Promedio</Button>
-                <Button variant={sortServBy==='colaborador' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','colaborador')}>Colaborador</Button>
-                <Button variant="outline-secondary" onClick={() => setSortServDir(d => d==='asc' ? 'desc' : 'asc')}>
-                  {sortServDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
-                </Button>
-              </div>
-            </h5>
+            {/* CHAT GPT, PONER LA TABLA AQUI, CON EL FILTRO NECESARIO */}
             <div className="table-responsive">
-              <table className="table table-sm align-middle">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Colaborador</th>
-                    <th className="text-end">Monto</th>
-                    <th className="text-end">Cantidad</th>
-                    <th className="text-end">Promedio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rankingServ.map((r, i) => (
-                    <tr key={r.colaborador + i}>
-                      <td>{i + 1}</td>
-                      <td>{r.colaborador}</td>
-                      <td className="text-end">
-                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.total} />} />
-                      </td>
-                      <td className="text-end">{r.cantidad}</td>
-                      <td className="text-end">
-                        <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.promedio} />} />
-                      </td>
-                    </tr>
-                  ))}
-                  {rankingServ.length === 0 && (
-                    <tr><td colSpan={5} className="text-center py-4">Sin datos.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+  <table className="table table-bordered table-sm">
+    <thead className="table-light">
+      <tr>
+        <th>
+          <div className='' style={{width: '100px'}}>
+            FECHA
+          </div>
+        </th><th>COM</th><th>#COMP</th>
+        <th>T-CLIENTE</th>
+        <th>CLIENTE</th>
+        <th>TOTAL COMP</th><th>CLASE</th>
+        <th>PRODUCTO / SERVICIO</th><th>EMPLEADO</th>
+        <th>CANT</th><th>SUB TOTAL</th><th>DESC</th><th>TOTAL</th>
+        <th>Efc - S/</th><th>Tipo Op. Elect</th><th>#Oper</th><th>Op. Elect - S/</th>
+      </tr>
+    </thead>
+    <tbody>
+      {normalizarVentasExcel(dataVentas).map((row, i) => (
+        <tr key={i}>
+          <td>{dayjs(row.fecha).format("YYYY-MM-DD")}</td>
+          <td>{row.com}</td>
+          <td>{row.comp}</td>
+          <td>{row.t_cliente}</td>
+          {/* <td>{row.t_doc}</td>
+          <td>{row.doc}</td> */}
+          <td>{row.cliente}</td>
+          <td className="text-end">{row.total_comp}</td>
+          <td>{row.clase}</td>
+          <td>{row.producto_servicio}</td>
+          <td>{row.empleado}</td>
+          <td className="text-end">{row.cant}</td>
+          <td className="text-end">{row.sub_total}</td>
+          <td className="text-end">{row.desc}</td>
+          <td className="text-end">{row.total}</td>
+          <td className="text-end">{row.efec_s}</td>
+          <td>{row.tipo_op}</td>
+          <td>{row.n_oper}</td>
+          <td className="text-end">{row.op_elect_s}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+{/* ====== Tabla 1: Servicios agregados ====== */}
+<div className="table-responsive mb-4">
+  <table className="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Servicio</th>
+        <th>Colaborador</th>
+        <th className="text-end">Cantidad</th>
+        <th className="text-end">Total</th>
+        <th className="text-end">Promedio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {aggregateServicios(serviciosRaw, groupBy)
+        .filter((it) => {
+          const q = (filtroServ || '').trim().toLowerCase();
+          if (!q) return true;
+          return (
+            (it.servicio || '').toLowerCase().includes(q) ||
+            (it.empleado || '').toLowerCase().includes(q)
+          );
+        })
+        .map((it, i) => (
+          <tr key={i}>
+            <td>{i + 1}</td>
+            <td>{it.servicio}</td>
+            <td>{it.empleado}</td>
+            <td className="text-end">{it.cantidad}</td>
+            <td className="text-end">
+              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total} />} />
+            </td>
+            <td className="text-end">
+              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total / (it.cantidad || 1)} />} />
+            </td>
+          </tr>
+        ))}
+      {serviciosRaw.length === 0 && (
+        <tr><td colSpan={6} className="text-center py-4">Sin servicios en el rango.</td></tr>
+      )}
+    </tbody>
+  </table>
+</div>
+
+{/* ====== Ranking de colaboradores (SERVICIOS) ====== */}
+<h5 className="fw-bold d-flex align-items-center justify-content-between">
+  Ranking de colaboradores (Servicios)
+  <div className="btn-group btn-group-sm">
+    <Button variant={sortServBy==='total' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','total')}>Monto</Button>
+    <Button variant={sortServBy==='promedio' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','promedio')}>Promedio</Button>
+    <Button variant={sortServBy==='colaborador' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','colaborador')}>Colaborador</Button>
+    <Button variant="outline-secondary" onClick={() => setSortServDir(d => d==='asc' ? 'desc' : 'asc')}>
+      {sortServDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
+    </Button>
+  </div>
+</h5>
+
+<div className="table-responsive">
+  <table className="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Colaborador</th>
+        <th className="text-end">Monto</th>
+        <th className="text-end">Cantidad</th>
+        <th className="text-end">Promedio</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rankingServ
+        .filter(r => {
+          const q = (filtroServ || '').trim().toLowerCase();
+          if (!q) return true;
+          return (r.colaborador || '').toLowerCase().includes(q);
+        })
+        .map((r, i) => (
+          <tr key={r.colaborador + i}>
+            <td>{i + 1}</td>
+            <td>{r.colaborador}</td>
+            <td className="text-end">
+              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.total} />} />
+            </td>
+            <td className="text-end">{r.cantidad}</td>
+            <td className="text-end">
+              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.promedio} />} />
+            </td>
+          </tr>
+      ))}
+      {rankingServ.length === 0 && (
+        <tr><td colSpan={5} className="text-center py-4">Sin datos.</td></tr>
+      )}
+    </tbody>
+  </table>
+</div>
           </Modal.Body>
 
           <Modal.Footer>
             <Button variant="secondary" onClick={() => setShowResumen(false)}>Cerrar</Button>
           </Modal.Footer>
-        </Modal>
+        </Dialog>
 
         {/* -------- MODAL: VISTA RESUMEN DETALLE DE PRODUCTOS -------- */}
         <Modal show={showResumenProd} onHide={() => setShowResumenProd(false)} size="xl" centered scrollable>

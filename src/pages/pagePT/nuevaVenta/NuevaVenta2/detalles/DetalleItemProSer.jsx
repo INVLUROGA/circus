@@ -17,7 +17,8 @@ export const DetalleItemProSer = ({ dataView, onOpenModalAgregarCarrito }) => {
     d.subCategoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (d.precio && d.precio.toString().includes(searchTerm))
   );
-
+  console.log({dataView, filteredData});
+  
   const itemTemplate = (d) => {
     return (
       <div className="col-12">

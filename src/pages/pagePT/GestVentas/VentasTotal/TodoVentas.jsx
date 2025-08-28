@@ -22,6 +22,7 @@ import { PdfComprobanteVenta } from './PdfComprobanteVenta';
 import config from '@/config';
 import sinAvatar from '@/assets/images/sinPhoto.jpg';
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
+import { ModalAgregarNotaCredito } from './ModalAgregarNotaCredito';
 
 
 export const TodoVentas=({id_empresa, DataClientes})=> {
@@ -46,7 +47,7 @@ export const TodoVentas=({id_empresa, DataClientes})=> {
   });
   const [loading, setLoading] = useState(true);
   const [globalFilterValue, setGlobalFilterValue] = useState('');
-
+  const [isOpenModalAgregarNotaCredito, setisOpenModalAgregarNotaCredito] = useState(false)
     useEffect(() => {
         const fetchData = () => {
           setCustomers(getCustomers(dataVentas));
@@ -159,17 +160,22 @@ export const TodoVentas=({id_empresa, DataClientes})=> {
     setidVentas(id_venta)
     
   }
+  const onClickNotaCredito = (id_venta)=>{
+    setisOpenModalAgregarNotaCredito(true)
+  }
   const actionBodyTemplate = (rowData) => {
     return (
+      <>
           <Row>
-              <Col xxl={12}>
+              <Col>
                 <Button 
                   rounded 
                   className=" p-1 border-0 text-decoration-underline" 
                   onClick={() => onModalviewVENTAS(rowData.id)} 
-                  >DETALLE <br/> VENTA</Button>
+                  >DETALLE VENTA</Button>
               </Col>
           </Row>
+      </>
     );
 };
 const comprobanteBodyTemplate = (rowData)=>{
@@ -289,6 +295,7 @@ const header = renderHeader();
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={logoPdfBodyTemplate} /> */}
               {/* <Column header="" frozen style={{ minWidth: '2rem' }} body={removeVentaBodyTemplate} /> */}
           </DataTable>
+          {/* <ModalAgregarNotaCredito show={isOpenModalAgregarNotaCredito} onHide={()=>setisOpenModalAgregarNotaCredito(false)}/> */}
           <PdfComprobanteVenta id_venta={idVentas} isPdfOpen={isPdfOpen}/>
           <ModalViewObservacion clientesOptions={DataClientes} show={viewVentas} onHide={onModalCancelVENTAS} id={idVentas}/>
         </>

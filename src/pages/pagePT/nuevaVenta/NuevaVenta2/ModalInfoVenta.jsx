@@ -24,6 +24,8 @@ carritoItems}) => {
   ];
   const dispatch = useDispatch()
 const onSubmitVenta = ()=>{
+  console.log({carritoItems});
+  
   const productos = carritoItems.filter(item=>item.tipo==='producto').map(prod=>{
     const { id_servicio, ...valor } = prod;
     return {

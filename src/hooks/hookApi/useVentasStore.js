@@ -182,36 +182,7 @@ export const useVentasStore = () => {
 			console.log(formState);
 
 			const { data } = await PTApi.post('/venta/post-ventas/599', formState);
-
-			if (formState.dataVenta.detalle_venta_programa[0]?.firmaCli) {
-				const file = base64ToFile(
-					formState.dataVenta.detalle_venta_programa[0].firmaCli,
-					`firma_cli${formState.detalle_cli_modelo.id_cli}.png`
-				);
-				const formData = new FormData();
-				formData.append('file', file);
-				const { data: blobFirma } = await PTApi.post(
-					`/storage/blob/create/${data.uid_firma}?container=firmasmembresia`,
-					formData
-				);
-				const { data: dataMail } = await PTApi.post(`/venta/invoice-mail/${data.idVenta}`, {
-					firma_base64: formState.dataVenta.detalle_venta_programa[0].firmaCli,
-				});
-				const file_contratoPDF = base64ToFile(
-					dataMail.base64_contratoPDF,
-					`contrato_${formState.detalle_cli_modelo.id_cli}.pdf`
-				);
-				const formData_contratoPDF = new FormData();
-				formData_contratoPDF.append('file', file_contratoPDF);
-				// console.log(formData_contratoPDF);
-
-				const { data: blobContrato } = await PTApi.post(
-					`/storage/blob/create/${data.uid_contrato}?container=contratos-cli`,
-					formData_contratoPDF
-				);
-			}
 			setloadingVenta(false);
-
 			if (data.ok == false) {
 				return Swal.fire('Error', 'Error, el socio es nuevo', 'error');
 			}

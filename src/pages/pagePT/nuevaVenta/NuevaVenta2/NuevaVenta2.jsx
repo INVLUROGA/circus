@@ -32,6 +32,7 @@ export const NuevaVenta2 = () => {
   useEffect(() => {
     obtenerCajaActual()
   }, [])
+  console.log({carrito});
   
   return (
     <>

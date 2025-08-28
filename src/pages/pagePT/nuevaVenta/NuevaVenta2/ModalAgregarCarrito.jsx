@@ -75,7 +75,6 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
 
     setMontoTotal(nuevoMonto);
   }, [monto_descuento, porcentaje_descuento, cantidad, show]);
-
   const onCloseAgregarCarrito = ()=>{
     onHide()
     onResetForm()
@@ -94,10 +93,17 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
     </div>
   );
 
+  const headerTemplate =(
+    <>
+    QUE LO VEA CARLOS SI ESTO ES CERO: 
+    {servSelect?.labelServ}
+    </>
+  )
+
   
   
   return (
-    <Dialog footer={footerTemplate} style={{ width: "40rem", height: "50rem" }} header={servSelect?.labelServ} visible={show} onHide={onCloseAgregarCarrito}>
+    <Dialog footer={footerTemplate} style={{ width: "40rem", height: "50rem" }} header={headerTemplate} visible={show} onHide={onCloseAgregarCarrito}>
       <div className="m-2">
         {/* <label className="form-label">COLABORADOR</label> */}
         <Select
