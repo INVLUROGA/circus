@@ -143,7 +143,7 @@ const Topbar = ({ topbarDark, toggleMenu, navOpen }) => {
 							userImage={userImage}
 							menuItems={profileMenus}
 							username={usuarioObtenido.usuario_user?usuarioObtenido.usuario_user:'unnamed'}
-							userTitle={`Rol: ${rolexUsuario(usuarioObtenido.rol_user)}`}
+							userTitle={`Rol: SN`}
 						/>
 					</li>
 				</ul>
