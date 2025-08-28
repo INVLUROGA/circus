@@ -80,7 +80,7 @@ const events = [
 										</TabPanel>
 										<TabPanel header={'COMANDAS'}>
 											{/* fullcalendar control */}
-											<Calendar3/>
+											{/* <Calendar3/> */}
 										</TabPanel>
 									</TabView>
 								</Col>
