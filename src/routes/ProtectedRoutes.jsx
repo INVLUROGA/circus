@@ -82,9 +82,9 @@ const GeneradorFechas = lazy(()=>import('../pages/pagePT/generadorFechas/Generad
 const EntradaArticulosForm = lazy(()=>import('../pages/pagePT/EntradaInventarioForm'))
 const TransferenciasArticulos = lazy(()=>import('../pages/pagePT/TransferenciaEmpresaInventario'))
 const ArticulosNuevos = lazy(()=>import('../pages/pagePT/GestArticulosChorrillos'))
-// const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo/'))
-const DetalleComprobantes = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantes'))
-const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantesRangoFecha'))
+// const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo'))
+const DetalleComprobantes = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantes/Index.jsx'))
+const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantesRangoFecha/Index.jsx'))
 const GestionComanda = lazy(()=>import('../pages/pagePT/GestionComandas'))
 /**
  * routes import
