@@ -35,7 +35,8 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
   const onCloseModalCarrito = ()=>{
     setisOpenModalCarritoEdit(false)
   }
- 
+  console.log({itemCarritoSelec});
+  
  const carritoItems = carrito.map(c=>{
   const cantidadxMontoDefault = c.cantidad*c.monto_default
   const tarifa = cantidadxMontoDefault-(c.monto_descuento || 0)
