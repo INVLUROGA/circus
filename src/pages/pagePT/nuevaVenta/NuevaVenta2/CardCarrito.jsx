@@ -23,6 +23,8 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
  }
  const onClickEditItemCarrito=(uid)=>{
   setitemCarritoSelec(carrito.find((item)=>item.uid === uid))
+  console.log({carrr: carrito.find((item)=>item.uid === uid)});
+  
   setisOpenModalCarritoEdit(true)
  }
  const onOpenModalInfoVenta = ()=>{
@@ -35,8 +37,6 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
   const onCloseModalCarrito = ()=>{
     setisOpenModalCarritoEdit(false)
   }
-  console.log({itemCarritoSelec});
-  
  const carritoItems = carrito.map(c=>{
   const cantidadxMontoDefault = c.cantidad*c.monto_default
   const tarifa = cantidadxMontoDefault-(c.monto_descuento || 0)
@@ -79,7 +79,7 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
     </Card>
 
         <ModalAgregarCarrito servSelect={itemCarritoSelec} onHide={onCloseModalCarrito} show={isOpenModalCarritoEdit}/>
-    <ModalInfoVenta show={isOpenModalInfoVenta} onHide={onCloseModalInfoVenta} dataPagos={dataPagos} detalle_cli_modelo={detalle_cli_modelo} carritoItems={carritoItems}/>
+        <ModalInfoVenta show={isOpenModalInfoVenta} onHide={onCloseModalInfoVenta} dataPagos={dataPagos} detalle_cli_modelo={detalle_cli_modelo} carritoItems={carritoItems}/>
     {/* <ModalEditCarrito/> */}
     </>
   )

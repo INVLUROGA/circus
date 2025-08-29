@@ -153,6 +153,10 @@ export const TodoVentas=({id_empresa, DataClientes})=> {
             <br/>
             {FormatoDateMask(rowData.fecha_venta_v, 'hh:mm A')}
           </span>
+          <br/>
+          {dayjs(rowData.fecha_venta).format('')}
+          <br/>
+          {JSON.stringify(rowData.fecha_venta, 2, null)}
       </div>
     )
   }

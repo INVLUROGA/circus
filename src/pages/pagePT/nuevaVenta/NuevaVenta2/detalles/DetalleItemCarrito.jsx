@@ -6,6 +6,7 @@ import React from 'react'
 export const DetalleItemCarrito = ({c, onClickRemoveItemCarrito, onClickEditItemCarrito}) => {
   return (
     <div className="col-12">
+        {JSON.stringify(c)}
                       <div className="flex flex-column xl:flex-row xl:align-items-start py-1 gap-1">
                           <div style={{width: '100%'}} className="flex flex-row lg:flex-row justify-content-between align-items-center xl:align-items-start lg:flex-1 gap-4">
                               <div className="flex flex-column lg:align-items-start">

@@ -128,7 +128,7 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
         labelSelectEmpl: labelEmpleado,
         labelServ: servSelect?.labelServ,
         uid: servSelect?.uid,
-        id_servicio: servSelect?.id,
+        id_servicio: servSelect?.id || servSelect?.id_servicio,
         tipo: servSelect?.tipo
       })
     );
@@ -145,7 +145,12 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
     </div>
   );
 
-  const headerTemplate = <>{servSelect?.labelServ}</>;
+  const headerTemplate = (
+    <>
+    {JSON.stringify(servSelect, 2, null)}
+      {servSelect?.labelServ}
+    </>
+  );
 
   return (
     <Dialog

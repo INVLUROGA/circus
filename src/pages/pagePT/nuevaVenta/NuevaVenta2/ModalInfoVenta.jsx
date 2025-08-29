@@ -53,7 +53,7 @@ const onSubmitVenta = ()=>{
     </>
   )
   return (
-    <Dialog footer={footer} visible={show} onHide={onHide} header={'¿ESTAS SEGUR(A) DE ESTA VENTA?'} style={{ margin: '0', width: '40rem'}}>
+    <Dialog footer={footer} visible={show} onHide={onHide} header={'¿ESTAS SEGUR(A) DE ESTA VENTA?'} style={{ margin: '0', width: '60rem'}}>
         <div className="container">
       <div className="row g-4">
         {columnas.map((col, index) => (
@@ -66,6 +66,8 @@ const onSubmitVenta = ()=>{
                     <li key={i} className="mb-2">
                       <i className="bi bi-check-circle-fill text-primary me-2"></i>
                       {item}
+                      <br/>
+                      {JSON.stringify(carritoItems, null, 2)}
                     </li>
                   ))}
                 </ul>

@@ -9,7 +9,15 @@ import Account from '@/pages/account';
 import { Home } from '@/pages/pagePT/Home';
 import { PerfilPrograma } from '@/pages/pagePT/GestProgramas/PerfilPrograma';
 import CrearCitasNutricion from '@/pages/pagePT/GestNutricion';
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
 
+// dayjs.extend(utc);
+// dayjs.extend(timezone);
+
+// // Por defecto: Lima (UTC-5)
+// dayjs.tz.setDefault("America/Lima");
 
 
 
@@ -82,7 +90,7 @@ const GeneradorFechas = lazy(()=>import('../pages/pagePT/generadorFechas/Generad
 const EntradaArticulosForm = lazy(()=>import('../pages/pagePT/EntradaInventarioForm'))
 const TransferenciasArticulos = lazy(()=>import('../pages/pagePT/TransferenciaEmpresaInventario'))
 const ArticulosNuevos = lazy(()=>import('../pages/pagePT/GestArticulosChorrillos'))
-// const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo'))
+const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecutivo/index.jsx'))
 const DetalleComprobantes = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantes/Index.jsx'))
 const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantesRangoFecha/Index.jsx'))
 const GestionComanda = lazy(()=>import('../pages/pagePT/GestionComandas'))
@@ -307,10 +315,10 @@ export default function ProtectedRoutes() {
 						sections.find(e=>e.url==='/gestion-ventas')&&
                         <Route path='gestion-ventas' element={<GestionVenta/>}/>
 					}
-					{/* {
+					{
 						sections.find(e=>e.url==='/resumen-ejecutivo')&&
                         <Route path='resumen-ejecutivo' element={<ResumenEjecutivo/>}/>
-					} */}
+					}
 					{
 						sections.find(e=>e.url==='/detalle-comprobantes')&&
                         <Route path='detalle-comprobantes' element={<DetalleComprobantes/>}/>
