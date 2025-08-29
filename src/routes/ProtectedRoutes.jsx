@@ -13,11 +13,11 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 
-dayjs.extend(utc);
-dayjs.extend(timezone);
+// dayjs.extend(utc);
+// dayjs.extend(timezone);
 
-// Por defecto: Lima (UTC-5)
-dayjs.tz.setDefault("America/Lima");
+// // Por defecto: Lima (UTC-5)
+// dayjs.tz.setDefault("America/Lima");
 
 
 

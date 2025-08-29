@@ -13,10 +13,10 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { PageBreadcrumb } from '@/components';
-dayjs.extend(isoWeek);
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.tz.setDefault('America/Lima'); // <-- todo a hora local Lima
+// dayjs.extend(isoWeek);
+// dayjs.extend(utc);
+// dayjs.extend(timezone);
+// dayjs.tz.setDefault('America/Lima'); // <-- todo a hora local Lima
 
 export const App = ({ id_empresa }) => {
   const { obtenerTablaVentas, dataVentas } = useVentasStore();
@@ -66,8 +66,8 @@ export const App = ({ id_empresa }) => {
   };
 // -------------------- FECHAS RANGO (LOCAL y RÁPIDO) --------------------
 const [tsStart, tsEnd] = useMemo(() => {
-  const s = dayjs.tz(RANGE_DATE?.[0]).startOf('day').valueOf();
-  const e = dayjs.tz(RANGE_DATE?.[1]).endOf('day').valueOf();
+  const s = dayjs(RANGE_DATE?.[0]).startOf('day').valueOf();
+  const e = dayjs(RANGE_DATE?.[1]).endOf('day').valueOf();
   return [s, e];
 }, [RANGE_DATE]);
 
@@ -110,7 +110,7 @@ const ventasFiltradas = useMemo(() => {
   };
 
   const pasaFecha = (v) => {
-    const t = dayjs.tz(v.fecha_venta).valueOf(); // local
+    const t = dayjs(v.fecha_venta).valueOf(); // local
     return t >= tsStart && t <= tsEnd;
   };
 
@@ -126,7 +126,7 @@ const firstPurchaseByClient = useMemo(() => {
   for (const v of dataVentas || []) {
     const id = v?.id_cli;
     if (!id) continue;
-    const t = dayjs.tz(v.fecha_venta).valueOf();
+    const t = dayjs(v.fecha_venta).valueOf();
     const prev = map.get(id);
     if (prev === undefined || t < prev) map.set(id, t);
   }
@@ -178,6 +178,7 @@ const clientesStats = useMemo(() => {
             onChange={setRangoFechas}
         />
       </div>
+      {JSON.stringify(RANGE_DATE, 2, null)}
 
       {/* Buscador */}
       <div className="d-flex justify-content-between align-items-center">
