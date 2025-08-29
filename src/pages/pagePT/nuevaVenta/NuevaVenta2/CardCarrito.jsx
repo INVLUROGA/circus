@@ -23,7 +23,7 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
  }
  const onClickEditItemCarrito=(uid)=>{
   setitemCarritoSelec(carrito.find((item)=>item.uid === uid))
-  console.log({carrr: carrito.find((item)=>item.uid === uid)});
+  // console.log({carrr: carrito.find((item)=>item.uid === uid)});
   
   setisOpenModalCarritoEdit(true)
  }

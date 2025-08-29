@@ -147,7 +147,7 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
 
   const headerTemplate = (
     <>
-    {JSON.stringify(servSelect, 2, null)}
+    {/* {JSON.stringify(servSelect, 2, null)} */}
       {servSelect?.labelServ}
     </>
   );
