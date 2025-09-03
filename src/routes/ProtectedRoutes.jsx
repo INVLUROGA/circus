@@ -96,6 +96,7 @@ const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleCompr
 const GestionComanda = lazy(()=>import('../pages/pagePT/GestionComandas'))
 const VentaCanje = lazy(() => import('../pages/pagePT/ventaCanje'));
 
+const ResumenVentaxDiaCalendario = lazy(()=>import('../pages/pagePT/reportes/ResumenVentasxDia/index.jsx'))
 /**
  * routes import
  */
@@ -126,6 +127,10 @@ export default function ProtectedRoutes() {
 				<>
 				<Route path="/*" element={<Layout />}>
 				{/* /reporte-seguimiento  /facturacion-publicidad*/}
+					{
+						sections.find(e=>e.url==='/resumen-ventas-x-dia-calendario')&&
+                        <Route path='resumen-ventas-x-dia-calendario' element={<ResumenVentaxDiaCalendario/>}/>
+					}
 					{
 						sections.find(e=>e.url==='/agregar-articulos-chorrillos')&&
                         <Route path='agregar-articulos-chorrillos' element={<ArticulosNuevos/>}/>

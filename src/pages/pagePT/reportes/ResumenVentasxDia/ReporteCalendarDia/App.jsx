@@ -110,7 +110,6 @@ export const App = () => {
 
   return (
     <div>
-      
       {/* Filtros de fecha */}
       <div className="row g-2 mb-3">
         {/* <div className="col">
