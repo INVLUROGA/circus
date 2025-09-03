@@ -6,6 +6,7 @@ import ExecutiveTable from "./components/ExecutiveTable";
 import ComparativoVsActual from "./components/ComparativoVsActual";
 import { PageBreadcrumb } from "@/components";
 import ClientesPorOrigen from "./components/ClientesPorOrigen";
+import ClientesPorCategoria from "./components/ClientesPorCategoria.";
 
 export const App = ({ id_empresa }) => {
   const { obtenerTablaVentas, dataVentas } = useVentasStore();
@@ -71,6 +72,11 @@ export const App = ({ id_empresa }) => {
               <ExecutiveTable data={tableData} cutDay={cutDay} />
             </Col>
             <Col>
+                <ClientesPorCategoria
+            ventas={dataVentas}
+            columns={columns}
+            cutDay={cutDay} // día de corte por mes (1..31)
+          />
           <ClientesPorOrigen
             ventas={dataVentas}
             columns={columns}

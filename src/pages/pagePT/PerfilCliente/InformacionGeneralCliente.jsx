@@ -30,12 +30,13 @@ export const InformacionGeneralCliente = ({data}) => {
     
         const { obtenerDistritosxDepxProvincia:obtenerDistritosDeLima, dataDistritos:distritosDeLima } = useTerminoStore()
         const { obtenerDistritosxDepxProvincia:obtenerDistritosDeCallao, dataDistritos:distritosDeCallao } = useTerminoStore()
-
+        const { DataGeneral:dataEstadoCliente, obtenerParametroPorEntidadyGrupo:obtenerEstadoCliente } = useTerminoStore()
     
         const [selectedFile, setSelectedFile] = useState(sinAvatar);
     // console.log(user);
     
     const { formState, 
+        id_estado,
         nombre_cli, 
         apPaterno_cli, 
         apMaterno_cli, 
@@ -66,12 +67,9 @@ export const InformacionGeneralCliente = ({data}) => {
         const reject = () => {
             toast.current.show({ severity: 'warn', summary: 'Rejected', detail: 'You have rejected', life: 3000 });
         }
-        const confirm1 = () => {
-            
-        };
         const onEliminarCliente = ()=>{
             confirmDialog({
-                message: '¿Estas seguro (a) de eliminar el socio?',
+                message: '¿Estas seguro (a) de eliminar el cliente?',
                 header: 'Eliminar socio',
                 icon: 'pi pi-question-circle',
                 defaultFocus: 'accept',
@@ -88,8 +86,8 @@ export const InformacionGeneralCliente = ({data}) => {
         
         const onUpdateCliente = () =>{
             confirmDialog({
-                message: '¿Estas seguro (a) de editar la informacion del socio?',
-                header: 'Editar socio',
+                message: '¿Estas seguro (a) de editar la informacion del cliente?',
+                header: 'Editar cliente',
                 icon: 'pi pi-question-circle',
                 defaultFocus: 'accept',
                 accept: ()=>{
@@ -104,6 +102,7 @@ export const InformacionGeneralCliente = ({data}) => {
           useEffect(() => {
             obtenerDistritosDeLima(1501, 15)
             obtenerDistritosDeCallao(701, 7)
+            obtenerEstadoCliente('cliente', 'estado-cliente')
           }, [])
           
     const dataDistritos = [
@@ -142,6 +141,25 @@ export const InformacionGeneralCliente = ({data}) => {
                                         ViewDataImg(e)
                                     }} 
                                     />
+                                </Col>
+                                <Col xl={4}>
+                                    <div className="mb-2">
+                                        <label htmlFor="id_estado" className="form-label">
+                                            ESTADO*
+                                        </label>
+										<Select
+											onChange={(e) => onInputChangeReact(e, 'id_estado')}
+											name="id_estado"
+											placeholder={'Seleccione el estado del cliente'}
+											className="react-select"
+											classNamePrefix="react-select"
+											options={dataEstadoCliente}
+											value={dataEstadoCliente.find(
+												(option) => option.value === id_estado
+											)}
+											required
+										/>
+                                    </div>
                                 </Col>
                                 <Col xl={4}>
                                     <div className="mb-2">
@@ -342,7 +360,7 @@ export const InformacionGeneralCliente = ({data}) => {
                                 <Col xl={4}>
                                     <div className="mb-2">
                                         <label htmlFor="tipoCli_cli" className="form-label">
-                                            Tipo de socio*
+                                            Tipo de cliente*
                                         </label>
 										<Select
 											onChange={(e) => onInputChangeReact(e, 'tipoCli_cli')}

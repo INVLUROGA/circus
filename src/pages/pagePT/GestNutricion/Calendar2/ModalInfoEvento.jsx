@@ -23,7 +23,7 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
             id_empl, 
             id_origen, 
             comentario,
-            fecha_inicio, fecha_fin, onInputChange, onInputChangeReact, onResetForm } = useForm(resor)
+            start, fecha_fin, onInputChange, onInputChangeReact, onResetForm } = useForm(resor)
     const [source, setSource] = useState([]);
     const [target, setTarget] = useState([]);
     const cancelInfoEvento = ()=>{
@@ -33,21 +33,21 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
         // console.log({resor}, 'asdfasdf');
         // ———> Este es el useEffect para recalcular fecha_fin:
         useEffect(() => {
-            if (!fecha_inicio) return;
+            if (!start) return;
     
             const totalDuracionMin = (etiquetas_busquedas || []).reduce((acum, serv) => {
             const dur = Number(serv.duracion) || 0;
             return acum + dur;
             }, 0);
     
-            const nuevaFechaFin = dayjs(fecha_inicio)
+            const nuevaFechaFin = dayjs(start)
             .add(totalDuracionMin, 'minute')
             .format('YYYY-MM-DDTHH:mm');
     
             onInputChange({
             target: { name: 'fecha_fin', value: nuevaFechaFin }
             });
-        }, [fecha_inicio, etiquetas_busquedas]);
+        }, [start, etiquetas_busquedas]);
     
         useEffect(() => {
             if(show){
@@ -63,7 +63,7 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
             const {  id, ...valores} = formState
             console.log({eninfo: formState.start});
             
-            putEventoServicioxEmpresa({...valores}, etiquetas_busquedas, new Date(dayjs(formState.start).toISOString()), formState.id)
+            putEventoServicioxEmpresa({...valores, fecha_inicio: formState.start}, etiquetas_busquedas, new Date(dayjs(formState.start).toISOString()), formState.id)
         }
         const onDeleteEvento=()=>{
             cancelInfoEvento()
@@ -119,11 +119,20 @@ const { obtenerClientes, dataClientes, obtenerEmpleadosxDepartamento, dataEmplea
                 </div>
                 <div style={{ display: "flex" }}>
                     <span style={labelStyle} className='fw-light'>COMIENZA:</span>
-                    <span style={valueStyle}><DateMask date={formState.start} format={'hh:mm A'}/></span>
+                    <span style={valueStyle}>
+                        {/* <DateMask date={formState.start} format={'dddd DD [DE] MMMM [DEL] YYYY [A LAS] hh:mm A'}/> */}
+                        <input
+                            type='datetime-local'
+                            value={start}
+                            name='start'
+                            className='form-control'
+                            onChange={onInputChange}
+                        />
+                    </span>
                 </div>
                 <div style={{ display: "flex" }}>
                     <span style={labelStyle} className='fw-light'>FINALIZA:</span>
-                    <span style={valueStyle}><DateMask date={formState.end} format={'hh:mm A'}/></span>
+                    <span style={valueStyle}><DateMask date={formState.end} format={' hh:mm A'}/></span>
                 </div>
                 <div style={{ display: "flex" }}>
                     <span style={labelStyle} className='fw-light'>ORIGEN:</span>

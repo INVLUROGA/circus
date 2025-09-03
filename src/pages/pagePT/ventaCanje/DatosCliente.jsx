@@ -53,7 +53,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 			...formStateCliente, 
 			id_cli: id_cli,
 			id_empl: id_empl, 
-            id_tipo_transaccion: id_tipo_transaccion, 
+            id_tipo_transaccion: 703, 
             numero_transac: numero_transac, 
             id_origen: id_origen, 
             observacion: observacion,
@@ -79,7 +79,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 	}, [id_empl])
 	useEffect(() => {
 		const dataTipoTransac = arrayFacturas.find(
-			(option) => option.value === id_tipo_transaccion
+			(option) => option.value === 703
 		)
 		setTipoTransacSelect(dataTipoTransac)
 	}, [id_tipo_transaccion])
@@ -105,9 +105,10 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 	const onChangeTipoDeComprobante = (e)=>{
 		// obtenerVentasxComprobantes(e.value)
 		obtenerVentasxComprobantes(e?.value)
-		onInputChangeFunction('id_tipo_transaccion', e?.value)
+		onInputChangeFunction('id_tipo_transaccion', 703)
 		// onInputChangeFunction('numero_transac', dataComprobante.numero_transac)   ${Number(dataComprobante?.numero_transac.split('-')[1])+1}
 	}
+	console.log({DataClientes});
 	
 	return (
 		<>
@@ -142,7 +143,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 													borderColor: "#EEBE00",
 													color: "#EEBE00",
 												}),
-										}}
+							}}
 											className="border-2 rounded-3 border-primary outline-none"
 												// classNamePrefix="react-select"
 												options={dataRecepcionista}
@@ -159,7 +160,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 											<Select
 												onChange={(e) => inputChangeClientes(e)}
 												name="id_cli"
-												placeholder={'Seleccionar cliente'}
+												placeholder={'Seleccionar canje'}
                     styles={{
                       input: (provided) => ({
                         ...provided,
@@ -182,7 +183,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
   }}
                   className="border-2 rounded-3 border-primary outline-none"
 												// classNamePrefix="react-select"
-												options={DataClientes}
+												options={DataClientes.filter(cliente=>cliente.tipoCli_cli!==84)}
 												value={DataClientes.find(
 													(option) => option.value === id_cli
 												)|| 0}
@@ -218,7 +219,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
   }}
                   className="border-2 rounded-3 border-primary outline-none"
 												// classNamePrefix="react-select"
-												options={dataOrigenCircus.filter(origen=>origen.value!==1450)}
+												options={dataOrigenCircus}
 												value={dataOrigenCircus.find(
 													(option) => option.value === id_origen
 												) || 0}
@@ -226,7 +227,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 											/>
 										</div>
 										</Col>
-										<Col xl={12} sm={12}>
+										{/* <Col xl={12} sm={12}>
 										<div className='mb-2'>
 											<Select
 												onChange={(e) => onChangeTipoDeComprobante(e)}
@@ -269,27 +270,15 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
   }}
                   className="border-2 rounded-3 border-primary outline-none"
 												// classNamePrefix="react-select"
-												options={arrayFacturas.filter(factura=>factura.value!==703)}
+												options={arrayFacturas}
 												value={arrayFacturas.find(
 													(option) => option.value === id_tipo_transaccion
 												)|| 0}
 												required
+												isDisabled
 											/>
 										</div>
-										</Col>
-										<Col xl={12} sm={12}>
-										<div className='mb-2'>
-											<input
-												type='text'
-												name='numero_transac'
-												id='numero_transac'
-												className='border-2 rounded-3 border-primary w-100 p-1 outline-none border-gray-300 fw-bold font-13'
-												placeholder='numero de comprobante'
-												value={numero_transac}
-												onChange={onInputChange}
-											/>
-										</div>
-										</Col>
+										</Col> */}
 										<Col xl={12} sm={12}>
 										<div className='mb-2'>
 											<textarea

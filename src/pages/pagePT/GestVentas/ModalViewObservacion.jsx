@@ -338,9 +338,8 @@ export const ModalViewObservacion = ({
                     {e.parametro_banco ? ` || BANCO: ${e.parametro_banco.label_param}` : ''}
                     {e.parametro_tarjeta ? ` || TARJETA: ${e.parametro_tarjeta.label_param}` : ''} |
                   </h4>
-
                   <small>
-                    MONTO PARCIAL:
+                    IMPORTE:
                     <span className="fw-bold">
                       {' '}
                       {FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param === 535 ? '$' : 'S/.')}

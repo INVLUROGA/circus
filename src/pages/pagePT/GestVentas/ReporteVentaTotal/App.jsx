@@ -348,7 +348,7 @@ export const App = ({ id_empresa }) => {
                             {e.parametro_tarjeta ? (<><span className="fw-light">TARJETA: </span>{e.parametro_tarjeta.label_param}</>) : null}
                           </span>
                           <span className="d-block fs-3">
-                            <span className="fw-light">MONTO PARCIAL: </span>
+                            <span className="fw-light">IMPORTE: </span>
                             <span className="fw-bold text-primary">
                               <SymbolSoles
                                 isbottom

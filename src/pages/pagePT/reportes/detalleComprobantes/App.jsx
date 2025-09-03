@@ -12,14 +12,45 @@ import { normalizarVentasExcel } from './desestructurarData';
 import { Dialog } from 'primereact/dialog';
 
 dayjs.extend(isoWeek);
+// Normaliza strings: minúsculas, sin acentos, espacios colapsados
+const canon = (s='') =>
+  s.toString()
+   .trim()
+   .toLowerCase()
+   .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+   .replace(/\s+/g,' ');
+
+// Reglas: agrega aquí sinónimos/variantes que quieras mapear a una etiqueta final
+const RULES = [
+  { to: 'TRANSFERENCIA', when: ['transf', 'transferencia', 'transferencias', 'transferencia bancaria', 'TRANSFERENCIA', 'bcp', 'interbank'] },
+  { to: 'tarjeta',        when: ['tarjeta', 
+"OPENPAY", 'tarjeta credito', 'tarjeta debito', 'visa', 'mastercard', 'amex', 'niubiz', 'culqi', 'mercado pago'] },
+  { to: 'efectivo',       when: ['efectivo', 'cash'] },
+  { to: 'yape',           when: ['yape'] },
+  { to: 'plin',           when: ['plin'] },
+  { to: 'deposito',       when: ['deposito', 'deposito bancario', 'abono'] },
+  { to: 'openpay',        when: ['OPENPAY'] },
+  // 👉 Añade más líneas como esta para nuevos métodos o sinónimos
+];
+
+// Devuelve la etiqueta final según las reglas; si no matchea, devuelve el texto base normalizado
+const mapFormaPago = (texto) => {
+  const c = canon(texto);
+  for (const r of RULES) {
+    if (r.when.some(w => c.includes(w))) return r.to;
+  }
+  return c || 'desconocido';
+};
 
 export const App = ({ id_empresa }) => {
   const { obtenerTablaVentas, dataVentas } = useVentasStore();
   const { obtenerParametroPorEntidadyGrupo: obtenerDataComprobantes, DataGeneral: dataComprobantes } = useTerminoStore();
+  const { obtenerParametroPorEntidadyGrupo: obtenerDataCategorias, DataGeneral: dataCategorias } = useTerminoStore();
 
   useEffect(() => {
     obtenerTablaVentas(599);
     obtenerDataComprobantes('nueva-venta', 'comprobante');
+    obtenerDataCategorias('producto', 'categoria')
   }, []);
 
   const [palabras, setPalabras] = useState([]);
@@ -261,12 +292,62 @@ const [filtroServ, setFiltroServ] = useState('');
 
   const rankingServ = useMemo(() => sortRows(rankingServBase, sortServBy, sortServDir), [rankingServBase, sortServBy, sortServDir]);
   const rankingProd = useMemo(() => sortRows(rankingProdBase, sortProdBy, sortProdDir), [rankingProdBase, sortProdBy, sortProdDir]);
+  
+const agruparPagos = (ventas = []) => {
+  const map = new Map();
+
+  ventas.forEach((venta, ventaIndex) => {
+    (venta?.detalleVenta_pagoVenta ?? []).forEach((pago, pagoIndex) => {
+      const forma_pago = mapFormaPago(pago?.parametro_forma_pago?.label_param);
+      const monto = Number(pago?.parcial_monto || 0);
+      
+      if (!map.has(forma_pago)) {
+        map.set(forma_pago, {
+          forma_pago,
+          suma_total_parcial: 0,
+          items_ventas_tienen_esa_forma_de_pago: [],
+        });
+      }
+
+      const entry = map.get(forma_pago);
+      entry.suma_total_parcial += monto;
+      entry.items_ventas_tienen_esa_forma_de_pago.push({
+        ventaIndex,
+        pagoIndex,
+        parcial_monto: monto,
+        parametro_forma_pago: pago?.parametro_forma_pago ?? null,
+      });
+    });
+  });
+
+  const resumenConItems = Array.from(map.values());
+  const resumenSoloSuma = resumenConItems.map(({ items_ventas_tienen_esa_forma_de_pago, ...rest }) => rest);
+
+  return { resumenSoloSuma, resumenConItems };
+};
+const agruparServiciosPorEmpleado = (lista = []) => {
+  const map = new Map();
+
+  for (const s of lista) {
+    const id = s?.id_empl ?? s?.empleado_servicio?.id ?? "sin_asignar";
+    const empleado = s?.empleado_servicio?.nombres_apellidos_empl || "Sin asignar";
+
+    if (!map.has(id)) {
+      map.set(id, { id_empl: id, empleado, items: [], total: 0 });
+    }
+    const g = map.get(id);
+    g.items.push(s);
+    g.total += Number(s?.tarifa_monto ?? 0);
+  }
+
+  return Array.from(map.values());
+};
 
   return (
     <>
           <PageBreadcrumb title="DETALLE DE COMPROBANTES" subName="Ventas" />
       <Row className="d-flex justify-content-center">
-        <Col lg={2} style={{ position: 'sticky', left: '0', top: 140, height: '200px' }} className=" p-3">
+        <Col lg={2} style={{ position: 'sticky', left: '0', top: 140, height: '300px', width: '400px' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <Row>
               <Col lg={12}>
@@ -274,9 +355,10 @@ const [filtroServ, setFiltroServ] = useState('');
                   <InputText
                     type="text"
                     className="form-control"
+                    width='300px'
                     placeholder="BUSCADOR"
                     value={input}
-                    style={{ fontWeight: 'bold', fontSize: '100px' }}
+                    style={{ fontWeight: 'bold', fontSize: '400px' }}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
@@ -300,8 +382,8 @@ const [filtroServ, setFiltroServ] = useState('');
                 </div>
               </Col>
               <Col lg={12}>
-                <div style={{ width: '240px' }}>
-                  <select className="form-select" style={{ fontWeight: 'bold' }} value={modo} onChange={(e) => setModo(e.target.value)}>
+                <div style={{ width: '340px' }}>
+                  <select className="form-select fs-3" style={{ fontWeight: 'bold' }} value={modo} onChange={(e) => setModo(e.target.value)}>
                     <option value="comprobante">Por comprobante</option>
                     <option value="dia">Por día</option>
                     <option value="semana">Por semana</option>
@@ -318,45 +400,52 @@ const [filtroServ, setFiltroServ] = useState('');
           {modo === 'comprobante' ? (
             ventasFiltradas.length > 0 ? (
               ventasFiltradas.map((venta) => {
-                const sumaMontoServicios = (venta.detalle_ventaservicios || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
                 const sumaMontoProductos = (venta.detalle_ventaProductos || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
+                const serviciosPeluqueria = (venta.detalle_ventaservicios || []).filter(vserv=>vserv?.circus_servicio?.id_categoria!==1478)
+                const serviciosManicure = (venta.detalle_ventaservicios || []).filter(vserv=>vserv?.circus_servicio?.id_categoria===1478)
+                const gruposPorEmpleadoPeluqueria = agruparServiciosPorEmpleado(serviciosPeluqueria || []);
+                const gruposPorEmpleadoManicure = agruparServiciosPorEmpleado(serviciosManicure || []);
+                const sumaMontoServicios = (serviciosPeluqueria || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
+                const sumaMontoServiciosManicure = (serviciosManicure || []).reduce((total, item) => total + (item?.tarifa_monto || 0), 0);
                 return (
-                  <div className="mb-4 shadow" key={venta.id}>
+                  <div className="border border-primary border-4" style={{marginBottom: '100px'}} key={venta.id}>
                     <div className="card-body fs-3">
                       <h1 className="text-center fw-bold mb-3">
                         {(venta.tb_cliente?.nombres_apellidos_cli || '').trim()}
                       </h1>
                       <div className="d-flex justify-content-between">
-                        <div className="" style={{ width: '66%' }}>
+                        <div className="" style={{ width: '100%' }}>
                           <span className="text-primary">{DateMaskString(venta.fecha_venta, 'dddd DD [DE] MMMM')}</span> {DateMaskString(venta.fecha_venta, 'YYYY')}
                         </div>
-                        <div className="" style={{ width: '33%' }}>
+                        <div className="" style={{ width: '100%' }}>
                           <strong>HORA: </strong>{DateMaskString(venta.fecha_venta, 'hh:mm A')}
                         </div>
                       </div>
 
-                      <div className="d-flex justify-content-between mb-3">
-                        <div className="text-primary" style={{ width: '66%', fontSize: '25px' }}>
+                      <div className="d-flex justify-content-between mb-3 align-items-center">
+                        <div className="text-primary" style={{ width: '100%', fontSize: '25px' }}>
                           <strong>{(dataComprobantes || []).find((c) => c.value === venta.id_tipoFactura)?.label}:</strong> {venta.numero_transac}
                         </div>
-                        <div className="text-primary" style={{ width: '33%', fontSize: '25px' }}>
+                        <div className="text-primary " style={{ width: '100%', fontSize: '34px' }}>
                           <strong>TOTAL: </strong>
-                          <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios + sumaMontoProductos} />} />
+                          <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios + sumaMontoServiciosManicure + sumaMontoProductos} />} />
                         </div>
                       </div>
+
+                      
 
                       <div>
                         {(venta?.detalleVenta_pagoVenta || []).map((e, i) => (
                           <div key={i} className="timeline-item-info border border-4 p-2 border-gray">
-                            <span className="mb-1 d-block fs-4">
+                            <span className="mb-1 d-block fs-3">
                               <span>
                                 <span className="fw-light">OPERADOR: </span>{e.parametro_forma_pago?.label_param}<br />
                               </span>
                               {e.parametro_tipo_tarjeta ? (<><span className="fw-light">TIPO DE TARJETA:</span> {e.parametro_tipo_tarjeta.label_param}<br /></>) : null}
                               {e.parametro_tarjeta ? (<><span className="fw-light">TARJETA: </span>{e.parametro_tarjeta.label_param}</>) : null}
                             </span>
-                            <span className="d-block fs-3">
-                              <span className="fw-light">MONTO PARCIAL: </span>
+                            <>
+                              <span className="fw-light fs-3">IMPORTE: </span>
                               <span className="fw-bold text-primary">
                                 <SymbolSoles
                                   isbottom
@@ -365,68 +454,176 @@ const [filtroServ, setFiltroServ] = useState('');
                                   numero={FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param == 535 ? '$' : 'S/.')}
                                 />
                               </span>
-                            </span>
+                            </>
                           </div>
                         ))}
                       </div>
+                        {
+                          (serviciosPeluqueria || []).length==0?(<></>):(
+                            <div>
+                              {/* <pre>
+                                {JSON.stringify(venta.detalle_ventaservicios, null, 2)}
+                              </pre> */}
+                              <h3 className="fw-bold text-primary" style={{fontSize: '34px'}}>
+                                Servicios peluqueria: 
+                                <span className="ml-2 text-black" >{serviciosPeluqueria.length}</span>
+                              </h3>
+                              <h3 className="fw-bold text-manicure " style={{fontSize: '34px'}}>
+                                Servicios MANICURE: 
+                                <span className="ml-2 text-black">{serviciosManicure.length}</span>
+                              </h3>
+                              {(serviciosPeluqueria || []).length === 0 ? null : (
+                                <div>
+                                  <ul className="list-group">
+                                    {gruposPorEmpleadoPeluqueria.map((g) => (
+                                      <li key={g.id_empl} className="list-group-item p-0">
+                                        <div className={`d-flex justify-content-between align-items-center ${(g.empleado || "-").split(" ")[0] ==='TIBISAY'?'bg-manicure':'bg-primary'}  text-white px-2 py-1`}>
+                                          <strong>{(g.empleado || "-").split(" ")[0]}</strong>
+                                          <div className="text-end">
+                                            <SymbolSoles
+                                              size={16}
+                                              bottomClasss={"4"}
+                                              numero={<NumberFormatMoney amount={g.total} />}
+                                            />
+                                          </div>
+                                        </div>
 
-                      <div>
-                        <h3 className="fw-bold">Servicios cantidad: <span className="" style={{ fontSize: '27px' }}>{(venta.detalle_ventaservicios || []).length}</span></h3>
-                        <ul className="list-group">
-                          {(venta.detalle_ventaservicios || []).map((s, i) => (
-                            <li key={i} className="list-group-item m-0 p-0">
-                              <div className="text-center bg-primary text-white" style={{ width: '100%' }}>
-                                {(s.empleado_servicio?.nombres_apellidos_empl || '-').split(' ')[0]}
-                              </div>
-                              <div className="d-flex flex-row justify-content-between">
-                                <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
-                                  {s.circus_servicio?.nombre_servicio}
+                                        <ul className="list-group list-group-flush">
+                                          {g.items.map((s, i) => (
+                                            <li key={`${g.id_empl}-${i}`} className={`list-group-item m-0 p-0 ${s?.circus_servicio?.id_categoria===1478?'':''}`}>
+                                              <div className="d-flex flex-row justify-content-between">
+                                                <div className={`${s?.circus_servicio?.id_categoria===1478?'text-manicure':'text-primary'}  mx-1`} style={{ width: "100%", fontSize: "16px" }}>
+                                                  {(dataCategorias.find(c => c.value == s?.circus_servicio?.id_categoria)?.label ?? "-")}
+                                                  {" / "}
+                                                  {s?.circus_servicio?.nombre_servicio ?? "-"}
+                                                </div>
+                                                <div className="text-end mx-1" style={{ width: "150px" }}>
+                                                  <SymbolSoles
+                                                    size={20}
+                                                    bottomClasss={"8"}
+                                                    numero={<NumberFormatMoney amount={s?.tarifa_monto} />}
+                                                  />
+                                                </div>
+                                              </div>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
-                                <div className="text-end mx-1" style={{ width: '150px' }}>
-                                  <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} />
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                          <li className="list-group-item px-0" style={{ backgroundColor: '#F8F8FA' }}>
-                            <div className="d-flex flex-row justify-content-between">
-                              <div className="mx-1" style={{ width: '200px', fontSize: '25px' }}>TOTAL VENTA:</div>
-                              <div className="text-end mx-1" style={{ width: '150px', fontSize: '27px' }}>
-                                <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios} />} />
-                              </div>
+                              )}
+                              
+                              <ul className="list-group">
+                                <li className="list-group-item px-0 bg-primary text-white">
+                                  <div className="d-flex flex-row justify-content-between">
+                                    <div className="mx-1" style={{ width: '100%', fontSize: '34px' }}>PELUQUERIA TOTAL:</div>
+                                    <div className="text-end mx-2" style={{ width: '150px', fontSize: '34px' }}>
+                                      <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios} />} />
+                                    </div>
+                                  </div>
+                                </li>
+                              </ul>
                             </div>
-                          </li>
-                        </ul>
-                      </div>
+                          )
+                        }
+                        {
+                          (serviciosManicure || []).length==0?(<></>):(
+                            <div>
+                              {/* <pre>
+                                {JSON.stringify(venta.detalle_ventaservicios, null, 2)}
+                              </pre> */}
+                              {/* <h3 className="fw-bold text-manicure">
+                                Servicios MANICURE: 
+                                <span className="ml-2" style={{ fontSize: '27px' }}>{serviciosManicure.length}</span>
+                              </h3> */}
+                              {(serviciosManicure || []).length === 0 ? null : (
+                                <div>
+                                  <ul className="list-group">
+                                    {gruposPorEmpleadoManicure.map((g) => (
+                                      <li key={g.id_empl} className="list-group-item p-0">
+                                        <div className={`d-flex justify-content-between align-items-center bg-manicure text-white px-2 py-1`}>
+                                          <strong>{(g.empleado || "-").split(" ")[0]}</strong>
+                                          <div className="text-end">
+                                            <SymbolSoles
+                                              size={16}
+                                              bottomClasss={"4"}
+                                              numero={<NumberFormatMoney amount={g.total} />}
+                                            />
+                                          </div>
+                                        </div>
 
-                      <div className="mt-5">
-                        <h3 className="fw-bold">PRODUCTOS cantidad: <span className="" style={{ fontSize: '27px' }}>{(venta.detalle_ventaProductos || []).length}</span></h3>
-                        <ul className="list-group">
-                          {(venta.detalle_ventaProductos || []).map((s, i) => (
-                            <li key={i} className="list-group-item">
-                              <div className="d-flex flex-row">
-                                <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
-                                  {(s.empleado_producto?.nombres_apellidos_empl || '-').split(' ')[0]}
+                                        <ul className="list-group list-group-flush">
+                                          {g.items.map((s, i) => (
+                                            <li key={`${g.id_empl}-${i}`} className={`list-group-item m-0 p-0 ${s?.circus_servicio?.id_categoria===1478?'':''}`}>
+                                              <div className="d-flex flex-row justify-content-between">
+                                                <div className={`${s?.circus_servicio?.id_categoria===1478?'text-manicure':'text-primary'}  mx-1`} style={{ width: "100%", fontSize: "16px" }}>
+                                                  {(dataCategorias.find(c => c.value == s?.circus_servicio?.id_categoria)?.label ?? "-")}
+                                                  {" / "}
+                                                  {s?.circus_servicio?.nombre_servicio ?? "-"}
+                                                </div>
+                                                <div className="text-end mx-1" style={{ width: "150px" }}>
+                                                  <SymbolSoles
+                                                    size={20}
+                                                    bottomClasss={"8"}
+                                                    numero={<NumberFormatMoney amount={s?.tarifa_monto} />}
+                                                  />
+                                                </div>
+                                              </div>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </div>
-                                <div className="text-end mx-1" style={{ width: '150px' }}>
-                                  <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} /> - 
-                                </div>
-                                <div className="text-end mx-1" style={{ width: 'auto' }}>
-                                  {s.tb_producto?.nombre_producto} - {s.cantidad} unidad
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                          <li className="list-group-item" style={{ backgroundColor: '#F8F8FA' }}>
-                            <div className="d-flex flex-row">
-                              <div className="mx-1" style={{ width: '200px', fontSize: '25px' }}>TOTAL VENTA:</div>
-                              <div className="text-end mx-1 align-content-center" style={{ width: '150px', fontSize: '27px' }}>
-                                <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoProductos} />} /> <span className="opacity-0">-</span>
-                              </div>
+                              )}
+                              
+                              <ul className="list-group">
+                                <li className="list-group-item px-0 bg-manicure text-white">
+                                  <div className="d-flex flex-row justify-content-between">
+                                    <div className="mx-1" style={{ width: '100%', fontSize: '34px' }}>MANICURE TOTAL:</div>
+                                    <div className="text-end mx-1" style={{ width: '150px', fontSize: '34px' }}>
+                                      <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServiciosManicure} />} />
+                                    </div>
+                                  </div>
+                                </li>
+                              </ul>
                             </div>
-                          </li>
-                        </ul>
-                      </div>
+                          )
+                        }
+                      {
+                        (venta.detalle_ventaProductos || []).length===0?(<></>):(
+                          <div className="mt-5">
+                            <h3 className="fw-bold">PRODUCTOS cantidad: <span className="" style={{ fontSize: '27px' }}>{(venta.detalle_ventaProductos || []).length}</span></h3>
+                            <ul className="list-group">
+                              {(venta.detalle_ventaProductos || []).map((s, i) => (
+                                <li key={i} className="list-group-item">
+                                  <div className="d-flex flex-row">
+                                    <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
+                                      {(s.empleado_producto?.nombres_apellidos_empl || '-').split(' ')[0]}
+                                    </div>
+                                    <div className="text-end mx-1" style={{ width: '150px' }}>
+                                      <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} /> - 
+                                    </div>
+                                    <div className="text-end mx-1" style={{ width: 'auto' }}>
+                                      {s.tb_producto?.nombre_producto} - {s.cantidad} unidad
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+                              <li className="list-group-item" style={{ backgroundColor: '#F8F8FA' }}>
+                                <div className="d-flex flex-row">
+                                  <div className="mx-1" style={{ width: '200px', fontSize: '25px' }}>TOTAL VENTA:</div>
+                                  <div className="text-end mx-1 align-content-center" style={{ width: '150px', fontSize: '27px' }}>
+                                    <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoProductos} />} /> <span className="opacity-0">-</span>
+                                  </div>
+                                </div>
+                              </li>
+                            </ul>
+                          </div>
+                        )
+                      }
                     </div>
                   </div>
                 );
@@ -443,7 +640,8 @@ const [filtroServ, setFiltroServ] = useState('');
               const totalServiciosImporte = servicios.reduce((sum, s) => sum + Number(s?.tarifa_monto || 0), 0);
               const totalProductosImporte = productos.reduce((sum, p) => sum + Number(p?.tarifa_monto || 0), 0);
               const total = totalServiciosImporte + totalProductosImporte;
-
+              console.log({ GRP: grupo});
+              
               return (
                 <div key={idx} className="card mb-4 shadow">
                   <div className="card-body">
@@ -538,6 +736,22 @@ const [filtroServ, setFiltroServ] = useState('');
                           <span className="fs-1">{encontrarRepetidos(grupo.ventas).cantidadRep}</span>
                         </div>
                       </li>
+                      
+                      {
+                        agruparPagos(grupo?.ventas).resumenSoloSuma.map(formas=>{
+                          return (
+                            <li className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
+                              <div className="d-flex justify-content-between">
+                                <span>{formas.forma_pago} </span>
+                                <span className="text-end fs-1">
+                                  <SymbolSoles size={25} bottomClasss={'20'} numero={<NumberFormatMoney amount={formas.suma_total_parcial} />} />
+                                </span>
+                              </div>
+                            </li>
+
+                          )
+                        })
+                      }
 
                     </ul>
                   </div>

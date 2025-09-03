@@ -286,6 +286,9 @@ td, th {
 .bg-circus{
   background-color: #EEBE00;
 }
+.bg-manicure{
+  background-color: #ef75c0;
+}
 .bg-greenISESAC{
   background-color: #17a700;
 }
@@ -295,6 +298,10 @@ td, th {
 }
 .text-ISESAC{
   color: #17a700 !important;
+}
+
+.text-manicure{
+  color: #ef75c0;
 }
 .text-circus{
   color: #EEBE00;
@@ -431,9 +438,9 @@ button{
 .leyenda-confirmada{
     // color: #000 !important;
     background-color: rgb(153, 204, 248) !important;
-    border-left: rgb(33, 105, 168) 10px solid !important;
-    border-top: rgb(33, 105, 168) 3px solid !important;
-    border-bottom: rgb(33, 105, 168) 3px solid !important;
+    // border-left: rgb(33, 105, 168) 10px solid !important;
+    // border-top: rgb(33, 105, 168) 3px solid !important;
+    // border-bottom: rgb(33, 105, 168) 3px solid !important;
 }
 .bg-leyenda-cancelada{
   background-color: rgb(190, 98, 28) !important;
@@ -442,9 +449,9 @@ button{
 .leyenda-cancelada{
   background-color: rgb(190, 98, 28) !important;
   // border: rgb(125, 134, 0) 2px solid !important;
-  border-left: rgb(190, 98, 28) 10px solid !important;
-    border-top: rgb(190, 98, 28) 3px solid !important;
-    border-bottom: rgb(190, 98, 28) 3px solid !important;
+  // border-left: rgb(190, 98, 28) 10px solid !important;
+  //   border-top: rgb(190, 98, 28) 3px solid !important;
+  //   border-bottom: rgb(190, 98, 28) 3px solid !important;
 }
 
 .bg-leyenda-asistio{
@@ -454,9 +461,9 @@ button{
 .leyenda-asistio{
   background-color: #76E97E !important;
   // background-color: #ffffff !important;
-  border-left: #27CA37 10px solid !important;
-    border-top: #27CA37 3px solid !important;
-    border-bottom: #27CA37 3px solid !important;
+  // border-left: #27CA37 10px solid !important;
+  //   border-top: #27CA37 3px solid !important;
+  //   border-bottom: #27CA37 3px solid !important;
 }
 .bg-leyenda-no-asistio{
   background-color: #bb4720 !important;
@@ -466,9 +473,9 @@ button{
   background-color: #FC8B8B !important;
   // background-color: #ffffff !important;
   // border-left: #bb4720 7px solid !important;
-  border-left: #bb4720 10px solid !important;
-    border-top: #bb4720 3px solid !important;
-    border-bottom: #bb4720 3px solid !important;
+  // border-left: #bb4720 10px solid !important;
+  //   border-top: #bb4720 3px solid !important;
+  //   border-bottom: #bb4720 3px solid !important;
 }
 .leyenda-null{
   background-color: #ffffff !important;

@@ -14,6 +14,16 @@ export const clasesVentasSeparadas = (tipo) => {
 			return '';
 	}
 };
+export const getBgEstados = (tipo) => {
+	switch (tipo) {
+		case 'INACTIVO':
+			return 'danger';
+		case 'ACTIVO':
+			return 'success';
+		case 'CRITICO':
+			return 'warning';
+	}
+};
 
 export const arrayEmpresa = [
 	{ value: 598, label: 'CHANGE' },

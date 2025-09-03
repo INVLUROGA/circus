@@ -94,6 +94,8 @@ const ResumenEjecutivo = lazy(()=>import('../pages/pagePT/reportes/resumenEjecut
 const DetalleComprobantes = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantes/Index.jsx'))
 const DetalleRangoFecha = lazy(()=>import('../pages/pagePT/reportes/detalleComprobantesRangoFecha/Index.jsx'))
 const GestionComanda = lazy(()=>import('../pages/pagePT/GestionComandas'))
+const VentaCanje = lazy(() => import('../pages/pagePT/ventaCanje'));
+
 /**
  * routes import
  */
@@ -156,10 +158,10 @@ export default function ProtectedRoutes() {
 						sections.find(e=>e.url==='/resultados-change')&&
                         <Route path='resultados-change' element={<ResultadoChange/>}/>
 					}
-					{
+					{/* {
 						sections.find(e=>e.url==='/facturacion-publicidad')&&
                         <Route path='facturacion-publicidad' element={<ReporteSesionesxMem/>}/>
-					}
+					} */}
 					{
 						sections.find(e=>e.url==='/reporte/seguimiento-x-mes')&&
                         <Route path='reporte/seguimiento-x-mes' element={<SeguimientoxMesView/>}/>
@@ -239,6 +241,10 @@ export default function ProtectedRoutes() {
 					}
 					{sections.find(e=>e.url==='/nueva-venta')&&
 						<Route path="nueva-venta" element={<NuevaVenta />} />
+					}
+					{
+						sections.find(e=>e.url==='/canje')&&
+                        <Route path='canje' element={<VentaCanje/>}/>
 					}
 					{
 						sections.find(e=>e.url==='/reporte/venta-por-semana')&&

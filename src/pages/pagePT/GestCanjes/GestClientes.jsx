@@ -26,11 +26,11 @@ export const GestClientes = () => {
 	
   return (
     <>
-    			<PageBreadcrumb title="GESTION DE CLIENTES" subName="E-commerce" />
+    			<PageBreadcrumb title="GESTION DE CANJES" subName="E-commerce" />
                 
 			<Row>
 				<TabView>
-					<TabPanel header={'CLIENTES'}>
+					<TabPanel header={'CANJES'}>
 						<Col xs={12}>
 							<Card>
 								<Card.Body>

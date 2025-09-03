@@ -335,7 +335,7 @@ const clientesStats = useMemo(() => {
                                     {e.n_operacion ? (<><br/><span className="fw-light">OPERACIÓN: </span>{e.n_operacion}</>) : null}
                                   </span>
                                   <span className="d-block fs-3">
-                                    <span className="fw-light">MONTO PARCIAL: </span>
+                                    <span className="fw-light">IMPORTE: </span>
                                     <span className="fw-bold text-primary">
                                       <SymbolSoles isbottom bottomClasss={'10'} size={20} numero={FUNMoneyFormatter(e.parcial_monto, e.parametro_forma_pago?.id_param == 535 ? '$' : 'S/.')} />
                                     </span>

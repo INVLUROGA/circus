@@ -76,11 +76,11 @@ const ResourcesTitle = ({height,lineHeight, boxShadow, onOpenModalCustomEvento, 
             <div className='mx-2'>
               <div className=''>{arrayCargoEmpl.find(e=>e.value===cargo_empl)?.label}</div>
               <div className='fs-1'>{resourceTitle.split(' ')[0]}</div>
-              <div className='text-start ml-5'><span className='color-confirmada'>confirmada <span className='color-confirmada'>{eventoConfirmadas.length}</span></span> </div>
-              <div className='text-start ml-5'><span className='color-asistio'>ASISTIÓ <span className=''>{eventoAsistio.length}</span></span> </div>
-              <div className='text-start ml-5'><span className='color-no-asistio'>NO ASISTIÓ <span className=''>{eventoNoAsistio.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='confirmada'>confirmada <span className='confirmada'>{eventoConfirmadas.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='asistio'>ASISTIÓ <span className=''>{eventoAsistio.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='no-asistio'>NO ASISTIÓ <span className=''>{eventoNoAsistio.length}</span></span> </div>
               <div className='text-start ml-5'><span className=''>PENDIENTE <span className=''>{eventosPasados.length}</span></span> </div>
-              <div className='text-start ml-5'><span className='color-cancelada'>CANCELADA <span className=''>{eventoCancelado.length}</span></span> </div>
+              <div className='text-start ml-5'><span className='cancelada'>CANCELADA <span className=''>{eventoCancelado.length}</span></span> </div>
             </div>
             <div>
               {/* <Button className='m-1 p-1' onClick={()=>onOpenModalCustomEvento(resource)}>Agregar evento</Button> */}
@@ -711,21 +711,21 @@ function App() {
   return (
 		<div>
 			<div className="chart-widget-list d-flex">
-				{/* <p>
-					<i className="mdi mdi-square ml-4 leyenda-confirmada"></i> Confirmada
+        <p>
+					<i className="ml-4 leyenda-confirmada px-2 py-1"></i> Confirmada
 				</p>
 				<p>
-					<i className="mdi mdi-square ml-4 leyenda-cancelada"></i> Cancelada
+					<i className="ml-4 leyenda-cancelada px-2 py-1"></i> Cancelada
+				</p>
+				<p className="mb-0 ">
+					<i className="ml-4 leyenda-asistio px-2 py-1"></i> Asistió
 				</p>
 				<p className="mb-0">
-					<i className="mdi mdi-square ml-4 leyenda-asistio"></i> Asistió
+					<i className="ml-4 leyenda-no-asistio px-2 py-1"></i> No asistió
 				</p>
 				<p className="mb-0">
-					<i className="mdi mdi-square ml-4 leyenda-no-asistio"></i> No asistió
-				</p>
-				<p className="mb-0">
-					<i className="mdi mdi-square ml-4 bg-primary"></i> PENDIENTE
-				</p> */}
+					<i className="ml-4 bg-primary px-2 py-1"></i> PENDIENTE
+				</p> 
 			</div>
 			<div className="d-flex align-items-center justify-content-center">
 				{/* Botón anterior */}

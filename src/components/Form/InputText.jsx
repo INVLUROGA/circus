@@ -1,15 +1,15 @@
 import React from 'react'
 
-export const InputText = ({...props}) => {
+export const InputText = ({ width='200px', ...props}) => {
   return (
-    <div className="border-3 border-primary rounded bg-white d-flex" style={{ width: '200px', height: '60px' }}>
+    <div className="border-3 border-primary rounded bg-white d-flex" style={{ width: width, height: '60px' }}>
         <input
             {...props}
-            className="border-0 outline-none"
+            className="border-0 outline-none fs-2"
             style={{
             padding: '5px',
             width: '100%',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
             }}
         />
     </div>

@@ -90,6 +90,8 @@ export const useUsuarioStore = () => {
 			setLoadingData(true);
 			dispatch(onLoadingClient());
 			const { data } = await PTApi.get(`/usuario/get-cliente/${uid_cliente}`);
+			console.log({ data });
+
 			// dispatch(onSetData(data.clientes));
 			// const { data: dataImg } = await PTApi.get(
 			// 	`/upload/get-upload/${data.cliente?.uid_avatar}`
