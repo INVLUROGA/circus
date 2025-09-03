@@ -645,8 +645,9 @@ function App() {
     {resourceId: 3550, orden: 100},
     {resourceId: 3567, orden: 200},
     {resourceId: 3568, orden: 300},
-    {resourceId: 3556, orden: 400},
-    {resourceId: 3553, orden: 500},
+    {resourceId: 3556, orden: 400}, //MIGUEL
+    {resourceId: 3553, orden: 600}, //MIA
+    {resourceId: 3574, orden: 500},  //TIBI
   ]
   const resourcesEmpleados = dataEmpleados.map(e=>{
     return {

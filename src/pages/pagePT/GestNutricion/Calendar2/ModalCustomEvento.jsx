@@ -15,6 +15,7 @@ import { ModalCliente } from '../../GestClientes/ModalCliente';
 import { ProfileCard } from './ProfileCard';
 import SimpleBar from 'simplebar-react';
 import { ModalInfoCliente } from '../ModalInfoCliente';
+import { ModalInfoComentarios } from './ModalInfoComentarios';
 const customEvent = {
     id: 0,
     id_cli: 0,
@@ -83,12 +84,19 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
         onShowCustomEvento(resor)
     }
     const [isOpenModalEventoDelCliente, setisOpenModalEventoDelCliente] = useState({isOpen: false, id_cli: 0})
+    const [isOpenModalComentarioCliente, setisOpenModalComentarioCliente] = useState({isOpen: false, id_cli: 0})
     const onOpenModalEventosDelCliente = ()=>{
         setisOpenModalEventoDelCliente({isOpen: true, id_cli: id_cli})
     }
     const onCloseModalEventosDelCliente = ()=>{
         setisOpenModalEventoDelCliente({isOpen: false, id_cli: 0})
     }
+	const onOpenModalComentarioCliente=()=>{
+		setisOpenModalComentarioCliente({isOpen: true, id_cli: id_cli})
+	}
+	const onCloseModalComentarioCliente=()=>{
+		setisOpenModalComentarioCliente({isOpen: false, id_cli: 0})
+	}
     const onChangeCliente = (e, id)=>{
         onInputChangeReact(e, id)
     }
@@ -111,6 +119,7 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
                                     {
                                         isOpenModalEventoDelCliente.id_cli==0 && (
                                             <div>
+                                            <Button onClick={onOpenModalComentarioCliente} label="VER COMENTARIOS" className='bg-change mx-2' />
                                             <Button onClick={onOpenModalEventosDelCliente} label="VER PERFIL" className='bg-change' />
                                             </div>
                                         )
@@ -312,20 +321,12 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
 									</Form>
 								</SimpleBar>
 							</Col>
-							{/* <Col lg={5} style={{ height: '100%' }}>
-								<SimpleBar style={{ maxHeight: '100%' }}>
-									<div style={{ padding: '0.5rem' }}>
-										<InfoEventosClientes
-											onHide={onCloseModalEventosDelCliente}
-											show={isOpenModalEventoDelCliente}
-										/>
-									</div>
-								</SimpleBar>
-							</Col> */}
+							{JSON.stringify(isOpenModalEventoDelCliente.id_cli)}
 						</Row>
 					</div>
 				</Dialog>
 			)}
+			<ModalInfoComentarios id_cli={isOpenModalComentarioCliente.id_cli} show={isOpenModalComentarioCliente.isOpen} onHide={onCloseModalComentarioCliente}/>
             <ModalInfoCliente id_cli={isOpenModalEventoDelCliente.id_cli} onHide={onCloseModalEventosDelCliente} show={isOpenModalEventoDelCliente.isOpen}/>
 		</>
   );

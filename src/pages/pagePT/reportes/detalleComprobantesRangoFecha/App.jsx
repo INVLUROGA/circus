@@ -328,10 +328,10 @@ const clientesStats = useMemo(() => {
                                 <div key={i} className=" border border-4 p-2 border-primary">
                                   <span className="mb-1 d-block fs-4">
                                     <span>
-                                      <span className="fw-light">OPERADOR: </span>{e.parametro_forma_pago?.label_param}<br />
+                                      <span className="fw-light">FORMA DE PAGO: </span>{e.parametro_forma_pago?.label_param}<br />
                                     </span>
-                                    {e.parametro_tipo_tarjeta ? (<><span className="fw-light">TIPO DE TARJETA:</span> {e.parametro_tipo_tarjeta.label_param}<br /></>) : null}
                                     {e.parametro_tarjeta ? (<><span className="fw-light">TARJETA: </span>{e.parametro_tarjeta.label_param}</>) : null}
+                                    {e.parametro_tipo_tarjeta ? (<><span className="fw-light">TIPO DE TARJETA:</span> {e.parametro_tipo_tarjeta.label_param}<br /></>) : null}
                                     {e.n_operacion ? (<><br/><span className="fw-light">OPERACIÓN: </span>{e.n_operacion}</>) : null}
                                   </span>
                                   <span className="d-block fs-3">

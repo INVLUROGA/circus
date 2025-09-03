@@ -7,6 +7,7 @@ import {App as ReporteVenta } from './ReporteVentaTotal/App'
 import {App as ReporteVenta1 } from './ReporteVentas/App'
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore'
 import ReporteDiaMes from './ReporteDiaMes'
+import ResumenVentasxDia from './ResumenVentasxDia'
 export const GestionVentas = () => {
     const {obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores, DataVendedores} = useTerminoStore()
     useEffect(() => {
@@ -20,8 +21,11 @@ export const GestionVentas = () => {
         <TabPanel header={'VENTAS'}>
                               <TodoVentas DataClientes={DataClientes} id_empresa={599}/>
         </TabPanel>
-        <TabPanel header={'VENTAS POR MES DIA'}>
+        <TabPanel header={'RESUMEN MENSUAL DE VENTAS POR DIA'}>
           <ReporteDiaMes/>
+        </TabPanel>
+        <TabPanel header={'RESUMEN VENTA POR DIA'}>
+          <ResumenVentasxDia/>
         </TabPanel>
       </TabView>
     </>

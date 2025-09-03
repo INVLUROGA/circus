@@ -329,7 +329,7 @@ console.log({resumen});
                                 <div key={i} className=" border border-4 p-2 border-primary">
                                   <span className="mb-1 d-block">
                                     <span>
-                                      <span className="fw-light fs-2">OPERADOR: </span>{e.parametro_forma_pago?.label_param}<br />
+                                      <span className="fw-light fs-2">FORMA DE PAGO: </span>{e.parametro_forma_pago?.label_param}<br />
                                     </span>
                                     {e.parametro_tipo_tarjeta ? (<><span className="fw-light">TIPO DE TARJETA:</span> {e.parametro_tipo_tarjeta.label_param}<br /></>) : null}
                                     {e.parametro_tarjeta ? (<><span className="fw-light">TARJETA: </span>{e.parametro_tarjeta.label_param}</>) : null}

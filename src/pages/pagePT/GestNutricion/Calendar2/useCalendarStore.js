@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 
 export const useCalendarStore = () => {
 	const [dataClientes, setdataClientes] = useState([]);
+	const [datacliente, setdatacliente] = useState({});
 	const [dataCitas, setdataCitas] = useState([]);
 	const [dataCitasxIdcli, setdataCitasxIdcli] = useState([]);
 	const [dataEmpleados, setdataEmpleados] = useState([]);
@@ -15,6 +16,14 @@ export const useCalendarStore = () => {
 	const [message, setmessage] = useState({ msg: '', ok: false });
 	const { postEtiquetaxEntidadxGrupo } = useTerminoStore();
 	const dispatch = useDispatch();
+	const obtenerCliente = async (id_cli) => {
+		try {
+			const { data } = await PTApi.get(`/usuario/get-cliente/id/${id_cli}`);
+			setdatacliente(data.cliente);
+		} catch (error) {
+			console.log(error);
+		}
+	};
 	const obtenerClientes = async () => {
 		try {
 			const { data } = await PTApi.get('/parametros/get_params/clientes/599');
@@ -192,6 +201,8 @@ export const useCalendarStore = () => {
 		}
 	};
 	return {
+		obtenerCliente,
+		datacliente,
 		obtenerEventoServicioxIdCli,
 		obtenerEventoServicioxEmpresa,
 		dataCitasxIdcli,
