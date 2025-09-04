@@ -24,6 +24,7 @@ function formatoNumero(num) {
 const DatosCliente = ({dataCliente, setNombreCliente}) => {
 	const dispatch = useDispatch()
 	  const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtenerRecepcionistas, DataVendedores:dataRecepcionista } = useTerminoStore();
+	//   const { obtenerEmpleadosxCargoxDepartamentoxEmpresa:obtener, DataVendedores:dataRecepcionista } = useTerminoStore();
 	const {obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores, DataVendedores} = useTerminoStore()
 	const {obtenerParametroPorEntidadyGrupo:obtenerDataOrigenCircus, DataGeneral:dataOrigenCircus} = useTerminoStore()
 	const { dataComprobante, obtenerVentasxComprobantes } = useVentasStore()

@@ -5,7 +5,7 @@ import DatosCliente from '../DatosCliente'
 
 export const CardCliente = ({dataCliente}) => {
   // console.log(dataCliente);
-  const [NombreCliente, setNombreCliente] = useState('CLIENTE')
+  const [NombreCliente, setNombreCliente] = useState('CANJE')
   return (
     <Card>
         <Card.Header>

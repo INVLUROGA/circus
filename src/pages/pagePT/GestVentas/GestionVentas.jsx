@@ -21,12 +21,6 @@ export const GestionVentas = () => {
         <TabPanel header={'VENTAS'}>
                               <TodoVentas DataClientes={DataClientes} id_empresa={599}/>
         </TabPanel>
-        <TabPanel header={'RESUMEN MENSUAL DE VENTAS POR DIA'}>
-          <ReporteDiaMes/>
-        </TabPanel>
-        <TabPanel header={'RESUMEN VENTA POR DIA'}>
-          <ResumenVentasxDia/>
-        </TabPanel>
       </TabView>
     </>
   )

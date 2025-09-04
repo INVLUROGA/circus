@@ -9,6 +9,8 @@ import minMax from 'dayjs/plugin/minMax';
 import 'dayjs/locale/es';
 
 import { useCalendarDia } from './useCalendarDia';
+import { PageBreadcrumb } from '@/components';
+import { NumberFormatter } from '@/components/CurrencyMask';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -192,6 +194,7 @@ export const App = () => {
 
   return (
     <div>
+    <PageBreadcrumb title="Acumulado anual por dia calendario" subName="Ventas" />
       {/* Calendario con header sticky */}
       <div style={{ maxHeight: 520, overflow: 'auto', border: '1px solid #eee', borderRadius: 12 }}>
         {/* Cabecera (sticky) */}
@@ -206,150 +209,77 @@ export const App = () => {
             borderBottom: '1px solid #ddd',
           }}
         >
-          {DAYS.map(d => (
+          {/* {DAYS.map(d => (
             <div key={d} className="py-2 px-3 text-center fw-semibold bg-primary fs-2" style={{ borderRight: '1px solid #f1f1f1' }}>
               {d}
             </div>
-          ))}
+          ))} */}
         </div>
 
-        {/* Secciones por mes */}
-        {monthSections.map(section => {
-          // ====== RESUMEN MENSUAL ======
-          const monthRealStart = section.monthMoment.startOf('month');
-          const monthRealEnd   = section.monthMoment.endOf('month');
-
-          const byDow = Array.from({ length: 7 }, () => ({
-            ventasServicios: 0,
-            ventasProductos: 0,
-            cantidadServicios: 0,
-            cantidadProductos: 0,
-            canjes: 0,
-          }));
-
-          let totalMes = 0;
-
-          {
-            let d = monthRealStart.clone();
-            while (d.isSame(monthRealStart, 'month') || d.isBefore(monthRealEnd, 'day')) {
-              const dkey = d.format('YYYY-MM-DD');
-              const m = dailyMap.get(dkey);
-              const idx = d.isoWeekday() - 1; // 0..6 (LUN..DOM)
-
-              const vs = Number(m?.ventasServicios || 0);
-              const vp = Number(m?.ventasProductos || 0);
-              const cs = Number(m?.cantidadServicios || 0);
-              const cp = Number(m?.cantidadProductos || 0);
-              const cj = (canjesMap.get(dkey)?.length) || 0;
-
-              byDow[idx].ventasServicios  += vs;
-              byDow[idx].ventasProductos  += vp;
-              byDow[idx].cantidadServicios += cs;
-              byDow[idx].cantidadProductos += cp;
-              byDow[idx].canjes            += cj;
-
-              totalMes += (vs + vp);
-              d = d.add(1, 'day');
-              if (d.isAfter(monthRealEnd, 'day')) break;
-            }
-          }
-
-          const aggMes = byDow.reduce(
-            (acc, x) => ({
-              ventasServicios: acc.ventasServicios + x.ventasServicios,
-              ventasProductos: acc.ventasProductos + x.ventasProductos,
-              cantidadServicios: acc.cantidadServicios + x.cantidadServicios,
-              cantidadProductos: acc.cantidadProductos + x.cantidadProductos,
-              canjes: acc.canjes + x.canjes,
-            }),
-            { ventasServicios: 0, ventasProductos: 0, cantidadServicios: 0, cantidadProductos: 0, canjes: 0 }
-          );
-
-          return (
-            <div key={section.monthId} style={{ padding: '12px 8px 32px' }}>
-              {/* Título del mes */}
-              <div className="fs-1 fw-bold text-primary mb-3 text-center" style={{ letterSpacing: 1 }}>
-                {section.monthTitle}
-              </div>
-
-              {/* Semanas del mes */}
-              {section.weeks.map((week, wi) => {
-                const isPartialWeek = week.some(d => !d.isSame(section.monthMoment, 'month'));
-                return (
-                  <div
-                    key={`${section.monthId}-w${wi}`}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: GRID,
-                      borderBottom: '1px solid #f6f6f6',
-                      // background: isPartialWeek ? YELLOW : 'transparent',
-                    }}
-                  >
-                    {week.map((d) => {
-                      const dkey = d.format('YYYY-MM-DD');
-                      const isOutside = !d.isSame(section.monthMoment, 'month');
-
-                      if (isPartialWeek && isOutside) {
-                        return (
-                          <div
-                            key={dkey}
-                            style={{
-                              borderRight: '1px solid #f6f6f6',
-                              // background: YELLOW,
-                              minHeight: 140,
-                            }}
-                          />
-                        );
-                      }
-
-                      const metrics = dailyMap.get(dkey) || {
-                        ventasProductos: 0,
-                        cantidadProductos: 0,
-                        ventasServicios: 0,
-                        cantidadServicios: 0,
-                        cantidadComprobantes: 0,
-                      };
-                      const tituloDia = d.locale('es').format('D [de] MMMM');
-                      const canjesCount = (canjesMap.get(dkey)?.length) || 0;
-
-                      return (
-                        <div
-                          key={dkey}
-                          style={{
-                            borderRight: '1px solid #f6f6f6',
-                            background: 'transparent',
-                          }}
-                        >
-                          <div className="fw-bold mb-2 text-white bg-primary text-center fs-3">
-                            {tituloDia}
-                          </div>
-                          <ul style={{ fontSize: 15, lineHeight: 1.4, marginBottom: 10 }}>
-                            <li className={metrics.ventasServicios > 0 ? 'fw-bold' : 'fw-light'}>
-                              Ventas servicios: {fmtMoney(metrics.ventasServicios)}
-                            </li>
-                            <li className={metrics.cantidadServicios > 0 ? 'fw-bold' : 'fw-light'}>
-                              Cant. servicios: {metrics.cantidadServicios}
-                            </li>
-                            <li className={metrics.ventasProductos > 0 ? 'fw-bold' : 'fw-light'}>
-                              Ventas productos: {fmtMoney(metrics.ventasProductos)}
-                            </li>
-                            <li className={metrics.cantidadProductos > 0 ? 'fw-bold' : 'fw-light'}>
-                              Cant. productos: {metrics.cantidadProductos}
-                            </li>
-                            <li className={canjesCount > 0 ? 'fw-bold' : 'fw-light'}>Canjes: {canjesCount}</li>
-                          </ul>
-                        </div>
-                      );
-                    })}
+        {/* ===== ACUMULADO GLOBAL (al final): LUN..DOM + TODO ===== */}
+        <div className="mt-4" style={{ padding: '12px 8px 24px' }}>
+          <div className="fs-2 fw-bold text-primary mb-2 text-center">Acumulado anual por día calendario</div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: GRID_SUMMARY,
+              border: '1px solid #eee',
+              borderRadius: 10,
+              overflow: 'hidden',
+            }}
+          >
+            {globalAgg.byDow.map((agg, i) => {
+              const totalDia = agg.ventasServicios + agg.ventasProductos;
+              const porcGlobal = globalAgg.total ? ((totalDia / globalAgg.total) * 100).toFixed(2) : '0.00';
+              return (
+                <div key={`global-dow-${i}`} style={{ borderRight: '1px solid #f1f1f1' }}>
+                  <div className="fw-semibold mb-1 text-center bg-primary " style={{fontSize: '33px'}}>{DAYS[i]}</div>
+                  <div className="fw-bold">VENTA TOTAL: {fmtMoney(totalDia)}</div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Ventas servicios: {fmtMoney(agg.ventasServicios)}
                   </div>
-                );
-              })}
-
-              {/* Espacio prudente entre meses */}
-              <div style={{ height: 16 }} />
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Ventas productos: {fmtMoney(agg.ventasProductos)}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Cant. servicios: {agg.cantidadServicios}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Cant. productos: {agg.cantidadProductos}
+                  </div>
+                  <div className="text-muted" style={{ fontSize: 12 }}>
+                    Canjes: {agg.canjes}
+                  </div>
+                  <div className="fw-bold text-primary fs-3">% ANUAL: {porcGlobal}</div>
+                </div>
+              );
+            })}
+            {/* Columna TODO global */}
+          </div>
+          <div className='d-flex justify-content-center'>
+            <div className='mt-3' key="global-todo" style={{ padding: '8px 10px' }}>
+              <div className="fw-semibold mb-1 text-center bg-dark text-white fs-3">acumulado anual</div>
+              <div className="fw-bold" style={{ fontSize: 25 }}>VENTA TOTAL: {fmtMoney(globalAgg.total)}</div>
+              <div className="text-muted" style={{ fontSize: 25 }}>
+                Ventas servicios: {fmtMoney(globalAgg.totales.ventasServicios)}
+              </div>
+              <div className="text-muted" style={{ fontSize: 25 }}>
+                Ventas productos: {fmtMoney(globalAgg.totales.ventasProductos)}
+              </div>
+              <div className="text-muted" style={{ fontSize: 25 }}>
+                Cant. servicios: <NumberFormatter amount={globalAgg.totales.cantidadServicios}/>
+              </div>
+              <div className="text-muted" style={{ fontSize: 25 }}>
+                Cant. productos: {globalAgg.totales.cantidadProductos}
+              </div>
+              <div className="text-muted" style={{ fontSize: 25 }}>
+                Canjes: {globalAgg.totales.canjes}
+              </div>
+              <div className="fw-bold text-primary fs-3">100.00%</div>
             </div>
-          );
-        })}
+          </div>
+          {/* <div className="text-end fw-bold mt-2 fs-1">TOTAL GLOBAL: {fmtMoney(globalAgg.total)}</div> */}
+        </div>
       </div>
     </div>
   );

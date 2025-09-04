@@ -10,7 +10,6 @@ import 'dayjs/locale/es';
 
 import { useCalendarDia } from './useCalendarDia';
 import { PageBreadcrumb } from '@/components';
-import { NumberFormatter } from '@/components/CurrencyMask';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -194,7 +193,7 @@ export const App = () => {
 
   return (
     <div>
-    <PageBreadcrumb title="Resumen venta x dia calendario" subName="Ventas" />
+    <PageBreadcrumb title="resumen ventas por dia calendario" subName="Ventas" />
       {/* Calendario con header sticky */}
       <div style={{ maxHeight: 520, overflow: 'auto', border: '1px solid #eee', borderRadius: 12 }}>
         {/* Cabecera (sticky) */}
@@ -209,11 +208,11 @@ export const App = () => {
             borderBottom: '1px solid #ddd',
           }}
         >
-          {/* {DAYS.map(d => (
+          {DAYS.map(d => (
             <div key={d} className="py-2 px-3 text-center fw-semibold bg-primary fs-2" style={{ borderRight: '1px solid #f1f1f1' }}>
               {d}
             </div>
-          ))} */}
+          ))}
         </div>
 
         {/* Secciones por mes */}
@@ -275,73 +274,8 @@ export const App = () => {
                 {section.monthTitle}
               </div>
 
-              {/* Resumen mensual LUN..DOM + TODO */}
-              <div className="mb-2">
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: GRID_SUMMARY,
-                    border: '1px solid #eee',
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {byDow.map((agg, i) => {
-                    const totalDia = agg.ventasServicios + agg.ventasProductos;
-                    const porcMes = totalMes ? ((totalDia / totalMes) * 100).toFixed(2) : '0.00';
-                    return (
-                      <div key={`${section.monthId}-dow-${i}`} style={{ borderRight: '1px solid #f1f1f1' }}>
-                        <div className="fw-semibold mb-1 text-center bg-primary " style={{fontSize: '33px'}}>{DAYS[i]}</div>
-                        <div className="fw-bold">VENTA TOTAL: {fmtMoney(totalDia)}</div>
-                        <div className="text-muted" style={{ fontSize: 12 }}>
-                          Ventas servicios: {fmtMoney(agg.ventasServicios)}
-                        </div>
-                        <div className="text-muted" style={{ fontSize: 12 }}>
-                          Cant. servicios: {agg.cantidadServicios}
-                        </div>
-                        <div className="text-muted" style={{ fontSize: 12 }}>
-                          Ventas productos: {fmtMoney(agg.ventasProductos)}
-                        </div>
-                        <div className="text-muted" style={{ fontSize: 12 }}>
-                          Cant. productos: {agg.cantidadProductos}
-                        </div>
-                        <div className="text-muted" style={{ fontSize: 12 }}>
-                          Canjes: {agg.canjes}
-                        </div>
-                        <div className="fw-bold text-primary fs-3">% MES: {porcMes}</div>
-                      </div>
-                    );
-                  })}
-                  {/* Columna TODO del mes */}
-
-                </div>
-                <div className='d-flex justify-content-center'>
-                    <div className='mt-4' key={`${section.monthId}-todo`} style={{ padding: '8px 10px' }}>
-                      <div className="fw-semibold mb-1 text-center bg-dark text-white fs-3">ACUM. MENSUAL</div>
-                      <div className="fw-bold" style={{ fontSize: 25 }}>VENTA TOTAL: {fmtMoney(totalMes)}</div>
-                      <div className="text-muted" style={{ fontSize: 25 }}>
-                        Ventas servicios: {fmtMoney(aggMes.ventasServicios)}
-                      </div>
-                      <div className="text-muted" style={{ fontSize: 25 }}>
-                        Cant. servicios: {aggMes.cantidadServicios}
-                      </div>
-                      <div className="text-muted" style={{ fontSize: 25 }}>
-                        Ventas productos: {fmtMoney(aggMes.ventasProductos)}
-                      </div>
-                      <div className="text-muted" style={{ fontSize: 25 }}>
-                        Cant. productos: {aggMes.cantidadProductos}
-                      </div>
-                      <div className="text-muted" style={{ fontSize: 25 }}>
-                        Canjes: {aggMes.canjes}
-                      </div>
-                      <div className="fw-bold text-primary fs-3">100.00%</div>
-                    </div>
-                </div>
-                {/* <div className="text-end fw-bold mt-2 fs-1">TOTAL MES: {fmtMoney(totalMes)}</div> */}
-              </div>
-
               {/* Semanas del mes */}
-              {/* {section.weeks.map((week, wi) => {
+              {section.weeks.map((week, wi) => {
                 const isPartialWeek = week.some(d => !d.isSame(section.monthMoment, 'month'));
                 return (
                   <div
@@ -350,7 +284,7 @@ export const App = () => {
                       display: 'grid',
                       gridTemplateColumns: GRID,
                       borderBottom: '1px solid #f6f6f6',
-                      background: isPartialWeek ? YELLOW : 'transparent',
+                      // background: isPartialWeek ? YELLOW : 'transparent',
                     }}
                   >
                     {week.map((d) => {
@@ -363,7 +297,7 @@ export const App = () => {
                             key={dkey}
                             style={{
                               borderRight: '1px solid #f6f6f6',
-                              background: YELLOW,
+                              // background: YELLOW,
                               minHeight: 140,
                             }}
                           />
@@ -411,7 +345,7 @@ export const App = () => {
                     })}
                   </div>
                 );
-              })} */}
+              })}
 
               {/* Espacio prudente entre meses */}
               <div style={{ height: 16 }} />
