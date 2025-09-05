@@ -417,16 +417,16 @@ const agruparServiciosPorEmpleado = (lista = []) => {
                         <div className="" style={{ width: '100%' }}>
                           <span className="text-primary">{DateMaskString(venta.fecha_venta, 'dddd DD [DE] MMMM')}</span> {DateMaskString(venta.fecha_venta, 'YYYY')}
                         </div>
-                        <div className="" style={{ width: '100%' }}>
+                        <div className="ml-4" style={{ width: '100%' }}>
                           <strong>HORA: </strong>{DateMaskString(venta.fecha_venta, 'hh:mm A')}
                         </div>
                       </div>
 
                       <div className="d-flex justify-content-between mb-3 align-items-center">
                         <div className="text-primary" style={{ width: '100%', fontSize: '25px' }}>
-                          <strong>{(dataComprobantes || []).find((c) => c.value === venta.id_tipoFactura)?.label}:</strong> {venta.numero_transac}
+                          <strong>{(dataComprobantes || []).find((c) => c.value === venta.id_tipoFactura)?.label} {venta.numero_transac? ':':'CANJE'}</strong> {venta.numero_transac}
                         </div>
-                        <div className="text-primary " style={{ width: '100%', fontSize: '34px' }}>
+                        <div className="text-primary ml-4" style={{ width: '100%', fontSize: '34px' }}>
                           <strong>TOTAL: </strong>
                           <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios + sumaMontoServiciosManicure + sumaMontoProductos} />} />
                         </div>

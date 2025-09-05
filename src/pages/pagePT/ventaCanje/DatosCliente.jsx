@@ -183,7 +183,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
   }}
                   className="border-2 rounded-3 border-primary outline-none"
 												// classNamePrefix="react-select"
-												options={DataClientes.filter(cliente=>cliente.tipoCli_cli!==84)}
+												options={DataClientes}
 												value={DataClientes.find(
 													(option) => option.value === id_cli
 												)|| 0}

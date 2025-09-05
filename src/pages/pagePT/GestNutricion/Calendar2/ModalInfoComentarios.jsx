@@ -7,14 +7,13 @@ export const ModalInfoComentarios = ({show, onHide, id_cli}) => {
     console.log({id_cli});
     const { obtenerCliente, datacliente } = useCalendarStore()
     useEffect(() => {
-        if(show){
+        if(show && id_cli>0){
             obtenerCliente(id_cli)
         }
-    }, [show, id_cli])
+    }, [show, id_cli>0])
     
   return (
     <Dialog header={'COMENTARIOS'} style={{width: '50rem', height: '80rem'}} visible={show} onHide={onHide}>
-            {/* {JSON.stringify(datacliente)} */}
                 <SectionComentario uid_comentario={datacliente.uid_comentario}/>
     </Dialog>
   )

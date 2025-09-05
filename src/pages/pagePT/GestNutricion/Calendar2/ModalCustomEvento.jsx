@@ -92,6 +92,8 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
         setisOpenModalEventoDelCliente({isOpen: false, id_cli: 0})
     }
 	const onOpenModalComentarioCliente=()=>{
+		console.log({iddd_cli: id_cli});
+		
 		setisOpenModalComentarioCliente({isOpen: true, id_cli: id_cli})
 	}
 	const onCloseModalComentarioCliente=()=>{
@@ -321,7 +323,6 @@ export const ModalCustomEvento = ({show, onHide, resor, onShowCustomEvento}) => 
 									</Form>
 								</SimpleBar>
 							</Col>
-							{JSON.stringify(isOpenModalEventoDelCliente.id_cli)}
 						</Row>
 					</div>
 				</Dialog>

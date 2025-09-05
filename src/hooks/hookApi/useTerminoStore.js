@@ -318,6 +318,8 @@ export const useTerminoStore = () => {
 	const obtenerParametroPorEntidadyGrupo = async (entidad, grupo) => {
 		try {
 			const { data } = await PTApi.get(`/parametros/get_params/${entidad}/${grupo}`);
+			console.log({ parametro: data });
+
 			setDataGeneral(data);
 		} catch (error) {
 			console.log(error);

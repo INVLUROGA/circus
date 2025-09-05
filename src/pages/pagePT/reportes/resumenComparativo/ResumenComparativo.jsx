@@ -33,6 +33,7 @@ import { TableTotalS } from './TableTotalS'
 import { Button } from 'primereact/button'
 import { SpeedDial } from 'primereact/speeddial'
 import { GrafPie } from './GrafPie'
+import { ModalProSer } from './ModalProSer'
 
 dayjs.extend(utc);
 
@@ -226,50 +227,6 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
         )
         return agrupadoPorServiciosProf;
     }
-    function agruparPorProductos(datam) {
-        return datam?.reduce((acc, { empleado, ...item }) => {
-          let empleadoGroup = acc.find(group => group.proser === 'producto');
-          
-          if (!empleadoGroup) {
-            empleadoGroup = { empleado, items: [] };
-            acc.push(empleadoGroup);
-          }
-        
-          empleadoGroup.items.push(item);
-          return acc;
-        }, []);
-    }
-    function agruparPorClientes(datam) {
-        // Primero, agrupar por cliente
-        const clientes = datam.reduce((acc, item) => {
-          const clienteId = item.num_doc; // Identificador único del cliente, por ejemplo, el número de documento
-          if (!acc[clienteId]) {
-            acc[clienteId] = { cliente: item.nombre_cliente, compras: [] };
-          }
-          acc[clienteId].compras.push(item);
-          return acc;
-        }, {});
-      
-        // Ahora, separar en nuevos y frecuentes
-        const resultados = {
-          nuevos: [],
-          frecuentes: [],
-        };
-      
-        for (let clienteId in clientes) {
-          const { cliente, compras } = clientes[clienteId];
-          if (compras.length === 1) {
-            // Si tiene solo una compra, es nuevo
-            resultados.nuevos.push({ cliente, compras });
-          } else {
-            // Si tiene más de una compra, es frecuente
-            resultados.frecuentes.push({ cliente, compras });
-          }
-        }
-      
-        return resultados;
-    }
-      
     const onCloseModalSOCIOS = ()=>{
         setisOpenModalSocio(false)
     }
@@ -372,8 +329,13 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
         }
         )
         // console.log(agruparxServiciosxProfesion(dataGroupCanjes), "aaaaag");
-        
-
+        const [isServiciosDeCat, setisServiciosDeCat] = useState({isOpen: false, items: []})
+        const onOpenModalServiciosDeCat = (arr)=>{
+            setisServiciosDeCat({isOpen: true, items: arr})
+        }
+        const onCloseModalServiciosDeCat = ()=>{
+            setisServiciosDeCat({isOpen: false, items: []})
+        }
     const data = [
         {
             title: 'VENTAS POR SERVICIO',
@@ -385,12 +347,11 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
                 const sumarCantidadServicios = d.items.reduce((total, item) => {
                     return total + (Number(item?.cantidad) || 0); // Convierte a número y suma
                     }, 0); // Inicia la suma desde 0 en lugar de undefined
-                  
                 return (
                 <Col style={{paddingBottom: '1px !important'}} xxl={4}>
                     <Card>
-                        <Card.Header className=' align-self-center fs-1 fw-bold'>
-                            {d.categoria||'PRODUCTOS'}
+                        <Card.Header className=' align-self-center fs-1 fw-bold' onClick={()=>onOpenModalServiciosDeCat(d)}>
+                            {d.categoria||'SIN DATA'}
                         </Card.Header>
                         <Card.Body style={{paddingBottom: '1px !important'}}>
                             <br/>
@@ -506,7 +467,7 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
                                                                 <td>
                                                                     <li className='d-flex flex-row justify-content-between p-2'><span className='fw-bold fs-2' style={{color: '#008FFB'}}>TICKET <br/> MEDIO <br/> PRODUCTOS</span></li>
                                                                 </td>
-                                                                <td> <span className='fs-1 fw-bold d-flex justify-content-end align-content-end align-items-end'>{sumarVentaProductos/sumarCantidadProductos}</span></td>
+                                                                <td> <span className='fs-1 fw-bold d-flex justify-content-end align-content-end align-items-end'><SymbolSoles bottomClasss={20} numero={ <NumberFormatMoney amount={sumarVentaProductos/sumarCantidadProductos}/>}/></span></td>
                                                             </tr>
                                                 </tbody>
                                             </Table>
@@ -621,51 +582,12 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
         sectionRefs.forEach(({ inView }, index) => {
           if (inView) {
             setextractTitle(data[index].title)
-            // setActiveSection(sections[index].title);
-            // dispatch(onSetViewSubTitle(`${data[index].title}`))
           }
         });
       }, [sectionRefs]);
       useEffect(() => {
         dispatch(onSetViewSubTitle(extractTitle))
       }, [sectionRefs])
-      const items = [
-        {
-            label: 'Add',
-            icon: 'pi pi-pencil',
-            command: () => {
-                toast.current.show({ severity: 'info', summary: 'Add', detail: 'Data Added' });
-            }
-        },
-        {
-            label: 'Update',
-            icon: 'pi pi-refresh',
-            command: () => {
-                toast.current.show({ severity: 'success', summary: 'Update', detail: 'Data Updated' });
-            }
-        },
-        {
-            label: 'Delete',
-            icon: 'pi pi-trash',
-            command: () => {
-                toast.current.show({ severity: 'error', summary: 'Delete', detail: 'Data Deleted' });
-            }
-        },
-        {
-            label: 'Upload',
-            icon: 'pi pi-upload',
-            command: () => {
-                router.push('/fileupload');
-            }
-        },
-        {
-            label: 'React Website',
-            icon: 'pi pi-external-link',
-            command: () => {
-                window.location.href = 'https://react.dev/';
-            }
-        }
-    ];
   return (
     <>
     <FechaRange rangoFechas={RANGE_DATE}/>
@@ -687,14 +609,15 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
                 <br/>
                 <br/>
                 <br/>
-
         {/* <h1 className='pt-5' style={{fontSize: '60px'}}>{section.title}</h1> */}
                     {section.HTML}
             </Row>
         </Col>
         ))}
+        
     </Row>
     }
+    <ModalProSer show={isServiciosDeCat.isOpen} items={isServiciosDeCat.items} onHide={onCloseModalServiciosDeCat}/>
     {/* <SpeedDial model={items} direction="up" className="speeddial-bottom-right right-0 bottom-0" buttonClassName="p-button-danger" /> */}
                                     <ModalTableSocios
                                     clickDataSocios={clickDataSocios}
@@ -705,208 +628,5 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
   )
 }
 
-// Agrupar por id_pgm con categorías separadas
-function agruparVentasConDetalles({
-    ventasProgramaNuevo = [],
-    ventasProgramaReinscritos = [],
-    ventasProgramaRenovaciones = [],
-    ventasProgramaTraspasos = [],
-    ventasProgramaTransferencias = [],
-}) {
-    const agrupados = {};
-
-    const agregarDetalles = (array, tipo) => {
-        array.forEach((venta) => {
-            const { name_pgm, id_pgm, tb_image, detalle_ventaMembresium } = venta;
-
-            // Generar una clave única para el agrupamiento
-            const key = `${name_pgm}_${id_pgm}`;
-
-            // Si el grupo no existe, se inicializa
-            if (!agrupados[key]) {
-                agrupados[key] = {
-                    name_pgm,
-                    id_pgm,
-                    tb_image: [],
-                    detallesNuevos: [],
-                    detallesReinscritos: [],
-                    detallesRenovaciones: [],
-                    detallesTraspasos: [],
-                    detalleTransferencias: [],
-                };
-            }
-
-            // Agregar `tb_image` solo si no está ya incluido
-            if (!agrupados[key].tb_image.some((img) => img === tb_image)) {
-                agrupados[key].tb_image.push(tb_image);
-            }
-            console.log(tipo, "dddd");
-            
-
-            // Agregar el detalle al tipo correspondiente
-            agrupados[key][tipo].push(detalle_ventaMembresium);
-        });
-    };
-
-    // Procesar cada tipo de ventas
-    agregarDetalles(ventasProgramaNuevo, "detallesNuevos");
-    agregarDetalles(ventasProgramaReinscritos, "detallesReinscritos");
-    agregarDetalles(ventasProgramaRenovaciones, "detallesRenovaciones");
-    agregarDetalles(ventasProgramaTraspasos, "detallesTraspasos");
-    agregarDetalles(ventasProgramaTransferencias, "detalleTransferencias");
-    
-
-    // Convertir el objeto agrupado en un array
-    return Object.values(agrupados);
-}
-
 // Ejemplo de uso con los arrays proporcionados
 // const ventasUnidas = 
-
-
-  const groupByIdOrigen = (data) => {
-	return data.reduce((acc, item) => {
-		const idOrigen = item.tb_ventum?.id_origen;
-
-		// Busca si ya existe un grupo para este id_origen
-		let group = acc.find((g) => g.id_origen === idOrigen);
-
-		if (!group) {
-			// Si no existe, crea uno nuevo
-			group = { id_origen: idOrigen, items: [] };
-			acc.push(group);
-		}
-
-		// Agrega el elemento al grupo correspondiente
-		group.items.push(item);
-		return acc;
-	}, []);
-};
-const groupByIdFactura = (data) => {
-  return data.reduce((acc, item) => {
-      const idFactura = item.tb_ventum?.id_tipoFactura;
-
-      // Busca si ya existe un grupo para este id_origen
-      let group = acc.find((g) => g.id_tipoFactura === idFactura);
-
-      if (!group) {
-          // Si no existe, crea uno nuevo
-          group = { id_tipoFactura: idFactura, items: [] };
-          acc.push(group);
-      }
-
-      // Agrega el elemento al grupo correspondiente
-      group.items.push(item);
-      return acc;
-  }, []);
-};
-
-
-function agruparMarcacionesPorSemana(data=[]) {
-    if (!Array.isArray(data)) {
-        throw new Error("El parámetro 'data' debe ser un array.");
-    }
-    return data?.map((obj) => {
-        const inicioMem = dayjs(obj.fec_inicio_mem);
-        // Validar que `tb_marcacions` sea un array
-        if (!Array.isArray(obj.tb_marcacions)) {
-            console.warn("El objeto 'tb_marcacions' no es un array o está ausente.", obj);
-            return; // Saltar al siguiente objeto
-        }
-        // Filtrar la primera marcación de cada día
-        const primerasMarcaciones = Object.values(
-            obj.tb_marcacions?.reduce((acumulador, marcacion) => {
-                const fechaDia = dayjs(marcacion.tiempo_marcacion).format('YYYY-MM-DD');
-                if (
-                    !acumulador[fechaDia] ||
-                    dayjs(marcacion.tiempo_marcacion).isBefore(
-                        acumulador[fechaDia].tiempo_marcacion
-                    )
-                ) {
-                    acumulador[fechaDia] = marcacion; // Guardar la más temprana del día
-                }
-                return acumulador;
-            }, {})
-        );
-
-        // Agrupar las primeras marcaciones por semana
-        const marcacionPorSemana = primerasMarcaciones.reduce((acumulador, marcacion) => {
-            const fechaMarcacion = dayjs(marcacion.tiempo_marcacion);
-
-            // Calcular la semana desde el inicio de la membresía
-            const diasDesdeInicio = fechaMarcacion.diff(inicioMem, 'day');
-            const semana = Math.floor(diasDesdeInicio / 7) + 1;
-
-            // Buscar o crear el grupo para esta semana
-            let grupo = acumulador.find((g) => g.semana === semana);
-            if (!grupo) {
-                grupo = { semana, items: [] };
-                acumulador.push(grupo);
-            }
-
-            // Añadir la marcación al grupo
-            grupo.items.push(marcacion);
-
-            return acumulador;
-        }, []);
-
-        // Retornar el objeto original con el nuevo array `marcacionPorSemana`
-        return { ...obj, marcacionPorSemana };
-    });
-}
-
-function agruparPrimeraMarcacionGlobal(data) {
-    const marcacionesPorSemanaGlobal = {};
-    // if (!Array.isArray(data)) {
-    //     throw new Error("El parámetro 'data' debe ser un array.");
-    // }
-    data?.forEach((obj) => {
-        const inicioMem = dayjs(obj?.fec_inicio_mem);
-
-        // Validar que `tb_marcacions` sea un array
-        if (!Array.isArray(obj.tb_marcacions)) {
-            console.warn("El objeto 'tb_marcacions' no es un array o está ausente.", obj);
-            return; // Saltar al siguiente objeto
-        }
-        // Filtrar la primera marcación de cada día
-        const primerasMarcaciones = Object.values(
-            obj.tb_marcacions?.reduce((acumulador, marcacion) => {
-                const fechaDia = dayjs(marcacion?.tiempo_marcacion).format('YYYY-MM-DD');
-                if (
-                    !acumulador[fechaDia] ||
-                    dayjs(marcacion?.tiempo_marcacion).isBefore(
-                        acumulador[fechaDia]?.tiempo_marcacion
-                    )
-                ) {
-                    acumulador[fechaDia] = marcacion; // Guardar la más temprana del día
-                }
-                return acumulador;
-            }, {})
-        );
-
-        // Agrupar las primeras marcaciones por semana
-        primerasMarcaciones.forEach((marcacion) => {
-            const fechaMarcacion = dayjs(marcacion.tiempo_marcacion);
-
-            // Calcular la semana desde el inicio de la membresía
-            const diasDesdeInicio = fechaMarcacion.diff(inicioMem, 'day');
-            const semana = Math.floor(diasDesdeInicio / 7) + 1;
-
-            // Inicializar el grupo de la semana si no existe
-            if (!marcacionesPorSemanaGlobal[semana]) {
-                marcacionesPorSemanaGlobal[semana] = { propiedad: semana, items: [] };
-            }
-
-            // Añadir la marcación al grupo TOTAL
-            marcacionesPorSemanaGlobal[semana].items.push({
-                ...marcacion,
-                fec_inicio_mem: obj.fec_inicio_mem,
-                tb_marcacions: obj.tb_marcacions,
-                marcacionPorSemana: obj.marcacionPorSemana,
-            });
-        });
-    });
-
-    // Convertir el objeto en un array
-    return Object.values(marcacionesPorSemanaGlobal);
-}
