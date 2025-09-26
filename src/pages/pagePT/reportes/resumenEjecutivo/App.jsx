@@ -58,6 +58,18 @@ export const App = ({ id_empresa }) => {
     1456: "REFERIDO",
     1457: "CARTERA",
   };
+  /*
+  1458:'WALKING'
+  1457:'VIP'
+  1456:'TELEVISION'
+  1455:'REGULAR'
+  1454:'whatsapp'
+  1453:'INSTAGRAM'
+  1452:'FACEBOOK'
+  1451:'YOHANDRY'
+  1450:'CANJE'
+  1449:'Preferencial'
+  */
   const dataMkt = buildDataMktByMonth(dataLead, initDay, cutDay)
   return (
     <>
@@ -117,17 +129,16 @@ export const App = ({ id_empresa }) => {
                 initialDay={initDay}
                 cutDay={cutDay}
                 originMap={{
-                  1458: 'Walking',
-                  1457: 'Mail',
-                  690: 'REFERIDOS',
-                  691: 'CARTERA DE RENOVACION',
-                  692: 'Cartera de reinscripcion',
-                  693: 'Instagram',
-                  694: 'Facebook',
-                  695: 'tiktok',
-                  696: 'EX-PT reinscripcion',
-                  689: 'WSP organico',
-                  1470: 'CORPORATIVOS BBVA',
+                    1458:'WALKING',
+                    1457:'VIP',
+                    1456:'TELEVISION',
+                    1455:'REGULAR',
+                    1454:'whatsapp',
+                    1453:'INSTAGRAM',
+                    1452:'FACEBOOK',
+                    1451:'YOHANDRY',
+                    1450:'CANJE',
+                    1449:'Preferencial',
                   // 1454: 'WALK-IN',
                   // 1455: 'DIGITAL',
                   // 1456: 'REFERIDO',

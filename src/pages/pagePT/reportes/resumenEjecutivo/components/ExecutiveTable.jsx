@@ -149,9 +149,9 @@ export default function ExecutiveTable({
   const mk = dataMktByMonth?.[key] || {};
 
   return {
-    mkInv: Number(mk?.inversiones_redes || 0),
+    mkInv: Number(mk?.inversiones_redes*3.7 || 0),
     mkLeads: Number(mk?.leads || 0),
-    mkCpl: Number(mk?.cpl || 0),
+    mkCpl: Number(mk?.cpl*3.7 || 0),
     mkCac: Number(mk?.cac || 0),
 
     // HASTA cutDay
