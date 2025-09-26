@@ -158,23 +158,20 @@ onMouseLeave={(e) => {
 >
   <SimpleBar  style={{ flex: '1 1 auto', maxHeight: '100%' }}>
     <div style={{ flex: '0 0 auto' }}>
+      {/* {JSON.stringify(e, null, 2)} */}
+      <h5 className='fw-medium font-16'>REGISTRADO: {dayjs(e.createdAt).format('DD/MM/YYYY [A LAS] hh:mm A')}</h5>
       <h5 className='fw-medium font-16'><DateMask date={start} format={'hh:mm A'}/> - <DateMask date={end} format={'hh:mm A'}/> ({e.eventos.length} {e.eventos.length===1?'SERVICIO':'SERVICIOS'})</h5>
       <span className='fs-5'>{e.title}</span>
       <div className='fs-5'><span className='fw-bold'>COMENTARIO: </span>{e.comentario}</div>
     </div>
     <span className='d-flex flex-column'>
-    {
+    { 
       e.eventos?.map(serv=>{
         return (
         <Chip label={`${serv?.nombre_servicio} : ${serv?.duracion} min`} className='m-1 font-12 bg-black text-white' />
         )
       })
-
     }
-        {/* <Chip label="CORTE DE DAMA NORMAL" className='m-1 font-12 bg-black text-white' />
-        <Chip label="BALAYAGE" className='m-1 font-12 bg-black text-white' />
-        <Chip label="BALAYAGE" className='m-1 font-12 bg-black text-white' />
-        <Chip label="BALAYAGE" className='m-1 font-12 bg-black text-white' /> */}
     </span>
       {/* cualquier otro chip extra irá a la siguiente línea y dentro del scroll */}
   </SimpleBar>
@@ -209,7 +206,7 @@ const ScheduleTable = ({
   for (let m = 0; m <= totalMinutes; m += slotMinutes) {
     timeMarks.push(m);
   }
-
+  
   // 5. Ancho total de TODO el contenido (columna horas + recursos)
   const hourColumnWidth = 80;
   const resourceWidth = 350;

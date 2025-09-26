@@ -112,9 +112,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 	
 	return (
 		<>
-		{/* <pre>
-			{JSON.stringify(dataCliente, null, 2)}
-		</pre> */}
 		<form>
 			<Row>
 				<Col>
@@ -127,43 +124,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 												onChange={(e) => inputChangeEmpl(e)}
 												name="id_empl"
 												placeholder={'Seleccionar COLABORADOR'}
-												styles={{
-													input: (provided) => ({
-														...provided,
-														color: "#EEBE00",
-														fontWeight: "bold",
-													}),
-													dropdownIndicator: (provided) => ({
-														...provided,
-														color: "#EEBE00",
-													}),
-													indicatorSeparator: (provided) => ({
-														...provided,
-														backgroundColor: "#EEBE00",
-													}),
-													control: (provided) => ({
-														...provided,
-														borderColor: "#EEBE00",
-														color: "#EEBE00",
-													}),
-												}}
-												className="border-2 rounded-3 border-primary outline-none"
-													// classNamePrefix="react-select"
-													options={dataRecepcionista}
-													
-													value={dataRecepcionista.find(
-														(option) => option.value === id_empl
-													)|| 0}
-													required
-												/>
-											</div>
-										</Col>
-										<Col xl={12} sm={12}>
-											<div className='mb-2'>
-											<Select
-												onChange={(e) => inputChangeClientes(e)}
-												name="id_cli"
-												placeholder={'Seleccionar cliente'}
 												styles={{
 												input: (provided) => ({
 													...provided,
@@ -183,8 +143,45 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 													borderColor: "#EEBE00",
 													color: "#EEBE00",
 												}),
-												}}
-                  								className="border-2 rounded-3 border-primary outline-none"
+										}}
+											className="border-2 rounded-3 border-primary outline-none"
+												// classNamePrefix="react-select"
+												options={dataRecepcionista}
+												
+												value={dataRecepcionista.find(
+													(option) => option.value === id_empl
+												)|| 0}
+												required
+											/>
+											</div>
+										</Col>
+										<Col xl={12} sm={12}>
+											<div className='mb-2'>
+											<Select
+												onChange={(e) => inputChangeClientes(e)}
+												name="id_cli"
+												placeholder={'Seleccionar cliente'}
+                    styles={{
+                      input: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                        fontWeight: "bold",
+                      }),
+                      dropdownIndicator: (provided) => ({
+                        ...provided,
+                        color: "#EEBE00",
+                      }),
+                      indicatorSeparator: (provided) => ({
+                        ...provided,
+                        backgroundColor: "#EEBE00",
+                      }),
+                      control: (provided) => ({
+                        ...provided,
+                        borderColor: "#EEBE00",
+                        color: "#EEBE00",
+                      }),
+  }}
+                  className="border-2 rounded-3 border-primary outline-none"
 												// classNamePrefix="react-select"
 												options={DataClientes}
 												value={DataClientes.find(

@@ -7,6 +7,7 @@ import { useForm } from '@/hooks/useForm'
 import { arrayEstadosVenta } from '@/types/type'
 import { Button } from 'primereact/button'
 import { DateMask, NumberFormatMoney } from '@/components/CurrencyMask'
+import { Formulas } from '../Formulas'
 
 // -------------------- helpers --------------------
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
@@ -43,7 +44,7 @@ const mapToOption = (x, tipo) => ({
   label: x.nombre || x.label || x.nombre_producto || x.nombre_servicio || '',
   subCategoria: x.subCategoria || (tipo === 'producto' ? 'PRODUCTO' : 'SERVICIO'),
   precio: x.precio ?? x.prec_venta ?? 0,
-  prec_compra: 0,
+  prec_compra: x.prec_compra || x.precio_compra,
   duracion: x.duracion ?? 0,
   uid: `${x.uid}`
 })
@@ -55,7 +56,7 @@ const rowTemplate = (i = 1) => ({
   item: null,                  // opción de producto/servicio
   porcentaje: pctOptions[0],   // default 10%
   precioBase: 0,               // precio del item
-  precio_compra: 0,
+  prec_compra: 0,
 })
 
 // -------------------- componente --------------------
@@ -71,7 +72,7 @@ export const ModalCustomComanda2 = ({
 }) => {
   const { obtenerClientes, DataClientes, onPostComandas } = useComandasStore()
   const { id_cli, observacion, status_remove, onInputChange, onInputChangeReact, onResetForm } = useForm(customcomandas)
-
+  const { igv, impRenta, openPay } = Formulas()
   const opcionesProductos = useMemo(
     () => (productos || []).map((p) => mapToOption({ ...p, nombre: p.nombre_producto,  label: p.label }, 'producto')),
     [productos]
@@ -91,12 +92,11 @@ export const ModalCustomComanda2 = ({
 
   const total = useMemo(() => rows.reduce((acc, r) => acc + r.precioBase - computeMonto(r), 0), [rows])
   const precioBaseTotal = useMemo(() => rows.reduce((acc, r) => acc + r.precioBase, 0), [rows])
-  console.log({rows});
   
   const onChangeClase = (idx, claseOpt) => {
     setRows((prev) => {
       const cp = [...prev]
-      cp[idx] = { ...cp[idx], clase: claseOpt?.value ?? null, item: null, precioBase: 0, prec_compra: 1 }
+      cp[idx] = { ...cp[idx], clase: claseOpt?.value ?? null, item: null, precioBase: 0, prec_compra: 0 }
       return cp
     })
   }
@@ -172,13 +172,30 @@ export const ModalCustomComanda2 = ({
     <>
     </>
   )
+  
+const agruparPorColaborador = (lista = []) => {
+  const map = new Map();
+
+  for (const obj of lista) {
+    const key = obj?.colaborador?.value ?? null; // evita undefined
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(obj);
+  }
+
+  return Array.from(map, ([value, items]) => ({ value, items: items.map(i=>{
+    const sumaImpuestos = igv(i.precioBase-computeMonto(i))+openPay((i.precioBase-computeMonto(i)))+impRenta((i.precioBase-computeMonto(i)))+i.item?.prec_compra
+    return {
+        ...i, 
+        prec_total: i.precioBase-computeMonto(i), 
+        comision: (Number(i.precioBase-computeMonto(i))-Number(`${sumaImpuestos}`))*0.1, precioSinInp:Number(`${i.precioBase - (igv(i.precioBase-computeMonto(i))+openPay((i.precioBase-computeMonto(i)))+impRenta((i.precioBase-computeMonto(i))))}`), impSacado: Number(`${igv(i.precioBase-computeMonto(i))+openPay((i.precioBase-computeMonto(i)))+impRenta((i.precioBase-computeMonto(i)))}`), vn: Number(`${(igv(i.precioBase-computeMonto(i))+openPay((i.precioBase-computeMonto(i)))+impRenta((i.precioBase-computeMonto(i))))-i.item?.prec_compra}`)}}) }));
+};
   console.log({rows, opcionesProductos, opcionesServicios, id_cli, status_remove, fecha_venta: new Date(), observacion, });
   return (
     <Dialog footer={footerButtons} style={{ width: '100%', height: '100rem' }} onHide={onHide} visible={show} header={'AGREGAR COMANDA'} position='top'>
       <form>
         <Row>
           <Col xl={3} sm={12}>
-            <div className='mb-3'>
+            <div className='mb-3' style={{fontSize: '30px'}}>
               <label>CLIENTE:</label>
               <Select
                 onChange={(e) => onInputChangeReact(e, 'id_cli')}
@@ -194,7 +211,7 @@ export const ModalCustomComanda2 = ({
           </Col>
 
           <Col xl={3} sm={12}>
-            <div className='mb-3'>
+            <div className='mb-3'  style={{fontSize: '30px'}}>
               <label>ESTADO:</label>
               <Select
                 onChange={(e) => onInputChangeReact(e, 'status_remove')}
@@ -210,7 +227,7 @@ export const ModalCustomComanda2 = ({
           </Col>
 
           <Col xl={6} sm={12}>
-            <div className='mb-3'>
+            <div className='mb-3' style={{fontSize: '50px'}}>
               FECHA: <DateMask date={new Date()} format={'dddd DD [DE] MMMM [DEL] YYYY'} />
             </div>
           </Col>
@@ -277,7 +294,7 @@ export const ModalCustomComanda2 = ({
                       </td>
                       <td className='fs-3 text-end align-middle' style={{width: '60px'}}>
                         <div className=''>
-                            <NumberFormatMoney amount={r.precioBase} />
+                            <NumberFormatMoney amount={r?.item?.prec_compra} />
                         </div>
                       </td>
                       <td className='fs-3 text-end align-middle' style={{width: '60px'}}>
@@ -289,9 +306,8 @@ export const ModalCustomComanda2 = ({
                         <div className='bg-danger'  style={{width: '300px'}}>
                             <Select
                             placeholder='%'
-                            
-                                                   styles={{
-                                                        dropdownIndicator: (provided) => ({
+                                styles={{
+                                    dropdownIndicator: (provided) => ({
                                   ...provided,
                                   color: "#CD1014",
                                 }),
@@ -343,7 +359,7 @@ export const ModalCustomComanda2 = ({
                     <div className='fs-2 text-black bg-primary m-0 p-0'>TOTAL</div>
                   </td>
                   <td className='fs-2 text-end'>
-                    <NumberFormatMoney amount={precioBaseTotal} />
+                    <NumberFormatMoney amount={rows.reduce((total, item)=>total + item?.item?.prec_compra,0)} />
                   </td>
                   <td className='fs-2 text-end'>
                     <NumberFormatMoney amount={precioBaseTotal} />
@@ -370,7 +386,20 @@ export const ModalCustomComanda2 = ({
                 <tr className='text-change'>
                   <td  colSpan={3} rowSpan={2} style={{width: '40px'}}>
                     <div className=' bg-danger' style={{fontSize: '50px'}}>
-                      COMISION: 15.31
+                             {
+                              agruparPorColaborador(rows).map((colaborador)=>{
+                                console.log({colaborador});
+                                
+                                return (
+                                  <>
+                                  {(colaborador.items[0]?.colaborador?.label)?.split(' ')[0]}: {(colaborador.items.reduce((total, item)=>total + item.comision,0)).toFixed(2)}
+                                  <br/>
+                                  </>
+                                )
+                              })
+                             } 
+                             <br/>
+                             TOTAL: {((total-total*(5/100)-((total)-(total/(1.18)))-((total-(total-(total/(1.18))))*(2/100))-rows.reduce((total, item)=>total + item?.item?.prec_compra,0))*0.1).toFixed(2)}
                     </div>
                     <div className='fs-2 bg-danger'>
                         <span className='text-change mr-1'>NOTA:</span> EN CASO LA VENTA SEA <br/>EN EFECTIVO, NO APLICA EL DESCUENTO OPENPAY

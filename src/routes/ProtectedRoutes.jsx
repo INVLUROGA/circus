@@ -21,6 +21,7 @@ import timezone from "dayjs/plugin/timezone";
 
 
 
+const NuevaVentaManicure = lazy(() => import('../pages/pagePT/nuevaVenta'));
 const NuevaVenta = lazy(() => import('../pages/pagePT/nuevaVenta'));
 const Seguimiento = lazy(() => import('../pages/pagePT/seguimiento'));
 const TotaldeVentas = lazy(() => import('../pages/pagePT/reportes/totalVentas'));
@@ -135,7 +136,6 @@ export default function ProtectedRoutes() {
 						sections.find(e=>e.url==='/resumen-comparativo')&&
                         <Route path='resumen-comparativo' element={<ResumenComparativo/>}/>
 					}
-					
 					{
 						sections.find(e=>e.url==='/resumen-venta-x-dia-calendario')&&
                         <Route path='resumen-venta-x-dia-calendario' element={<VentasxDiaCalendario/>}/>

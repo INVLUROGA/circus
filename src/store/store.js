@@ -28,7 +28,7 @@ export const store = configureStore({
 		auth: authSlice.reducer,
 		ui: uiSlice.reducer,
 		eSelect: selectSlice.reducer,
-		prov: proveedorSlice.reducer,
+		prov: proveedorSlice.reducer, 
 		prod: productoSlice.reducer,
 		gf_gv: gfGvSlice.reducer,
 		programaPT: programaPTSlice.reducer,

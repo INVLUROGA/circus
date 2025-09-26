@@ -22,8 +22,8 @@ export const ModalConceptos = ({dataProp, show, onHide, textEmpresa, background}
     <Dialog visible={show} onHide={onHide}>
       <h1>NOTA: LOS COSTOS EN DOLARES HAN SIDO CONVERTIDO A SOLES</h1>
                 <Table striped style={{fontSize: '39px'}}>
-                  <thead className={`${background}`}>
-                    <tr>
+                  <thead >
+                    <tr className={`${background}`} >
                       <th className="text-white p-1"><div> <span className='mx-4'>COMPARATIVO</span></div></th>
                       <th className="text-white text-center p-1"><div  style={{fontSize: '50px'}}>S/.</div></th>
                       <th className="text-white text-center p-1"><div  style={{fontSize: '50px'}}>$</div></th>

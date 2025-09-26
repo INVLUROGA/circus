@@ -54,43 +54,28 @@ const onSubmitVenta = ()=>{
   )
   return (
     <Dialog footer={footer} visible={show} onHide={onHide} header={'¿ESTAS SEGUR(A) DE ESTA VENTA?'} style={{ margin: '0', width: '60rem'}}>
-      {
-        cuantosCerosEnEmplEnArray(carritoItems)!==0?(
-          <>
-            VERIFICAR LAS VENTAS {cuantosCerosEnEmplEnArray(carritoItems)}
-          </>
-        ): (
-          <>
-            <div className="container">
-          <div className="row g-4">
-            {columnas.map((col, index) => (
-              <div className="col-12 col-md-6" key={index}>
-                <div className="h-100">
-                  <div className=" d-flex flex-column">
-                    <h3 className="fw-bold text-primary text-center">{col.titulo}</h3>
-                    <ul className="list-unstyled mt-3">
-                      {col.items.map((item, i) => (
-                        <li key={i} className="mb-2">
-                          <i className="bi bi-check-circle-fill text-primary me-2"></i>
-                          {item}
-                          <br/>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+        <div className="container">
+      <div className="row g-4">
+        {columnas.map((col, index) => (
+          <div className="col-12 col-md-6" key={index}>
+            <div className="h-100">
+              <div className=" d-flex flex-column">
+                <h3 className="fw-bold text-primary text-center">{col.titulo}</h3>
+                <ul className="list-unstyled mt-3">
+                  {col.items.map((item, i) => (
+                    <li key={i} className="mb-2">
+                      <i className="bi bi-check-circle-fill text-primary me-2"></i>
+                      {item}
+                      <br/>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            ))}
-          </div>
             </div>
-          </>
-        )
-      }
+          </div>
+        ))}
+      </div>
+    </div>
     </Dialog>
   )
-}
-
-
-const cuantosCerosEnEmplEnArray = (dataVenta=[])=>{
-  return dataVenta.filter(f=>f.id_empl===0).length
 }

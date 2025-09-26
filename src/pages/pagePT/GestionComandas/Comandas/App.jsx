@@ -55,6 +55,7 @@ export const App = () => {
     const onOpenModalCustomServComanda = (id_venta)=>{
         setisOpenModalCustomClaseComanda({prod: false, serv: true, id_venta})
     }
+    
     useEffect(() => {
         obtenerComandas()
         obtenerServicios()

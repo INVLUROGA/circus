@@ -70,11 +70,11 @@ export const CardCarrito = ({carrito, setisOpenModalItemCarrito, dataPagos, deta
             <div className='float-end fs-1'>
               <div className='fs-1'>{SUMA_montoCarrito-SUMA_montoPagos<0?'VUELTO':'SALDO PENDIENTE'}: <SymbolSoles numero={<NumberFormatMoney amount={SUMA_montoCarrito-SUMA_montoPagos}/>}/></div>
             </div>
-            <Button onClick={onOpenModalInfoVenta} label={<span className='fs-3'>AGREGAR VENTA</span>} outlined />
-            {/* {
+            {
               SUMA_montoCarrito===SUMA_montoPagos && (
+                <Button onClick={onOpenModalInfoVenta} label={<span className='fs-3'>AGREGAR VENTA</span>} outlined />
               )
-            } */}
+            }
         </Card.Footer>
     </Card>
 

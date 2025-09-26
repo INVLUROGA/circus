@@ -144,6 +144,7 @@ export const useCalendarStore = () => {
 					id_origen: d?.id_origen,
 					id_asistencia: d?.id_asistencia,
 					id_estado: d?.id_estado,
+					createdAt: d.createdAt,
 				};
 			});
 			dispatch(onSetDataView(dataCitas));

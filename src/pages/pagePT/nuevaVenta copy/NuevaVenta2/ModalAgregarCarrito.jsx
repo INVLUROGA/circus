@@ -161,7 +161,6 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
       onHide={onCloseAgregarCarrito}
       modal
     >
-      
       {/* Colaborador */}
       <div className="m-2">
         <Select

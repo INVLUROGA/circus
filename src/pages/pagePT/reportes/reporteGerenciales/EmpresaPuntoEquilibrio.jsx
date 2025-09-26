@@ -129,7 +129,6 @@ const totalPorPagar = dataPorPagar.reduce(
 												>
 													<div className="bg-porsiaca text-right mr-4" 
 														onClick={() => onOpenModalConceptos(g)}
-                          
                           >
 														<NumberFormatMoney amount={(g.montopen+(g.montousd*3.70))} />
 													</div>

@@ -202,7 +202,7 @@ function buildExecutiveDataCut({ ventas = [], cutDay = 21, marketing = {}, title
     const lima = new Date(utc - 5 * 60 * 60000);
     const day = lima.getDate();
 
-    const serv = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const serv = Array.isArray(v?.detalle_ventaServicios) ? v.detalle_ventaServicios : [];
     const prod = Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
 
     // Siempre acumulamos ALL (mes completo)
@@ -304,7 +304,7 @@ function buildExecutiveDataCut({ ventas = [], cutDay = 21, marketing = {}, title
   ventas.forEach((v) => {
     const mk = getMonthKey(v?.fecha_venta);
     if (!mk || !monthAggAll[mk]) return;
-    const serv = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const serv = Array.isArray(v?.detalle_ventaServicios) ? v.detalle_ventaServicios : [];
     const prod = Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
 
     serv.forEach((d) => {
@@ -331,7 +331,7 @@ function buildExecutiveDataCut({ ventas = [], cutDay = 21, marketing = {}, title
     const mk = getMonthKey(v?.fecha_venta);
     if (!mk || !monthAggDay[mk]) return;
 
-    const serv = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const serv = Array.isArray(v?.detalle_ventaServicios) ? v.detalle_ventaServicios : [];
     const prod = Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
 
     serv.forEach((d) => {

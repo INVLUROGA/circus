@@ -1,171 +1,192 @@
-import { useTerminoStore } from "@/hooks/hookApi/useTerminoStore";
-import React, { useEffect, useMemo } from "react";
+import React from "react";
 
-/********************** Utils ************************/ 
-const MONTHS = [
-  "enero","febrero","marzo","abril","mayo","junio","julio","agosto","setiembre","octubre","noviembre","diciembre"
-];
-const monthKey = (iso) => {
-  const d = new Date(iso);
-  const utc = d.getTime() + d.getTimezoneOffset() * 60000;
-  const lima = new Date(utc - 5 * 60 * 60000); // -05:00 Lima
-  return MONTHS[lima.getMonth()];
-};
-const dayOfMonth = (iso) => {
-  const d = new Date(iso);
-  const utc = d.getTime() + d.getTimezoneOffset() * 60000;
-  const lima = new Date(utc - 5 * 60 * 60000);
-  return lima.getDate();
-};
-const fmt2 = (n) => Number(n ?? 0);
-
-/**************** Presentacional (estilo imagen) ****************/
 /**
- * props.data = {
- *   title: 'CLIENTES POR ORIGEN',
- *   columns: [{ key:'marzo', label:'MARZO' }, ...],
- *   rows: [ { label:'WALK-IN', values:{ marzo:0, ... } }, ... ],
- *   totals: { marzo:0, ... } // totales por mes
- * }
+ * ClientsByOriginTable
+ * --------------------------------------------------------------
+ * Tabla: "CLIENTES POR ORIGEN DEL 1 HASTA <cutDay>".
+ * Agrupa por id_origen (mapeado con originMap). Cuenta clientes únicos por mes y origen.
+ *
+ * Props:
+ *  - ventas: Array<{ fecha_venta: ISOString, id_cli: number|string, id_origen: number|string }>
+ *  - fechas: Array<{ label: string; anio: string|number; mes: string }>
+ *  - initialDay?: number  // default 1
+ *  - cutDay?: number      // default 21
+ *  - originMap?: Record<string|number, string>
+ *  - uniqueByClient?: boolean // default true (si false, cuenta ventas)
  */
-export function ClientesOrigenTable({ data }) {
-  const { title, columns, rows, totals } = data;
-  const { obtenerParametroPorEntidadyGrupo:obtenerOrigen, DataGeneral:dataorigen } = useTerminoStore()
-  useEffect(() => {
-    obtenerOrigen('nueva-venta-circus', 'origen')
-  }, [])
-  
-  return (
-    <div className="w-full py-4">
-      {/* Header negro */}
-      <div className="w-full bg-black text-white rounded-t-xl">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-center text-lg md:text-2xl font-extrabold">
-          {title}
-        </div>
-      </div>
+export const ClientesPorOrigen=({
+  ventas = [],
+  fechas = [],
+  initialDay = 1,
+  cutDay = 21,
+  originMap = {
+    1454: "WALK-IN",
+    1455: "DIGITAL",
+    1456: "REFERIDO",
+    1457: "CARTERA",
+  },
+  uniqueByClient = true,
+}) => {
+  // --------------------------- Helpers ---------------------------
+  const MESES = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "setiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
 
-      <div className="overflow-x-auto bg-white shadow-2xl rounded-b-xl ring-1 ring-black/10">
-        <table className="w-full table-fixed border-collapse">
-          <thead>
-            <tr>
-              <th className="w-64 fs-3 bg-yellow-400 text-black font-extrabold uppercase border border-black text-left px-3 py-2">MES</th>
-              {columns.map((c) => (
-                <th key={c.key} className="fs-3 min-w-[120px] bg-yellow-400 text-black border border-black uppercase text-center px-3 py-2">
-                  {c.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
+  const aliasMes = (m) => (m === "septiembre" ? "setiembre" : String(m || "").toLowerCase());
+  const monthIdx = (mes) => MESES.indexOf(aliasMes(mes));
 
-          <tbody>
-            {/* {JSON.stringify(dataorigen)} */}
-            {rows.map((r, idx) => (
-              <tr key={r.label} className={idx % 2 ? "bg-neutral-50" : "bg-white"}>
-                <td className="fs-3 border border-black px-3 py-2 text-left font-semibold uppercase">{r.label==0?'OTROS': dataorigen.find(o=>String(o.value)===r.label)?.label}</td>
-                {columns.map((c) => (
-                  <td key={c.key} className="fs-3 border border-black px-3 py-2 text-right font-semibold text-neutral-800">
-                    {fmt2(r.values[c.key] ?? 0)}
-                  </td>
-                ))}
-              </tr>
-            ))}
-            {/* Total clientes por origen (fila negra) */}
-            <tr>
-              <td className="bg-black text-white border border-black px-3 py-2 font-extrabold uppercase">TOTAL CLIENTES POR ORIGEN</td>
-              {columns.map((c) => (
-                <td key={c.key} className="fs-3 bg-black text-white border border-black px-3 py-2 text-right font-extrabold">
-                  {fmt2(totals[c.key] ?? 0)}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-
-          {/* Footer tipo Excel amarillo */}
-          <tfoot>
-            <tr>
-              <td className="bg-yellow-400 text-black border border-black px-3 py-4 fs-3">
-                <div className="text-2xl font-extrabold uppercase leading-tight">CLIENTES TOTAL</div>
-                <div className="text-sm font-bold uppercase -mt-1">ACUMULADO POR MES</div>
-              </td>
-              {columns.map((c) => (
-                <td key={c.key} className="fs-1 bg-yellow-400 text-black border border-black px-3 py-4 text-right font-extrabold">
-                  {fmt2(totals[c.key] ?? 0)}
-                </td>
-              ))}
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-/**************** Adapter: ventas -> matriz por id_origen ****************/
-/**
- * Cuenta ventas por id_origen y mes (o clientes únicos si uniqueByClient=true).
- * Aplica día de corte (cutDay) por mes.
- */
-export function buildOrigenMatrixFromVentas(ventas = [], { columns = [], originMap = {}, originsOrder = [], cutDay = null, uniqueByClient = false } = {}) {
-  const keys = columns.map((c) => c.key);
-
-  // preparar estructura
-  const totals = keys.reduce((a, k) => (a[k] = 0, a), {});
-  const byOrigin = new Map(); // label -> { mes: count }
-  const seen = new Set(); // para clientes únicos
-
-  const ensureRow = (label) => {
-    if (!byOrigin.has(label)) byOrigin.set(label, keys.reduce((a, k) => (a[k] = 0, a), {}));
-    return byOrigin.get(label);
+  const toLimaDate = (iso) => {
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
+      return new Date(utcMs - 5 * 60 * 60000);
+    } catch (_) {
+      return null;
+    }
   };
 
-  ventas.forEach((v) => {
-    const mk = monthKey(v?.fecha_venta);
-    if (!keys.includes(mk)) return;
-    if (cutDay && dayOfMonth(v?.fecha_venta) > cutDay) return;
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
-    const label = (originMap?.[v?.id_origen] ?? String(v?.id_origen ?? "Desconocido")).toUpperCase();
+  const labelOfOrigin = (id) => {
+    const k = String(id ?? "0");
+    return String(originMap?.[k] || originMap?.[Number(k)] || k).toUpperCase();
+  };
+
+  // --------------------------- Aggregation ---------------------------
+  // Prepara estructura de meses visibles
+  const monthKeys = fechas.map((f) => ({
+    key: `${f.anio}-${aliasMes(f.mes)}`,
+    anio: Number(f.anio),
+    mes: aliasMes(f.mes),
+    label: String(f.label || "").toUpperCase(),
+    idx: monthIdx(f.mes),
+  }));
+
+  // Map claveMes -> Map origin -> Set/contador
+  const base = new Map();
+  monthKeys.forEach((m) => base.set(m.key, new Map()));
+
+  for (const v of ventas) {
+    const d = toLimaDate(v?.fecha_venta);
+    if (!d) continue;
+
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const from = clamp(Number(initialDay || 1), 1, last);
+    const to = clamp(Number(cutDay || last), from, last);
+    const dia = d.getDate();
+    if (dia < from || dia > to) continue;
+
+    const mes = MESES[d.getMonth()];
+    const keyMes = `${d.getFullYear()}-${mes}`;
+    if (!base.has(keyMes)) continue; // sólo contamos lo que se muestra en columnas
+
+    const originId = v?.id_origen ?? 0;
+    const origin = labelOfOrigin(originId);
+
+    const bucket = base.get(keyMes);
+    if (!bucket.has(origin)) bucket.set(origin, uniqueByClient ? new Set() : 0);
 
     if (uniqueByClient) {
-      const idc = v?.id_cli ?? `venta:${v?.id}`;
-      const key = `${mk}|${label}|${idc}`;
-      if (seen.has(key)) return;
-      seen.add(key);
-      const row = ensureRow(label);
-      row[mk] += 1;
-      totals[mk] += 1;
+      const set = bucket.get(origin);
+      const idCli = v?.id_cli ?? `venta-${v?.id ?? Math.random()}`;
+      set.add(String(idCli));
     } else {
-      const row = ensureRow(label);
-      row[mk] += 1;        // cuenta ventas
-      totals[mk] += 1;
+      bucket.set(origin, Number(bucket.get(origin) || 0) + 1);
     }
-  });
-
-  // ordenar filas: originsOrder (por label) si viene; si no, alfabético
-  let rows = Array.from(byOrigin.entries()).map(([label, values]) => ({ label, values }));
-  if (originsOrder?.length) {
-    const orderMap = new Map(originsOrder.map((l, i) => [l.toUpperCase(), i]));
-    rows.sort((a, b) => (orderMap.get(a.label) ?? 999) - (orderMap.get(b.label) ?? 999) || a.label.localeCompare(b.label));
-  } else {
-    rows.sort((a, b) => a.label.localeCompare(b.label));
   }
 
-  return { rows, totals };
-}
+  // Reunir todos los orígenes presentes (incluye los que aparezcan en originMap aunque estén en 0)
+  const allOrigins = new Set();
+  // Desde los datos
+  for (const m of base.values()) {
+    for (const o of m.keys()) allOrigins.add(o);
+  }
+  // Desde el mapa de referencia
+  Object.values(originMap || {}).forEach((name) => allOrigins.add(String(name).toUpperCase()));
 
-/**************** Contenedor listo para usar ****************/
-export default function ClientesPorOrigen({ ventas = [], columns, title = "CLIENTES POR ORIGEN", originMap = {}, originsOrder = [], cutDay = null, uniqueByClient = false }) {
-  const cols = useMemo(() => (columns && columns.length ? columns : [
-    { key: "marzo",  label: "MARZO" },
-    { key: "abril",  label: "ABRIL" },
-    { key: "mayo",   label: "MAYO" },
-    { key: "junio",  label: "JUNIO" },
-    { key: "julio",  label: "JULIO" },
-    { key: "agosto", label: "AGOSTO" },
-  ]), [columns]);
+  const orderedOrigins = Array.from(allOrigins);
+  // Orden: los del originMap primero en el orden que vinieron, luego el resto alfabético
+  const prefer = Object.values(originMap || {}).map((n) => String(n).toUpperCase());
+  orderedOrigins.sort((a, b) => {
+    const ia = prefer.indexOf(a);
+    const ib = prefer.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
 
-  const { rows, totals } = useMemo(() => buildOrigenMatrixFromVentas(ventas, { columns: cols, originMap, originsOrder, cutDay, uniqueByClient }), [ventas, cols, originMap, originsOrder, cutDay, uniqueByClient]);
+  const getCount = (keyMes, origin) => {
+    const m = base.get(keyMes);
+    if (!m) return 0;
+    const v = m.get(origin);
+    if (!v) return 0;
+    return uniqueByClient ? v.size : Number(v);
+  };
 
-  const data = useMemo(() => ({ title, columns: cols, rows, totals }), [title, cols, rows, totals]);
+  // --------------------------- Styles ---------------------------
+  const C = {
+    black: "#000000",
+    red: "#EEBE00",
+    white: "#ffffff",
+    border: "1px solid #333",
+    headRow: "#e9eef6",
+  };
+  
 
-  return <ClientesOrigenTable data={data} />;
+  const sTitle = {
+    background: C.black,
+    color: C.white,
+    textAlign: "center",
+    padding: "25px 12px",
+    fontWeight: 700,
+    letterSpacing: 0.2,
+    fontSize: 25
+  };
+
+  const sTable = { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" };
+  const sHeadLeft = { background: C.red, color: C.white, padding: "10px", border: C.border, textAlign: "left", width: 260 };
+  const sHead = { background: C.red, color: C.white, padding: "10px", border: C.border, textAlign: "center" };
+  const sCell = { background: C.white, color: "#000", padding: "10px", border: C.border, fontSize: 17, textAlign: "center" };
+  const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700, fontSize: 15 };
+
+  // --------------------------- Render ---------------------------
+  return (
+    <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
+      <div style={sTitle}>CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}</div>
+
+      <table style={sTable}>
+        <thead>
+          <tr>
+            <th style={sHeadLeft}>MES</th>
+            {monthKeys.map((m) => (
+              <th key={m.key} style={sHead}>{m.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {orderedOrigins.map((origin) => (
+            <tr key={origin}>
+              <td style={sCellLeft}>{origin}</td>
+              {monthKeys.map((m) => (
+                <td key={`${m.key}-${origin}`} style={sCell}>{getCount(m.key, origin)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
