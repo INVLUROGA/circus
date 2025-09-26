@@ -61,7 +61,7 @@ export const App = ({ id_empresa }) => {
   const dataMkt = buildDataMktByMonth(dataLead, initDay, cutDay)
   return (
     <>
-          <PageBreadcrumb title="RESUMEN EJECUTIVO" subName="Ventas" />
+          <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
 
       <Row className="mb-3">
         <Col lg={12}>
@@ -80,13 +80,17 @@ export const App = ({ id_empresa }) => {
         </Col>
       </Row>
       <Row className="">
-        <Col lg={6} className="pt-0">
+        <Col lg={12} className="pt-0">
           <Row>
             <Col lg={12} className="mb-4">
               <ExecutiveTable    
                 ventas={dataVentas}
                 fechas={[
                   // { label: 'MAYO',  anio: '2025', mes: 'mayo' },
+                  { label: 'FEBRERO', anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO', anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL', anio: '2025', mes: 'abril' },
+                  { label: 'MAYO', anio: '2025', mes: 'mayo' },
                   { label: 'JUNIO', anio: '2025', mes: 'junio' },
                   { label: 'JULIO', anio: '2025', mes: 'julio' },
                   { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
@@ -101,16 +105,20 @@ export const App = ({ id_empresa }) => {
                 ventas={dataVentas}             // tu array de ventas
                 fechas={[
                   // { label: 'MAYO', anio: '2025', mes: 'mayo' },
+                  { label: 'FEBRERO', anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO', anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL', anio: '2025', mes: 'abril' },
+                  { label: 'MAYO', anio: '2025', mes: 'mayo' },
                   { label: 'JUNIO', anio: '2025', mes: 'junio' },
                   { label: 'JULIO', anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO', anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE', anio: '2025', mes: 'septiembre' }, // acepta 'setiembre'
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
                 ]}
                 initialDay={initDay}
                 cutDay={cutDay}
                 originMap={{
-                  686: 'Walking',
-                  687: 'Mail',
+                  1458: 'Walking',
+                  1457: 'Mail',
                   690: 'REFERIDOS',
                   691: 'CARTERA DE RENOVACION',
                   692: 'Cartera de reinscripcion',
@@ -129,16 +137,20 @@ export const App = ({ id_empresa }) => {
             </Col>
           </Row>
         </Col>
-        <Col lg={6}>
+        <Col lg={12}>
           <Row>
             <Col lg={12} className="mb-4">
               <ComparativoVsActual
                   fechas={[
                     // { label: 'MAYO',  anio: '2025', mes: 'mayo' },
-                    { label: 'JUNIO', anio: '2025', mes: 'junio' },
-                    { label: 'JULIO', anio: '2025', mes: 'julio' },
-                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+                  { label: 'FEBRERO', anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO', anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL', anio: '2025', mes: 'abril' },
+                  { label: 'MAYO', anio: '2025', mes: 'mayo' },
+                  { label: 'JUNIO', anio: '2025', mes: 'junio' },
+                  { label: 'JULIO', anio: '2025', mes: 'julio' },
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
                   ]}
                   ventas={dataVentas}
                   initialDay={initDay}

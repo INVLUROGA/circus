@@ -244,7 +244,7 @@ export default function ExecutiveTable({
   return (
     <div style={sWrap}>
       <div style={sHeader}>
-        RESUMEN EJECUTIVO HASTA EL {cutDay} DE CADA MES
+        INFORME GERENCIAL HASTA EL {cutDay} DE CADA MES
       </div>
 
       <table style={sTable}>
