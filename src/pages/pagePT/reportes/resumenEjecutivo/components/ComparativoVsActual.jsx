@@ -90,11 +90,11 @@ export const ComparativoVsActual=({
 
       for (const s of getDetalleServicios(v)) {
         const cantidad = Number(s?.cantidad || 1);
-        bucket.serv += Number(s?.tarifa_monto || 0) * cantidad;
+        bucket.serv += Number(s?.tarifa_monto || 0);
       }
       for (const p of getDetalleProductos(v)) {
         const cantidad = Number(p?.cantidad || 1);
-        const linea = Number(p?.tarifa_monto || p?.precio_unitario || 0) * cantidad;
+        const linea = Number(p?.tarifa_monto || p?.precio_unitario || 0);
         bucket.prod += linea;
       }
       bucket.total = bucket.serv + bucket.prod;
@@ -123,16 +123,13 @@ export const ComparativoVsActual=({
   const columns = fechas.map((f) => {
     const key = keyOf(f.anio, f.mes);
     const vals = dataByMonth.get(key) || { serv: 0, prod: 0, total: 0 };
-
     const dServ = vals.serv - refVals.serv;
     const dProd = vals.prod - refVals.prod;
     const dTot = vals.total - refVals.total;
-
     const pct = (val, ref) => {
       if (!ref) return 0;
       return ((val - ref) / ref) * 100;
     };
-
     return {
       key,
       label: String(f.label || "").toUpperCase(),
