@@ -26,7 +26,7 @@ export const GestClientes = () => {
 	
   return (
     <>
-    			<PageBreadcrumb title="GESTION DE CLIENTES" subName="E-commerce" />
+    			<PageBreadcrumb title="GESTION DE CLIENTES TESTEO LUI" subName="E-commerce" />
                 
 			<Row>
 				<TabView>
