@@ -100,7 +100,7 @@ const VentaCanje = lazy(() => import('../pages/pagePT/ventaCanje'));
 const ResumenVentaxDiaCalendario = lazy(()=>import('../pages/pagePT/reportes/ResumenVentasxDia/index.jsx'))
 const AcumuladoAnualPorDiaCalendario = lazy(()=>import('../pages/pagePT/reportes/acumuladoAnualPorDiaCalendario/index.jsx'))
 const VentasxDiaCalendario = lazy(()=>import('../pages/pagePT/reportes/ventasxDiaCalendario/index.jsx'))
-
+const Mofs = lazy(()=>import('../pages/pagePT/reportes/Mofs'))
 // const ResumenComparativo = lazy(()=>import('../pages/pagePT/reportes/resumenComparativo/index.jsx'))
 /**
  * routes import
@@ -132,6 +132,10 @@ export default function ProtectedRoutes() {
 				<>
 				<Route path="/*" element={<Layout />}>
 				{/* /reporte-seguimiento  /facturacion-publicidad*/}
+					{
+						sections.find(e=>e.url==='/m-o-f')&&
+                        <Route path='m-o-f' element={<Mofs/>}/>
+					}
 					{
 						sections.find(e=>e.url==='/resumen-comparativo')&&
                         <Route path='resumen-comparativo' element={<ResumenComparativo/>}/>

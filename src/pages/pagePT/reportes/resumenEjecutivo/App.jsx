@@ -8,6 +8,7 @@ import {ClientesPorOrigen} from "./components/ClientesPorOrigen";
 import { ComparativoVsActual } from "./components/ComparativoVsActual";
 import { buildDataMktByMonth } from "./adapters/buildDataMktByMonth";
 import { GraficoLinealInversionRedes } from "./components/GraficoLinealInversionRedes";
+import { RankingEstilista } from "./components/RankingEstilista";
 
 export const App = ({ id_empresa }) => {
   const { obtenerTablaVentas, dataVentas, obtenerLeads, dataLead, dataLeadPorMesAnio } = useVentasStore();
@@ -177,6 +178,11 @@ export const App = ({ id_empresa }) => {
                   />
             </Col>
           </Row>
+        </Col>
+        <Col lg={12}>
+        <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+        ]}/>
         </Col>
       </Row>
     </>

@@ -149,8 +149,8 @@ export const ComparativoVsActual=({
     black: "#000000",
     white: "#ffffff",
     red: "#EEBE00",
-    red_1: "#C00000",
-    green: "#2e7d32",
+    red_1: "#2e7d32",
+    green: "#C00000",
     greyRow: "#e9eef6",
     cellBorder: "1px solid #333",
   };
