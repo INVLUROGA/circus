@@ -9,6 +9,7 @@ import { ComparativoVsActual } from "./components/ComparativoVsActual";
 import { buildDataMktByMonth } from "./adapters/buildDataMktByMonth";
 import { GraficoLinealInversionRedes } from "./components/GraficoLinealInversionRedes";
 import { RankingEstilista } from "./components/RankingEstilista";
+import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
 
 export const App = ({ id_empresa }) => {
   const { obtenerTablaVentas, dataVentas, obtenerLeads, dataLead, dataLeadPorMesAnio } = useVentasStore();
@@ -183,6 +184,86 @@ export const App = ({ id_empresa }) => {
         <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
                   { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}/>
+        </Col>
+        <Col lg={12}>
+        <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={[
+                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                  { label: 'JULIO',anio: '2025', mes: 'julio' },
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+        ]}
+            datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+          />
+        </Col>
+        <Col lg={12}>
+        <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={[
+                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                  { label: 'JULIO',anio: '2025', mes: 'julio' },
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+        ]}
+            datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+          />
+        </Col>
+        <Col lg={12}>
+        <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={[
+                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                  { label: 'JULIO',anio: '2025', mes: 'julio' },
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+        ]}
+            datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+          />
+        </Col>
+        <Col lg={12}>
+        <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={[
+                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                  { label: 'JULIO',anio: '2025', mes: 'julio' },
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+        ]}
+            datoEstadistico="Ventas Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
+          />
+        </Col>
+        <Col lg={12}>
+        <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={[
+                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                  { label: 'JULIO',anio: '2025', mes: 'julio' },
+                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+        ]}
+            datoEstadistico="Ventas Productos" // o "Cant. Ventas", "Ventas Productos", etc.
+          />
         </Col>
       </Row>
     </>

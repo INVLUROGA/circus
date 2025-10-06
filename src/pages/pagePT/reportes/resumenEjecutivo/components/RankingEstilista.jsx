@@ -118,7 +118,7 @@ function TablaRanking({ titulo, ventas }) {
           <tbody>
             {ranking.map((r, idx) => (
               <tr key={idx}>
-                <td style={tdStyle}>{r.empleado}</td>
+                <td style={tdStyle}>{r.empleado.split(' ')[0]}</td>
                 <td style={tdStyle}><NumberFormatMoney amount={r.totalVentas} /></td>
                 <td style={tdStyle}>{r.cantidadVentas}</td>
                 <td style={tdStyle}><NumberFormatMoney amount={r.ventasProductos} /></td>
