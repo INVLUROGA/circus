@@ -1,65 +1,54 @@
 import { NumberFormatMoney } from '@/components/CurrencyMask';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { Dialog } from 'primereact/dialog';
+import { Button } from 'primereact/button';
+import dayjs from 'dayjs';
+// import utc from 'dayjs/plugin/utc';
+// import 'dayjs/locale/es';
 
-/**
- * MatrizEmpleadoMes
- * -------------------------------------------------------------
- * Eje Y: empleados
- * Eje X: meses (array filtrarFecha: [{ label, anio, mes }, ...])
- * Celda: valor del datoEstadistico (ej. "Total Ventas", "Cant. Ventas", etc.)
- *
- * Props:
- *  - dataVenta: Array<Venta>
- *  - filtrarFecha: Array<{ label: string; anio: string|number; mes: string }>
- *  - datoEstadistico: string (una de las 6 opciones)
- */
+// dayjs.extend(utc);
+// dayjs.locale('es');
+
 const mesAIndice = (m = '') => {
-	const k = m.trim().toLowerCase();
-	const mapa = {
-		enero: 0,
-		febrero: 1,
-		marzo: 2,
-		abril: 3,
-		mayo: 4,
-		junio: 5,
-		julio: 6,
-		agosto: 7,
-		septiembre: 8,
-		setiembre: 8,
-		octubre: 9,
-		noviembre: 10,
-		diciembre: 11,
-	};
-	return mapa[k] ?? -1;
+  const k = m.trim().toLowerCase();
+  const mapa = {
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9,
+    noviembre: 10, diciembre: 11,
+  };
+  return mapa[k] ?? -1;
 };
+
+const normalizeName = (s) =>
+  !s ? '' : s.normalize('NFKC').trim().replace(/\s+/g, ' ');
+
 function filtrarVentasPorMes(ventas = [], filtro) {
-	if (!filtro || !filtro.mes || !filtro.anio) return ventas;
-	const monthIdx = mesAIndice(filtro.mes);
-	const yearNum = Number(filtro.anio);
-	if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
-	return ventas.filter((v) => {
-		const d = new Date(v?.fecha_venta);
-		if (isNaN(d)) return false;
-		return d.getUTCFullYear() === yearNum && d.getUTCMonth() === monthIdx;
-	});
+  if (!filtro || !filtro.mes || !filtro.anio) return ventas;
+  const monthIdx = mesAIndice(filtro.mes);
+  const yearNum = Number(filtro.anio);
+  if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
+
+  return ventas.filter((v) => {
+    const d = dayjs.utc(v?.fecha_venta);
+    if (!d.isValid()) return false;
+    return d.year() === yearNum && d.month() === monthIdx;
+  });
 }
-// --- Construye ranking por empleado (versión con opciones)
+
+// --- igual que antes
 function rankingPorEmpleado(
   ventas = [],
   {
-    datoEstadistico = 'totalVentas', // métrica para ordenar
-    sortDir = 'desc',                // 'desc' | 'asc'
-    includeZero = false,             // incluir empleados con todo en 0
-    normalizarNombre = true          // normalizar nombres (trim/lowercase colapsado)
+    datoEstadistico = 'totalVentas',
+    sortDir = 'desc',
+    includeZero = false,
+    normalizarNombre = true
   } = {}
 ) {
-  const accMap = new Map();               // empleado -> acumulador
-  const ventasPorEmpleado = new Map();    // empleado -> Set(ids de venta únicos)
+  const accMap = new Map();
+  const ventasPorEmpleado = new Map();
 
-  const norm = (s) =>
-    !normalizarNombre || !s
-      ? s
-      : s.normalize('NFKC').trim().replace(/\s+/g, ' ');
+  const norm = (s) => (!normalizarNombre ? s : normalizeName(s));
 
   const getAcc = (empleadoRaw) => {
     const empleado = norm(empleadoRaw);
@@ -81,10 +70,8 @@ function rankingPorEmpleado(
 
   for (let i = 0; i < ventas.length; i++) {
     const v = ventas[i];
-    // Fallback estable si no hay id/numero_transac
     const idVenta = v?.id ?? v?.numero_transac ?? `venta_${i}`;
 
-    // --- Productos (acepta camel y snake)
     const productos = Array.isArray(v?.detalle_ventaProductos)
       ? v.detalle_ventaProductos
       : Array.isArray(v?.detalle_ventaproductos)
@@ -101,14 +88,13 @@ function rankingPorEmpleado(
         Number(it?.tarifa_monto) ||
         Number(it?.tb_producto?.prec_venta) ||
         0;
+      const importe = precio;
 
-      const importe = precio * cantidad;
       acc.ventasProductos += importe;
       acc.cantidadProductos += cantidad;
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
     }
 
-    // --- Servicios
     const servicios = Array.isArray(v?.detalle_ventaservicios)
       ? v.detalle_ventaservicios
       : [];
@@ -119,8 +105,8 @@ function rankingPorEmpleado(
       if (!acc) continue;
 
       const cantidad = Number(it?.cantidad) || 0;
-      const precio = Number(it?.tarifa_monto) || 0; // agrega aquí otros fallbacks si existen
-      const importe = precio * cantidad;
+      const precio = Number(it?.tarifa_monto) || 0;
+      const importe = precio;
 
       acc.ventasServicios += importe;
       acc.cantidadServicios += cantidad;
@@ -128,18 +114,15 @@ function rankingPorEmpleado(
     }
   }
 
-  // Cierre: totales y cantidadVentas
   const out = [];
   for (const [empleado, acc] of accMap.entries()) {
     acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
     acc.cantidadVentas = ventasPorEmpleado.get(empleado)?.size ?? 0;
-
     if (includeZero || acc.totalVentas > 0 || acc.cantidadVentas > 0) {
       out.push(acc);
     }
   }
 
-  // Ordenar por métrica elegida
   out.sort((a, b) => {
     const va = Number(a?.[datoEstadistico]) || 0;
     const vb = Number(b?.[datoEstadistico]) || 0;
@@ -149,14 +132,11 @@ function rankingPorEmpleado(
   return out;
 }
 
-
-
 export const MatrizEmpleadoMes = ({
   dataVenta = [],
   filtrarFecha = [],
   datoEstadistico = 'Total Ventas',
 }) => {
-  // Mapea la etiqueta elegida al campo del rankingPorEmpleado
   const METRIC_MAP = {
     'Total Ventas': 'totalVentas',
     'Cant. Ventas': 'cantidadVentas',
@@ -165,51 +145,93 @@ export const MatrizEmpleadoMes = ({
     'Ventas Servicios': 'ventasServicios',
     'Cant. Servicios': 'cantidadServicios',
   };
-
   const metricKey = METRIC_MAP[datoEstadistico] ?? 'totalVentas';
   const isMoney =
     metricKey === 'totalVentas' ||
     metricKey === 'ventasProductos' ||
     metricKey === 'ventasServicios';
 
-  // Normaliza meses: si te pasan un solo objeto, conviértelo en array
   const meses = Array.isArray(filtrarFecha) ? filtrarFecha : [filtrarFecha].filter(Boolean);
 
-  // Precalcula por mes: rankingPorEmpleado(filtrado) -> Map(empleado -> valor)
+  // ---- estado del modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalRows, setModalRows] = useState([]); // [{id, fecha_venta}]
+  const [modalTitle, setModalTitle] = useState('');
+
+  // helper: lista de ventas (id, fecha_venta) por empleado + mes
+  const getVentasDeCelda = useCallback(
+    (empleadoNombre, idxMes) => {
+      const filtroMes = meses[idxMes];
+      const ventasMes = filtrarVentasPorMes(dataVenta, filtroMes);
+      const objetivo = normalizeName(empleadoNombre);
+
+      const filas = [];
+      const seen = new Set();
+
+      for (let i = 0; i < ventasMes.length; i++) {
+        const v = ventasMes[i];
+        const id = v?.id ?? v?.numero_transac ?? `venta_${i}_${idxMes}`;
+
+        // ¿esta venta tiene participación de ese empleado en productos o servicios?
+        const productos = Array.isArray(v?.detalle_ventaProductos)
+          ? v.detalle_ventaProductos
+          : Array.isArray(v?.detalle_ventaproductos)
+          ? v.detalle_ventaproductos
+          : [];
+
+        const matchProd = productos.some(
+          (it) => normalizeName(it?.empleado_producto?.nombres_apellidos_empl) === objetivo
+        );
+
+        const servicios = Array.isArray(v?.detalle_ventaservicios)
+          ? v.detalle_ventaservicios
+          : [];
+
+        const matchServ = servicios.some(
+          (it) => normalizeName(it?.empleado_servicio?.nombres_apellidos_empl) === objetivo
+        );
+
+        if (matchProd || matchServ) {
+          if (!seen.has(id)) {
+            seen.add(id);
+            
+            filas.push({
+              id,
+              fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
+              ...v
+            });
+          }
+        }
+      }
+      return filas;
+    },
+    [dataVenta, meses]
+  );
+
   const { empleadosOrdenados, columnas, matriz, totalesFila, totalesCol } = useMemo(() => {
-    // 1) Por cada mes, filtra ventas y arma ranking
     const columnas = meses.map((f) => {
       const ventasMes = filtrarVentasPorMes(dataVenta, f);
-      const ranking = rankingPorEmpleado(ventasMes); // devuelve [{empleado, totalVentas, ...}]
-      // armamos un map: empleado -> valor de la métrica elegida
+      const ranking = rankingPorEmpleado(ventasMes);
       const map = new Map();
       for (const r of ranking) {
         map.set(r.empleado, Number(r[metricKey] || 0));
       }
       return {
         label: `${f?.label ?? f?.mes?.toUpperCase?.() ?? ''} ${f?.anio ?? ''}`.trim(),
+        filtroMes: f, // guardo el filtro para accesos
         map,
       };
     });
 
-    // 2) Conjunto de todos los empleados que aparezcan en cualquier mes
     const allEmpleados = new Set();
-    for (const col of columnas) {
-      for (const emp of col.map.keys()) allEmpleados.add(emp);
-    }
+    for (const col of columnas) for (const emp of col.map.keys()) allEmpleados.add(emp);
 
-    // 3) Construimos la matriz y totales por fila/columna
     const empleados = Array.from(allEmpleados);
-    const matriz = empleados.map((emp) =>
-      columnas.map((col) => Number(col.map.get(emp) || 0))
-    );
+    const matriz = empleados.map((emp) => columnas.map((col) => Number(col.map.get(emp) || 0)));
 
     const totalesFila = matriz.map((row) => row.reduce((a, b) => a + b, 0));
-    const totalesCol = columnas.map((_, j) =>
-      matriz.reduce((acc, row) => acc + (row[j] || 0), 0)
-    );
+    const totalesCol = columnas.map((_, j) => matriz.reduce((acc, row) => acc + (row[j] || 0), 0));
 
-    // 4) Ordena empleados por total desc
     const idxs = empleados.map((_, i) => i);
     idxs.sort((i, j) => totalesFila[j] - totalesFila[i]);
 
@@ -224,75 +246,138 @@ export const MatrizEmpleadoMes = ({
       totalesFila: totalesFilaOrdenado,
       totalesCol,
     };
-  }, [dataVenta, filtrarFecha, datoEstadistico]);
+  }, [dataVenta, filtrarFecha, metricKey, meses]);
+
+  const onCellClick = (emp, colIndex, valor) => {
+    if (!emp || !meses[colIndex]) return;
+    // si la celda está en cero, igual abrimos por si quieren ver (o puedes bloquear aquí)
+    const filas = getVentasDeCelda(emp, colIndex);
+    setModalRows(filas);
+    setModalTitle(`${emp?.split?.(' ')?.[0] ?? emp} — ${columnas[colIndex]?.label} (${isMoney ? 'monto' : 'valor'}: ${valor})`);
+    setModalOpen(true);
+  };
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <div style={{ marginBottom: 8, fontWeight: 600 }}>
-        Métrica: {datoEstadistico}
-      </div>
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr className="bg-primary fs-3">
-            <th style={thStyle}>Empleado</th>
-            {columnas.map((c, i) => (
-              <th key={i} style={thStyle}>{c.label}</th>
+    <>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ marginBottom: 8, fontWeight: 600 }}>
+          Métrica: {datoEstadistico}
+        </div>
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            <tr className="bg-primary fs-3">
+              <th style={thStyle}>Empleado</th>
+              {columnas.map((c, i) => (
+                <th key={i} style={thStyle}>{c.label}</th>
+              ))}
+              <th style={thStyle}>TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {empleadosOrdenados.length === 0 && (
+              <tr>
+                <td style={tdStyle} colSpan={columnas.length + 2}>
+                  Sin datos para este periodo
+                </td>
+              </tr>
+            )}
+
+            {empleadosOrdenados.map((emp, r) => (
+              <tr key={emp}>
+                <td style={tdStyle}>
+                  {emp?.split?.(' ')?.[0] ?? emp}
+                </td>
+
+                {matriz[r].map((val, c) => (
+                  <td
+                    key={c}
+                    style={{ ...tdStyle, cursor: 'pointer', textDecoration: 'underline dotted' }}
+                    title="Ver ventas (id, fecha_venta)"
+                    onClick={() => onCellClick(emp, c, isMoney ? Number(val).toFixed(2) : val)}
+                    aria-label="Abrir ventas de la celda"
+                  >
+                    {isMoney ? <NumberFormatMoney amount={val} /> : val}
+                  </td>
+                ))}
+
+                <td style={{ ...tdStyle, fontWeight: 'bold' }}>
+                  {isMoney ? <NumberFormatMoney amount={totalesFila[r]} /> : totalesFila[r]}
+                </td>
+              </tr>
             ))}
-            <th style={thStyle}>TOTAL</th>
-          </tr>
-        </thead>
-        <tbody>
-          {empleadosOrdenados.length === 0 && (
-            <tr>
-              <td style={tdStyle} colSpan={columnas.length + 2}>
-                Sin datos para este periodo
-              </td>
-            </tr>
+          </tbody>
+
+          {empleadosOrdenados.length > 0 && (
+            <tfoot>
+              <tr>
+                <td style={{ ...tdStyle, fontWeight: 'bold' }}>TOTAL</td>
+                {totalesCol.map((val, i) => (
+                  <td key={i} style={{ ...tdStyle, fontWeight: 'bold' }}>
+                    {isMoney ? <NumberFormatMoney amount={val} /> : val}
+                  </td>
+                ))}
+                <td style={{ ...tdStyle, fontWeight: 'bold' }}>
+                  {isMoney
+                    ? <NumberFormatMoney amount={totalesCol.reduce((a, b) => a + b, 0)} />
+                    : totalesCol.reduce((a, b) => a + b, 0)}
+                </td>
+              </tr>
+            </tfoot>
           )}
+        </table>
+      </div>
 
-          {empleadosOrdenados.map((emp, r) => (
-            <tr key={emp}>
-              <td style={tdStyle}>
-                {/* si quieres solo el primer nombre como en tu otra tabla: */}
-                {emp?.split?.(' ')?.[0] ?? emp}
-              </td>
-
-              {matriz[r].map((val, c) => (
-                <td key={c} style={tdStyle}>
-                  {isMoney ? <NumberFormatMoney amount={val} /> : val}
-                </td>
-              ))}
-
-              <td style={{ ...tdStyle, fontWeight: 'bold' }}>
-                {isMoney ? <NumberFormatMoney amount={totalesFila[r]} /> : totalesFila[r]}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-
-        {empleadosOrdenados.length > 0 && (
-          <tfoot>
-            <tr>
-              <td style={{ ...tdStyle, fontWeight: 'bold' }}>TOTAL</td>
-              {totalesCol.map((val, i) => (
-                <td key={i} style={{ ...tdStyle, fontWeight: 'bold' }}>
-                  {isMoney ? <NumberFormatMoney amount={val} /> : val}
-                </td>
-              ))}
-              <td style={{ ...tdStyle, fontWeight: 'bold' }}>
-                {isMoney
-                  ? <NumberFormatMoney amount={totalesCol.reduce((a, b) => a + b, 0)} />
-                  : totalesCol.reduce((a, b) => a + b, 0)}
-              </td>
-            </tr>
-          </tfoot>
+      {/* Modal con tabla (id, fecha_venta) */}
+      <Dialog
+        header={modalTitle || 'Ventas'}
+        visible={modalOpen}
+        style={{ width: '60rem', maxWidth: '95vw' }}
+        modal
+        onHide={() => setModalOpen(false)}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button label="Cerrar" onClick={() => setModalOpen(false)} />
+          </div>
+        }
+      >
+        {/* <pre>
+          {JSON.stringify(modalRows, null, 2)}
+        </pre> */}
+        {modalRows.length === 0 ? (
+          <div className="py-2">Sin ventas para esta celda.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={thStyle}>ID</th>
+                  <th style={thStyle}>VENTA PRODUCTOS</th>
+                  <th style={thStyle}>VENTA SERVICIOS</th>
+                  <th style={thStyle}>FECHA_VENTA</th>
+                </tr>
+              </thead>
+              <tbody>
+                {modalRows.map((row) => (
+                  <tr key={row.id}>
+                    <td style={tdStyle}>{row.id}</td>
+                    <td style={tdStyle}>{row.detalle_ventaProductos?.reduce((total, item)=>item?.tarifa_monto+total,0)}</td>
+                    <td style={tdStyle}>{row.detalle_ventaservicios?.reduce((total, item)=>item?.tarifa_monto+total,0)}</td>
+                    <td style={tdStyle}>
+                      {/* ISO 8601 como prefieres */}
+                      {row.fecha_venta || ''}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </table>
-    </div>
+      </Dialog>
+    </>
   );
 };
 
-// Reusa tus estilos
+// estilos
 const thStyle = {
   border: '1px solid #ccc',
   padding: '8px',

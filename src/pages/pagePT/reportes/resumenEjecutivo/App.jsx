@@ -182,7 +182,7 @@ export const App = ({ id_empresa }) => {
         </Col>
         <Col lg={12}>
         <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+                  { label: 'JULIO',anio: '2025', mes: 'julio' },
         ]}/>
         </Col>
         <Col lg={12}>
@@ -196,7 +196,7 @@ export const App = ({ id_empresa }) => {
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
                   { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}
             datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
           />
@@ -212,7 +212,7 @@ export const App = ({ id_empresa }) => {
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
                   { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}
             datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
           />
@@ -228,7 +228,7 @@ export const App = ({ id_empresa }) => {
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
                   { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}
             datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
           />
@@ -244,7 +244,7 @@ export const App = ({ id_empresa }) => {
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
                   { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}
             datoEstadistico="Ventas Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
           />
@@ -260,7 +260,7 @@ export const App = ({ id_empresa }) => {
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
                   { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'mayo' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}
             datoEstadistico="Ventas Productos" // o "Cant. Ventas", "Ventas Productos", etc.
           />

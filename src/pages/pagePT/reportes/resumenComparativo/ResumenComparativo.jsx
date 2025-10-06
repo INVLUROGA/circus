@@ -401,6 +401,8 @@ const generarResumen = (array, grupo, labelCaracter, index, objDeleting, objDele
             id: 'comparativoventasenprograma',
             HTML: agruparPorEmpleados(dataGroup)?.map((d, array)=>{
                 const agrupadoxClase = agruparPorClase(d.items)
+                console.log({deeg: agruparPorEmpleados(dataGroup)});
+                
                 const sumarVentaServicios = agrupadoxClase.find(f => f?.clase === 'Servicio')
                 ?.items.reduce((total, item) => {
                     return total + (Number(item?.pago_monto) || 0); // Convierte a número y suma
