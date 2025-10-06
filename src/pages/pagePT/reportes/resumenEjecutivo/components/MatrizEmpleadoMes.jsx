@@ -3,11 +3,11 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import dayjs from 'dayjs';
-// import utc from 'dayjs/plugin/utc';
-// import 'dayjs/locale/es';
+import utc from 'dayjs/plugin/utc';
+import 'dayjs/locale/es';
 
-// dayjs.extend(utc);
-// dayjs.locale('es');
+dayjs.extend(utc);
+dayjs.locale('es');
 
 const mesAIndice = (m = '') => {
   const k = m.trim().toLowerCase();
@@ -268,9 +268,13 @@ export const MatrizEmpleadoMes = ({
             <tr className="bg-primary fs-3">
               <th style={thStyle}>Empleado</th>
               {columnas.map((c, i) => (
-                <th key={i} style={thStyle}>{c.label}</th>
+                <th 
+                    className='fs-3'
+                key={i} style={thStyle}>{c.label}</th>
               ))}
-              <th style={thStyle}>TOTAL</th>
+              <th 
+                    className='fs-3'
+              style={thStyle}>TOTAL</th>
             </tr>
           </thead>
           <tbody>
@@ -284,23 +288,28 @@ export const MatrizEmpleadoMes = ({
 
             {empleadosOrdenados.map((emp, r) => (
               <tr key={emp}>
-                <td style={tdStyle}>
+                <td style={tdStyle} 
+                    className='fs-3'
+                >
                   {emp?.split?.(' ')?.[0] ?? emp}
                 </td>
 
                 {matriz[r].map((val, c) => (
                   <td
                     key={c}
+                    className='fs-3'
                     style={{ ...tdStyle, cursor: 'pointer', textDecoration: 'underline dotted' }}
                     title="Ver ventas (id, fecha_venta)"
-                    onClick={() => onCellClick(emp, c, isMoney ? Number(val).toFixed(2) : val)}
+                    // onClick={() => onCellClick(emp, c, isMoney ? Number(val).toFixed(2) : val)}
                     aria-label="Abrir ventas de la celda"
                   >
                     {isMoney ? <NumberFormatMoney amount={val} /> : val}
                   </td>
                 ))}
 
-                <td style={{ ...tdStyle, fontWeight: 'bold' }}>
+                <td
+                    className='fs-3'
+                style={{ ...tdStyle, fontWeight: 'bold' }}>
                   {isMoney ? <NumberFormatMoney amount={totalesFila[r]} /> : totalesFila[r]}
                 </td>
               </tr>
@@ -310,13 +319,19 @@ export const MatrizEmpleadoMes = ({
           {empleadosOrdenados.length > 0 && (
             <tfoot>
               <tr>
-                <td style={{ ...tdStyle, fontWeight: 'bold' }}>TOTAL</td>
+                <td 
+                    className='fs-3'
+                style={{ ...tdStyle, fontWeight: 'bold' }}>TOTAL</td>
                 {totalesCol.map((val, i) => (
-                  <td key={i} style={{ ...tdStyle, fontWeight: 'bold' }}>
+                  <td key={i}
+                  className='fs-3'
+                  style={{ ...tdStyle, fontWeight: 'bold' }}>
                     {isMoney ? <NumberFormatMoney amount={val} /> : val}
                   </td>
                 ))}
-                <td style={{ ...tdStyle, fontWeight: 'bold' }}>
+                <td
+                    className='fs-3'
+                style={{ ...tdStyle, fontWeight: 'bold' }}>
                   {isMoney
                     ? <NumberFormatMoney amount={totalesCol.reduce((a, b) => a + b, 0)} />
                     : totalesCol.reduce((a, b) => a + b, 0)}

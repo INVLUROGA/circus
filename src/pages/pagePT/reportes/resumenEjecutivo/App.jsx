@@ -182,7 +182,7 @@ export const App = ({ id_empresa }) => {
         </Col>
         <Col lg={12}>
         <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
-                  { label: 'JULIO',anio: '2025', mes: 'julio' },
+                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}/>
         </Col>
         <Col lg={12}>
@@ -199,22 +199,6 @@ export const App = ({ id_empresa }) => {
                   { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
         ]}
             datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
-          />
-        </Col>
-        <Col lg={12}>
-        <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={[
-                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                  { label: 'JULIO',anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-        ]}
-            datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
           />
         </Col>
         <Col lg={12}>
