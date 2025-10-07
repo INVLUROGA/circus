@@ -137,6 +137,19 @@ export const MatrizEmpleadoMes = ({
   filtrarFecha = [],
   datoEstadistico = 'Total Ventas',
 }) => {
+  // --- buscadores
+const [q, setQ] = useState('');          // buscador principal (empleados)
+const [qModal, setQModal] = useState(''); // buscador dentro del modal
+
+const normq = (s='') =>
+  s.normalize('NFKC')
+   .toLowerCase()
+   .trim()
+   .replace(/\s+/g, ' ');
+
+const matchIncludes = (haystack, needle) =>
+  normq(haystack).includes(normq(needle));
+
   const METRIC_MAP = {
     'Total Ventas': 'totalVentas',
     'Cant. Ventas': 'cantidadVentas',
@@ -248,6 +261,31 @@ export const MatrizEmpleadoMes = ({
     };
   }, [dataVenta, filtrarFecha, metricKey, meses]);
 
+  // aplica el filtro por empleado (buscador principal)
+const {
+  empleadosFiltrados,
+  matrizFiltrada,
+  totalesFilaFiltrada
+} = useMemo(() => {
+  if (!q) {
+    return {
+      empleadosFiltrados: empleadosOrdenados,
+      matrizFiltrada: matriz,
+      totalesFilaFiltrada: totalesFila
+    };
+  }
+  const keepIdx = empleadosOrdenados
+    .map((emp, i) => ({ emp, i }))
+    .filter(({ emp }) => matchIncludes(emp, q))
+    .map(({ i }) => i);
+
+  return {
+    empleadosFiltrados: keepIdx.map(i => empleadosOrdenados[i]),
+    matrizFiltrada: keepIdx.map(i => matriz[i]),
+    totalesFilaFiltrada: keepIdx.map(i => totalesFila[i]),
+  };
+}, [q, empleadosOrdenados, matriz, totalesFila]);
+
   const onCellClick = (emp, colIndex, valor) => {
     if (!emp || !meses[colIndex]) return;
     // si la celda está en cero, igual abrimos por si quieren ver (o puedes bloquear aquí)
@@ -263,6 +301,25 @@ export const MatrizEmpleadoMes = ({
         <div style={{ marginBottom: 8, fontWeight: 600 }}>
           Métrica: {datoEstadistico}
         </div>
+        
+      <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar empleado..."
+          className="p-inputtext p-component"
+          style={{ minWidth: 260, padding: 8 }}
+          aria-label="Buscar empleado"
+        />
+        {q && (
+          <Button
+            label="Limpiar"
+            onClick={() => setQ('')}
+            severity="secondary"
+            outlined
+          />
+        )}
+      </div>
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr className="bg-primary fs-3">
@@ -278,7 +335,7 @@ export const MatrizEmpleadoMes = ({
             </tr>
           </thead>
           <tbody>
-            {empleadosOrdenados.length === 0 && (
+            {empleadosFiltrados.length === 0 && (
               <tr>
                 <td style={tdStyle} colSpan={columnas.length + 2}>
                   Sin datos para este periodo
@@ -286,7 +343,7 @@ export const MatrizEmpleadoMes = ({
               </tr>
             )}
 
-            {empleadosOrdenados.map((emp, r) => (
+            {empleadosFiltrados.map((emp, r) => (
               <tr key={emp}>
                 <td style={tdStyle} 
                     className='fs-3'
@@ -294,7 +351,7 @@ export const MatrizEmpleadoMes = ({
                   {emp?.split?.(' ')?.[0] ?? emp}
                 </td>
 
-                {matriz[r].map((val, c) => (
+                {matrizFiltrada[r].map((val, c) => (
                   <td
                     key={c}
                     className='fs-3'
@@ -316,28 +373,30 @@ export const MatrizEmpleadoMes = ({
             ))}
           </tbody>
 
-          {empleadosOrdenados.length > 0 && (
-            <tfoot>
-              <tr>
-                <td 
-                    className='fs-3'
-                style={{ ...tdStyle, fontWeight: 'bold' }}>TOTAL</td>
-                {totalesCol.map((val, i) => (
-                  <td key={i}
-                  className='fs-3'
-                  style={{ ...tdStyle, fontWeight: 'bold' }}>
-                    {isMoney ? <NumberFormatMoney amount={val} /> : val}
+          {empleadosFiltrados.length > 0 && (
+              <tfoot>
+                <tr>
+                  <td className='fs-3' style={{ ...tdStyle, fontWeight: 'bold' }}>TOTAL</td>
+                  {columnas.map((_, i) => (
+                    <td key={i} className='fs-3' style={{ ...tdStyle, fontWeight: 'bold' }}>
+                      {isMoney
+                        ? <NumberFormatMoney amount={
+                            matrizFiltrada.reduce((acc, row) => acc + (row[i] || 0), 0)
+                          } />
+                        : matrizFiltrada.reduce((acc, row) => acc + (row[i] || 0), 0)
+                      }
+                    </td>
+                  ))}
+                  <td className='fs-3' style={{ ...tdStyle, fontWeight: 'bold' }}>
+                    {isMoney
+                      ? <NumberFormatMoney amount={
+                          matrizFiltrada.flat().reduce((a, b) => a + b, 0)
+                        } />
+                      : matrizFiltrada.flat().reduce((a, b) => a + b, 0)
+                    }
                   </td>
-                ))}
-                <td
-                    className='fs-3'
-                style={{ ...tdStyle, fontWeight: 'bold' }}>
-                  {isMoney
-                    ? <NumberFormatMoney amount={totalesCol.reduce((a, b) => a + b, 0)} />
-                    : totalesCol.reduce((a, b) => a + b, 0)}
-                </td>
-              </tr>
-            </tfoot>
+                </tr>
+              </tfoot>
           )}
         </table>
       </div>

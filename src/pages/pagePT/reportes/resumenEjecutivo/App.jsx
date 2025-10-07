@@ -189,9 +189,9 @@ export const App = ({ id_empresa }) => {
         <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={[
-                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
                   { label: 'MAYO',anio: '2025', mes: 'mayo' },
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
@@ -205,9 +205,9 @@ export const App = ({ id_empresa }) => {
         <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={[
-                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
                   { label: 'MAYO',anio: '2025', mes: 'mayo' },
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
@@ -221,9 +221,9 @@ export const App = ({ id_empresa }) => {
         <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={[
-                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
                   { label: 'MAYO',anio: '2025', mes: 'mayo' },
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
@@ -237,9 +237,9 @@ export const App = ({ id_empresa }) => {
         <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={[
-                                { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
                   { label: 'MAYO',anio: '2025', mes: 'mayo' },
                   { label: 'JUNIO',anio: '2025', mes: 'junio' },
                   { label: 'JULIO',anio: '2025', mes: 'julio' },
