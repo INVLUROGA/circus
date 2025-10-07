@@ -143,7 +143,7 @@ export const MatrizEmpleadoMes = ({
   dataVenta = [],
   filtrarFecha = [],
   datoEstadistico = 'Total Ventas',
-  excluirNombres = ['LUIS', 'JESUS', 'FATIMA', 'MIA'],
+  excluirNombres = ['LUIS', 'JESUS', 'FATIMA', 'MIA', 'KATIA', 'TIBISAY'],
 }) => {
   // --- buscadores
 const [q, setQ] = useState('');          // buscador principal (empleados)
