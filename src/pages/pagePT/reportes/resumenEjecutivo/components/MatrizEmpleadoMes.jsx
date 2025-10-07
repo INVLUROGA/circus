@@ -18,7 +18,14 @@ const mesAIndice = (m = '') => {
   };
   return mapa[k] ?? -1;
 };
+const toKey = (s='') =>
+  s
+    .normalize('NFKD')                 // separa acentos
+    .replace(/[\u0300-\u036f]/g, '')   // quita acentos
+    .trim()
+    .toLowerCase();
 
+const firstWord = (s='') => toKey(s).split(' ')[0] || '';
 const normalizeName = (s) =>
   !s ? '' : s.normalize('NFKC').trim().replace(/\s+/g, ' ');
 
@@ -136,6 +143,7 @@ export const MatrizEmpleadoMes = ({
   dataVenta = [],
   filtrarFecha = [],
   datoEstadistico = 'Total Ventas',
+  excluirNombres = ['LUIS', 'JESUS', 'FATIMA', 'MIA'],
 }) => {
   // --- buscadores
 const [q, setQ] = useState('');          // buscador principal (empleados)
@@ -220,6 +228,10 @@ const matchIncludes = (haystack, needle) =>
     },
     [dataVenta, meses]
   );
+const excluirSet = useMemo(() => {
+  const set = new Set(excluirNombres.map(toKey));
+  return set;
+}, [excluirNombres]);
 
   const { empleadosOrdenados, columnas, matriz, totalesFila, totalesCol } = useMemo(() => {
     const columnas = meses.map((f) => {
@@ -267,16 +279,20 @@ const {
   matrizFiltrada,
   totalesFilaFiltrada
 } = useMemo(() => {
-  if (!q) {
-    return {
-      empleadosFiltrados: empleadosOrdenados,
-      matrizFiltrada: matriz,
-      totalesFilaFiltrada: totalesFila
-    };
-  }
+  // Índices que pasan el filtro de buscador Y NO están excluidos
   const keepIdx = empleadosOrdenados
     .map((emp, i) => ({ emp, i }))
-    .filter(({ emp }) => matchIncludes(emp, q))
+    .filter(({ emp }) => {
+      // fuera si está en la lista de exclusión
+      const empKey = toKey(emp);
+      if (excluirSet.has(empKey) || excluirSet.has(firstWord(emp))) return false;
+
+      // si no hay query, aceptarlo
+      if (!q) return true;
+
+      // si hay query, aplicar match
+      return matchIncludes(emp, q);
+    })
     .map(({ i }) => i);
 
   return {
@@ -284,7 +300,7 @@ const {
     matrizFiltrada: keepIdx.map(i => matriz[i]),
     totalesFilaFiltrada: keepIdx.map(i => totalesFila[i]),
   };
-}, [q, empleadosOrdenados, matriz, totalesFila]);
+}, [q, empleadosOrdenados, matriz, totalesFila, excluirSet]);
 
   const onCellClick = (emp, colIndex, valor) => {
     if (!emp || !meses[colIndex]) return;
@@ -367,7 +383,7 @@ const {
                 <td
                     className='fs-3'
                 style={{ ...tdStyle, fontWeight: 'bold' }}>
-                  {isMoney ? <NumberFormatMoney amount={totalesFila[r]} /> : totalesFila[r]}
+                  {isMoney ? <NumberFormatMoney amount={totalesFilaFiltrada[r]} /> : totalesFilaFiltrada[r]}
                 </td>
               </tr>
             ))}
