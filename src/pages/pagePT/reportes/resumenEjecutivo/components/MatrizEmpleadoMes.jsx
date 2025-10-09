@@ -5,6 +5,7 @@ import { Button } from 'primereact/button';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import 'dayjs/locale/es';
+import { set } from 'lodash';
 
 dayjs.extend(utc);
 dayjs.locale('es');
@@ -173,11 +174,18 @@ const matchIncludes = (haystack, needle) =>
     metricKey === 'ventasServicios';
 
   const meses = Array.isArray(filtrarFecha) ? filtrarFecha : [filtrarFecha].filter(Boolean);
+  const RATE_IGV = 0.18;
+  const RATE_RENTA=0.03;
+  const RATE_TARJETA=0.045;
+
+
 
   // ---- estado del modal
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRows, setModalRows] = useState([]); // [{id, fecha_venta}]
   const [modalTitle, setModalTitle] = useState('');
+  const [modalMonto, setModalMonto] = useState(0);
+  const [modalResumen,setModalResumen]=useState(null);
 
   // helper: lista de ventas (id, fecha_venta) por empleado + mes
   const getVentasDeCelda = useCallback(
@@ -228,6 +236,15 @@ const matchIncludes = (haystack, needle) =>
     },
     [dataVenta, meses]
   );
+  const buildBreakdown = (brutoNum = 0) => {
+  const bruto = Number(brutoNum) || 0;
+  const igv = +(bruto * RATE_IGV).toFixed(2);
+  const renta = +(bruto * RATE_RENTA).toFixed(2);
+  const tarjeta = +(bruto * RATE_TARJETA).toFixed(2);
+  const neto = +(bruto - igv - renta - tarjeta).toFixed(2);
+  return { bruto, igv, renta, tarjeta, neto };
+};
+
 const excluirSet = useMemo(() => {
   const set = new Set(excluirNombres.map(toKey));
   return set;
@@ -301,15 +318,44 @@ const {
     totalesFilaFiltrada: keepIdx.map(i => totalesFila[i]),
   };
 }, [q, empleadosOrdenados, matriz, totalesFila, excluirSet]);
+const onCellClick = (emp, colIndex, valor) => {
+  if (!emp || !meses[colIndex]) return;
 
-  const onCellClick = (emp, colIndex, valor) => {
-    if (!emp || !meses[colIndex]) return;
-    // si la celda está en cero, igual abrimos por si quieren ver (o puedes bloquear aquí)
-    const filas = getVentasDeCelda(emp, colIndex);
-    setModalRows(filas);
-    setModalTitle(`${emp?.split?.(' ')?.[0] ?? emp} — ${columnas[colIndex]?.label} (${isMoney ? 'monto' : 'valor'}: ${valor})`);
-    setModalOpen(true);
-  };
+  // 🔹 Obtiene las ventas del empleado en ese mes
+  const filas = getVentasDeCelda(emp, colIndex);
+  setModalRows(filas);
+
+  // 🔹 Calcular total de compra de productos (prec_compra)
+  let totalCompra = 0;
+
+  for (const venta of filas) {
+    const productos = Array.isArray(venta.detalle_ventaProductos)
+      ? venta.detalle_ventaProductos
+      : Array.isArray(venta.detalle_ventaproductos)
+      ? venta.detalle_ventaproductos
+      : [];
+
+    for (const it of productos) {
+      const costo = Number(it?.tb_producto?.prec_compra) || 0;
+      const cantidad = Number(it?.cantidad) || 1;
+      totalCompra += costo * cantidad;
+    }
+  }
+
+  // 🔹 Calcular resumen con descuentos
+  const bruto = Number(valor) || 0;
+  const resumen = buildBreakdown(bruto);
+
+  // 🔹 Añadimos costo de compra y neto final
+  resumen.costoCompra = totalCompra;
+  resumen.netoFinal = +(resumen.neto - totalCompra).toFixed(2);
+
+  // 🔹 Guardar datos en estado del modal
+  setModalMonto(bruto);
+  setModalResumen(resumen);
+  setModalTitle(`${emp?.split?.(' ')?.[0] ?? emp} - ${columnas[colIndex]?.label}`);
+  setModalOpen(true);
+};
 
   return (
     <>
@@ -373,7 +419,7 @@ const {
                     className='fs-3'
                     style={{ ...tdStyle, cursor: 'pointer', textDecoration: 'underline dotted' }}
                     title="Ver ventas (id, fecha_venta)"
-                    // onClick={() => onCellClick(emp, c, isMoney ? Number(val).toFixed(2) : val)}
+                    onClick={() => onCellClick(emp, c, isMoney ? Number(val).toFixed(2) : val)}
                     aria-label="Abrir ventas de la celda"
                   >
                     {isMoney ? <NumberFormatMoney amount={val} /> : val}
@@ -419,50 +465,114 @@ const {
 
       {/* Modal con tabla (id, fecha_venta) */}
       <Dialog
-        header={modalTitle || 'Ventas'}
-        visible={modalOpen}
-        style={{ width: '60rem', maxWidth: '95vw' }}
-        modal
-        onHide={() => setModalOpen(false)}
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button label="Cerrar" onClick={() => setModalOpen(false)} />
-          </div>
-        }
-      >
-        {/* <pre>
-          {JSON.stringify(modalRows, null, 2)}
-        </pre> */}
-        {modalRows.length === 0 ? (
-          <div className="py-2">Sin ventas para esta celda.</div>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-              <thead>
-                <tr>
-                  <th style={thStyle}>ID</th>
-                  <th style={thStyle}>VENTA PRODUCTOS</th>
-                  <th style={thStyle}>VENTA SERVICIOS</th>
-                  <th style={thStyle}>FECHA_VENTA</th>
-                </tr>
-              </thead>
-              <tbody>
-                {modalRows.map((row) => (
-                  <tr key={row.id}>
-                    <td style={tdStyle}>{row.id}</td>
-                    <td style={tdStyle}>{row.detalle_ventaProductos?.reduce((total, item)=>item?.tarifa_monto+total,0)}</td>
-                    <td style={tdStyle}>{row.detalle_ventaservicios?.reduce((total, item)=>item?.tarifa_monto+total,0)}</td>
-                    <td style={tdStyle}>
-                      {/* ISO 8601 como prefieres */}
-                      {row.fecha_venta || ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Dialog>
+  header={modalTitle || 'Ventas'}
+  visible={modalOpen}
+  style={{ width: '60rem', maxWidth: '95vw' }}
+  modal
+  onHide={() => setModalOpen(false)}
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button label="Cerrar" onClick={() => setModalOpen(false)} />
+    </div>
+  }
+>
+  {/* ---- Desglose de descuentos ---- */}
+  {modalResumen && (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ fontWeight: 700, marginBottom: 8 ,textAlign:'center',fontSize:'30px'}}>Detalle de descuentos</div>
+      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 12 }}>
+        <thead>
+          <tr>
+            <th className='bg-primary'style={thStyle}>Concepto</th>
+            <th className='bg-primary'style={thStyle}>Tasa</th>
+            <th className='bg-primary' style={thStyle}>Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={tdStyle}>Monto bruto</td>
+            <td style={tdStyle}>—</td>
+            <td style={tdStyle}><NumberFormatMoney amount={modalResumen.bruto}/></td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>IGV</td>
+            <td style={tdStyle}>{(RATE_IGV*100).toFixed(2)} %</td>
+            <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.igv}/></td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Impuesto a la renta</td>
+            <td style={tdStyle}>{(RATE_RENTA*100).toFixed(2)} %</td>
+            <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.renta} /></td>
+          </tr>
+          <tr>
+            <td style={tdStyle}>Tarjeta de crédito</td>
+            <td style={tdStyle}>{(RATE_TARJETA*100).toFixed(2)} %</td>
+            <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.tarjeta} /></td>
+          </tr>
+              <tr>
+            <td style={{ ...tdStyle, fontWeight: '700' }}>INGRESO NETO</td>
+            <td style={tdStyle}>—</td>
+            <td style={{ ...tdStyle, fontWeight: '700' }}>
+              <NumberFormatMoney amount={modalResumen.neto} />
+            </td>
+          </tr>
+          <tr>
+  <td style={tdStyle}>Costo de compra (productos)</td>
+  <td style={tdStyle}>—</td>
+  <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.costoCompra} /></td>
+</tr>
+      
+          <tr>
+  <td style={{ ...tdStyle, fontWeight: '700' }}>UTILIDAD NETA </td>
+  <td style={tdStyle}>—</td>
+  <td style={{ ...tdStyle, fontWeight: '700', color: '#007b00' }}>
+    <NumberFormatMoney amount={modalResumen.netoFinal} />
+  </td>
+</tr>
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  {/* ---- Tu tabla de ventas existente ---- */}
+  {modalRows.length === 0 ? (
+    <div className="py-2">Sin ventas para esta celda.</div>
+  ) : (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={thStyle}>ID</th>
+            <th style={thStyle}>VENTA PRODUCTOS</th>
+            <th style={thStyle}>VENTA SERVICIOS</th>
+            <th style={thStyle}>FECHA_VENTA</th>
+          </tr>
+        </thead>
+        <tbody>
+          {modalRows.map((row) => (
+            <tr key={row.id}>
+              <td style={tdStyle}>{row.id}</td>
+              <td style={tdStyle}>
+                <NumberFormatMoney amount={
+                  (row.detalle_ventaProductos || row.detalle_ventaproductos || [])
+                    .reduce((t, it) => t + (Number(it?.tarifa_monto) || 0), 0)
+                }/>
+              </td>
+              <td style={tdStyle}>
+                <NumberFormatMoney amount={
+                  (row.detalle_ventaservicios || [])
+                    .reduce((t, it) => t + (Number(it?.tarifa_monto) || 0), 0)
+                }/>
+              </td>
+              <td style={tdStyle}>{row.fecha_venta || ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</Dialog>
+
     </>
   );
 };
@@ -473,9 +583,11 @@ const thStyle = {
   padding: '8px',
   textAlign: 'center',
   fontWeight: 'bold',
+  fontSize :'20px'
 };
 const tdStyle = {
   border: '1px solid #ccc',
   padding: '8px',
   textAlign: 'center',
+  fontSize : '18px'
 };
