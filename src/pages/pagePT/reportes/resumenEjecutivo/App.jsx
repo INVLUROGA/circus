@@ -40,6 +40,7 @@
     }, [id_empresa]);
 
    const mesesDinamicos = useMemo(() => generarMesesDinamicos(8), []);
+   const mesesEmpleados = useMemo(() => generarMesesDinamicos(5), []);
   
     // Define las
     // columnas (las del diseño de tu imagen)
@@ -176,64 +177,28 @@
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
-              filtrarFecha={[
-                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                    { label: 'JULIO',anio: '2025', mes: 'julio' },
-                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-          ]}
+              filtrarFecha={mesesEmpleados}
               datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
-              filtrarFecha={[
-                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                    { label: 'JULIO',anio: '2025', mes: 'julio' },
-                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-          ]}
+              filtrarFecha={mesesEmpleados}
               datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
-              filtrarFecha={[
-                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                    { label: 'JULIO',anio: '2025', mes: 'julio' },
-                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-          ]}
+              filtrarFecha={mesesEmpleados}
               datoEstadistico="Ventas Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
-              filtrarFecha={[
-                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                    { label: 'JULIO',anio: '2025', mes: 'julio' },
-                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-          ]}
+              filtrarFecha={mesesEmpleados}
               datoEstadistico="Ventas Productos" // o "Cant. Ventas", "Ventas Productos", etc.
             />
           </Col>
