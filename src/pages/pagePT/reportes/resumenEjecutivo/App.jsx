@@ -1,255 +1,243 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Col, Row } from "react-bootstrap";
-import { useVentasStore } from "./useVentasStore";
-import { ventasToExecutiveData } from "./adapters/ventasToExecutiveData";
-import ExecutiveTable from "./components/ExecutiveTable";
-import { PageBreadcrumb } from "@/components";
-import {ClientesPorOrigen} from "./components/ClientesPorOrigen";
-import { ComparativoVsActual } from "./components/ComparativoVsActual";
-import { buildDataMktByMonth } from "./adapters/buildDataMktByMonth";
-import { GraficoLinealInversionRedes } from "./components/GraficoLinealInversionRedes";
-import { RankingEstilista } from "./components/RankingEstilista";
-import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
+  import React, { useEffect, useMemo, useState } from "react";
+  import { Col, Row } from "react-bootstrap";
+  import { useVentasStore } from "./useVentasStore";
+  import { ventasToExecutiveData } from "./adapters/ventasToExecutiveData";
+  import ExecutiveTable from "./components/ExecutiveTable";
+  import { PageBreadcrumb } from "@/components";
+  import {ClientesPorOrigen} from "./components/ClientesPorOrigen";
+  import { ComparativoVsActual } from "./components/ComparativoVsActual";
+  import { buildDataMktByMonth } from "./adapters/buildDataMktByMonth";
+  import { GraficoLinealInversionRedes } from "./components/GraficoLinealInversionRedes";
+  import { RankingEstilista } from "./components/RankingEstilista";
+  import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
 
-export const App = ({ id_empresa }) => {
-  const { obtenerTablaVentas, dataVentas, obtenerLeads, dataLead, dataLeadPorMesAnio } = useVentasStore();
+     const generarMesesDinamicos = (Cantidad=8) => {
+      const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio",
+         "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"  ];
+    
+    const mesesLabel = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
+         "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"  ];
+      const fechaActual = new Date();
+      const mesActual = fechaActual.getMonth();
+      const anioActual = fechaActual.getFullYear();
+      const mesesDinamicos = [];
+      for (let i = Cantidad - 1; i >= 0; i--) {
+        const fecha = new Date(anioActual, mesActual - i, 1);
+        const mes = fecha.getMonth();
+        const anio = fecha.getFullYear();
+        mesesDinamicos.push({ 
+          label: mesesLabel[mes], anio: anio.toString(), mes: meses[mes]
+        });
+      }
+      return mesesDinamicos;
+    }; 
+  export const App = ({ id_empresa }) => {
+    const { obtenerTablaVentas, dataVentas, obtenerLeads, dataLead, dataLeadPorMesAnio } = useVentasStore();
 
-  useEffect(() => { 
-    obtenerTablaVentas(599); 
-    obtenerLeads(599)
-  }, [id_empresa]);
+    useEffect(() => { 
+      obtenerTablaVentas(599); 
+      obtenerLeads(599)
+    }, [id_empresa]);
 
-  // columnas (las del diseño de tu imagen)
-  const columns = useMemo(() => ([
-    // { key: "marzo",  label: "MARZO",  currency: "S/." },
-    // { key: "abril",  label: "ABRIL",  currency: "S/." },
-    { key: "mayo",   label: "MAYO",   currency: "S/." },
-    { key: "junio",  label: "JUNIO",  currency: "S/." },
-    { key: "julio",  label: "JULIO",  currency: "S/." },
-    { key: "agosto", label: "AGOSTO", currency: "S/." },
-    { key: "septiembre", label: "SEPTIEMBRE", currency: "S/." },
-  ]), []);
-
-  // (opcional) KPIs de marketing por mes
-  const marketing = {
-    inversion_redes: { marzo: 1098, abril: 3537, mayo: 4895, junio: 4622, julio: 4697, agosto: 5119, septiembre: 0 },
-    leads:           { marzo: 84,  abril: 214,  mayo: 408,  junio: 462,  julio: 320,  agosto: 417, septiembre: 0  },
-    cpl:             { marzo: 13.07,  abril: 16.53,   mayo: 12,   junio: 10,    julio: 14.68,   agosto: 12.28, septiembre: 0   },
-    cac:             { marzo: null,  abril: null,   mayo: null,   junio: null,   julio: null,   agosto: null, septiembre: 0   },
-  };
-
-  // Día de corte 1..31 (si no quieres corte, deja null)
-  const [cutDay, setCutDay] = useState(21);
-  const [initDay, setInitDay] = useState(1);
-  console.log({dataVentas});
+   const mesesDinamicos = useMemo(() => generarMesesDinamicos(8), []);
   
-  const tableData = useMemo(() => ventasToExecutiveData({
-    ventas: dataVentas,
-    columns,
-    titleLeft: "CIRCUS",
-    titleRight: `RESUMEN EJECUTIVO HASTA EL ${cutDay} DE CADA MES`,
-    marketing,
-    cutDay,               // coméntalo si no quieres corte
-    initDay,
-    footerFullMonth: true // footer = mes completo
-  }), [dataVentas, columns, marketing, cutDay]);
-  // Mapea tus IDs reales
-  const originMap = {
-    1454: "WALK-IN",
-    1455: "DIGITAL",
-    1456: "REFERIDO",
-    1457: "CARTERA",
-  };
-  /*
-  1458:'WALKING'
-  1457:'VIP'
-  1456:'TELEVISION'
-  1455:'REGULAR'
-  1454:'whatsapp'
-  1453:'INSTAGRAM'
-  1452:'FACEBOOK'
-  1451:'YOHANDRY'
-  1450:'CANJE'
-  1449:'Preferencial'
-  */
-  const dataMkt = buildDataMktByMonth(dataLead, initDay, cutDay)
-  return (
-    <>
-          <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
-
-      <Row className="mb-3">
-        <Col lg={12}>
-          <div style={{ display:"flex", alignItems:"center" }}>
-            <label style={{ fontWeight: 600 }}>Día de inicio:</label>
-            <select value={initDay} onChange={e=>setInitDay(parseInt(e.target.value,10))}>
-              {Array.from({length:31},(_,i)=>i+1).map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div style={{ display:"flex", alignItems:"center" }}>
-            <label style={{ fontWeight: 600 }}>Día de corte:</label>
-            <select value={cutDay} onChange={e=>setCutDay(parseInt(e.target.value,10))}>
-              {Array.from({length:31},(_,i)=>i+1).map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-        </Col>
-      </Row>
-      <Row className="">
-        <Col lg={12} className="pt-0">
-          <Row>
-            <Col lg={12} className="mb-4">
-              <ExecutiveTable    
-                ventas={dataVentas}
-                fechas={[
-                  // { label: 'MAYO',  anio: '2025', mes: 'mayo' },
-                  { label: 'FEBRERO', anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO', anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL', anio: '2025', mes: 'abril' },
-                  { label: 'MAYO', anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO', anio: '2025', mes: 'junio' },
-                  { label: 'JULIO', anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-                ]}
-                dataMktByMonth={dataMkt}
-                initialDay={initDay}
-                cutDay={cutDay} />
-            </Col>
-            <Col lg={12}>
-              <ClientesPorOrigen
-                ventas={dataVentas}             // tu array de ventas
-                fechas={[
-                  // { label: 'MAYO', anio: '2025', mes: 'mayo' },
-                  { label: 'FEBRERO', anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO', anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL', anio: '2025', mes: 'abril' },
-                  { label: 'MAYO', anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO', anio: '2025', mes: 'junio' },
-                  { label: 'JULIO', anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-                ]}
-                initialDay={initDay}
-                cutDay={cutDay}
-                originMap={{
-                    1458:'WALKING',
-                    1457:'VIP',
-                    1456:'TELEVISION',
-                    1455:'REGULAR',
-                    1454:'whatsapp',
-                    1453:'INSTAGRAM',
-                    1452:'FACEBOOK',
-                    1451:'YOHANDRY',
-                    1450:'CANJE',
-                    1449:'Preferencial',
-                  // 1454: 'WALK-IN',
-                  // 1455: 'DIGITAL',
-                  // 1456: 'REFERIDO',
-                  // 1457: 'CARTERA',
-                }}
-              />
-            </Col>
-          </Row>
-        </Col>
-        <Col lg={12}>
-          <Row>
-            <Col lg={12} className="mb-4">
-              <ComparativoVsActual
-                  fechas={[
-                    // { label: 'MAYO',  anio: '2025', mes: 'mayo' },
-                  { label: 'FEBRERO', anio: '2025', mes: 'febrero' },
-                  { label: 'MARZO', anio: '2025', mes: 'marzo' },
-                  { label: 'ABRIL', anio: '2025', mes: 'abril' },
-                  { label: 'MAYO', anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO', anio: '2025', mes: 'junio' },
-                  { label: 'JULIO', anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-                  ]}
-                  ventas={dataVentas}
-                  initialDay={initDay}
-                  cutDay={cutDay}            // día de corte opcional (1..31)
-                  // referenceMonth={"agosto"} // opcional; si lo omites, usa el último mes con datos
-                />
-            </Col>
-            <Col lg={12}>
-                  <GraficoLinealInversionRedes
-                    data={dataLeadPorMesAnio}
-                    fechas={[new Date()]}
-
-                  />
-            </Col>
-          </Row>
-        </Col>
-        <Col lg={12}>
-        <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-        ]}/>
-        </Col>
-        <Col lg={12}>
-        <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={[
-                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                  { label: 'JULIO',anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-        ]}
-            datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
-          />
-        </Col>
-        <Col lg={12}>
-        <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={[
-                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                  { label: 'JULIO',anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-        ]}
-            datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
-          />
-        </Col>
-        <Col lg={12}>
-        <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={[
-                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                  { label: 'JULIO',anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-        ]}
-            datoEstadistico="Ventas Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
-          />
-        </Col>
-        <Col lg={12}>
-        <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={[
-                  //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
-                  // { label: 'MARZO',anio: '2025', mes: 'marzo' },
-                  // { label: 'ABRIL',anio: '2025', mes: 'abril' },
-                  { label: 'MAYO',anio: '2025', mes: 'mayo' },
-                  { label: 'JUNIO',anio: '2025', mes: 'junio' },
-                  { label: 'JULIO',anio: '2025', mes: 'julio' },
-                  { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
-                  { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
-        ]}
-            datoEstadistico="Ventas Productos" // o "Cant. Ventas", "Ventas Productos", etc.
-          />
-        </Col>
-      </Row>
-    </>
+    // Define las
+    // columnas (las del diseño de tu imagen)
+  const columns = useMemo(
+    () => mesesDinamicos.map(m => ({ key: m.mes, label: m.label, currency: "S/." })),
+    [mesesDinamicos]
   );
-};
+
+    // (opcional) KPIs de marketing por mes
+    const marketing = {
+      inversion_redes: { marzo: 1098, abril: 3537, mayo: 4895, junio: 4622, julio: 4697, agosto: 5119, septiembre: 0 },
+      leads:           { marzo: 84,  abril: 214,  mayo: 408,  junio: 462,  julio: 320,  agosto: 417, septiembre: 0  },
+      cpl:             { marzo: 13.07,  abril: 16.53,   mayo: 12,   junio: 10,    julio: 14.68,   agosto: 12.28, septiembre: 0   },
+      cac:             { marzo: null,  abril: null,   mayo: null,   junio: null,   julio: null,   agosto: null, septiembre: 0   },
+    };
+
+    // Día de corte 1..31 (si no quieres corte, deja null)
+    const [cutDay, setCutDay] = useState(new Date().getDate());
+    const [initDay, setInitDay] = useState(1);
+    console.log({dataVentas});
+    
+    const tableData = useMemo(() => ventasToExecutiveData({
+      ventas: dataVentas,
+      columns,
+      titleLeft: "CIRCUS",
+      titleRight: `RESUMEN EJECUTIVO HASTA EL ${cutDay} DE CADA MES`,
+      marketing,
+      cutDay,               // coméntalo si no quieres corte
+      initDay,
+      footerFullMonth: true // footer = mes completo
+    }), [dataVentas, columns, marketing, cutDay]);
+    // Mapea tus IDs reales
+    const originMap = {
+      1454: "WALK-IN",
+      1455: "DIGITAL",
+      1456: "REFERIDO",
+      1457: "CARTERA",
+    };
+    /*
+    1458:'WALKING'
+    1457:'VIP'
+    1456:'TELEVISION'
+    1455:'REGULAR'
+    1454:'whatsapp'
+    1453:'INSTAGRAM'
+    1452:'FACEBOOK'
+    1451:'YOHANDRY'
+    1450:'CANJE'
+    1449:'Preferencial'
+    */
+    const dataMkt = buildDataMktByMonth(dataLead, initDay, cutDay)
+    return (
+      <>
+            <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
+
+        <Row className="mb-3">
+          <Col lg={12}>
+            <div style={{ display:"flex", alignItems:"center" }}>
+              <label style={{ fontWeight: 600 }}>Día de inicio:</label>
+              <select value={initDay} onChange={e=>setInitDay(parseInt(e.target.value,10))}>
+                {Array.from({length:31},(_,i)=>i+1).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div style={{ display:"flex", alignItems:"center" }}>
+              <label style={{ fontWeight: 600 }}>Día de corte:</label>
+              <select value={cutDay} onChange={e=>setCutDay(parseInt(e.target.value,10))}>
+                {Array.from({length:31},(_,i)=>i+1).map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </Col>
+        </Row>
+        <Row className="">
+          <Col lg={12} className="pt-0">
+            <Row>
+              <Col lg={12} className="mb-4">
+                <ExecutiveTable    
+                  ventas={dataVentas}
+                  fechas={mesesDinamicos}
+                  dataMktByMonth={dataMkt}
+                  initialDay={initDay}
+                  cutDay={cutDay} />
+              </Col>
+              <Col lg={12}>
+                <ClientesPorOrigen
+                  ventas={dataVentas}             // tu array de ventas
+                  fechas={mesesDinamicos}
+                  initialDay={initDay}
+                  cutDay={cutDay}
+                  originMap={{
+                      1458:'WALKING',
+                      1457:'VIP',
+                      1456:'TELEVISION',
+                      1455:'REGULAR',
+                      1454:'whatsapp',
+                      1453:'INSTAGRAM',
+                      1452:'FACEBOOK',
+                      1451:'YOHANDRY',
+                      1450:'CANJE',
+                      1449:'Preferencial',
+                    // 1454: 'WALK-IN',
+                    // 1455: 'DIGITAL',
+                    // 1456: 'REFERIDO',
+                    // 1457: 'CARTERA',
+                  }}
+                />
+              </Col>
+            </Row>
+          </Col>
+          <Col lg={12}>
+            <Row>
+              <Col lg={12} className="mb-4">
+                <ComparativoVsActual
+                    fechas={mesesDinamicos}
+                    ventas={dataVentas}
+                    initialDay={initDay}
+                    cutDay={cutDay}            // día de corte opcional (1..31)
+                    // referenceMonth={"agosto"} // opcional; si lo omites, usa el último mes con datos
+                  />
+              </Col>
+              <Col lg={12}>
+                    <GraficoLinealInversionRedes
+                      data={dataLeadPorMesAnio}
+                      fechas={[new Date()]}
+
+                    />
+              </Col>
+            </Row>
+          </Col>
+          <Col lg={12}>
+          <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
+                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+          ]}/>
+          </Col>
+          <Col lg={12}>
+          <MatrizEmpleadoMes
+              dataVenta={dataVentas}
+              filtrarFecha={[
+                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                    { label: 'JULIO',anio: '2025', mes: 'julio' },
+                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+          ]}
+              datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+            />
+          </Col>
+          <Col lg={12}>
+          <MatrizEmpleadoMes
+              dataVenta={dataVentas}
+              filtrarFecha={[
+                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                    { label: 'JULIO',anio: '2025', mes: 'julio' },
+                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+          ]}
+              datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+            />
+          </Col>
+          <Col lg={12}>
+          <MatrizEmpleadoMes
+              dataVenta={dataVentas}
+              filtrarFecha={[
+                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                    { label: 'JULIO',anio: '2025', mes: 'julio' },
+                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+          ]}
+              datoEstadistico="Ventas Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
+            />
+          </Col>
+          <Col lg={12}>
+          <MatrizEmpleadoMes
+              dataVenta={dataVentas}
+              filtrarFecha={[
+                    //               { label: 'FEBRERO',anio: '2025', mes: 'febrero' },
+                    // { label: 'MARZO',anio: '2025', mes: 'marzo' },
+                    // { label: 'ABRIL',anio: '2025', mes: 'abril' },
+                    { label: 'MAYO',anio: '2025', mes: 'mayo' },
+                    { label: 'JUNIO',anio: '2025', mes: 'junio' },
+                    { label: 'JULIO',anio: '2025', mes: 'julio' },
+                    { label: 'AGOSTO',anio: '2025', mes: 'agosto' },
+                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+          ]}
+              datoEstadistico="Ventas Productos" // o "Cant. Ventas", "Ventas Productos", etc.
+            />
+          </Col>
+        </Row>
+      </>
+    );
+  };
