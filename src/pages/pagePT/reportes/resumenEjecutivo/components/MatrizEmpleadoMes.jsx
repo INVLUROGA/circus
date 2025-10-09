@@ -177,6 +177,42 @@ const matchIncludes = (haystack, needle) =>
   const RATE_IGV = 0.18;
   const RATE_RENTA=0.03;
   const RATE_TARJETA=0.045;
+// 🎨 Estilos refinados
+const thStyle = {
+  border: '1px solid #bbb',
+  padding: '6px 10px',
+  textAlign: 'center',
+  fontWeight: '600',
+  fontSize: '16px',
+  letterSpacing: '0.3px',
+};
+
+const tdStyle = {
+  border: '1px solid #ccc',
+  padding: '6px 8px',
+  textAlign: 'center',
+  fontSize: '15px',
+  verticalAlign: 'middle',
+};
+
+const innerTableStyle = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  marginTop: '2px',
+};
+
+const thInner = {
+  ...thStyle,
+  fontSize: '14px',
+  padding: '5px',
+  backgroundColor: '#eef7ff',
+};
+
+const tdInner = {
+  ...tdStyle,
+  fontSize: '14px',
+  padding: '5px',
+};
 
 
 
@@ -186,6 +222,12 @@ const matchIncludes = (haystack, needle) =>
   const [modalTitle, setModalTitle] = useState('');
   const [modalMonto, setModalMonto] = useState(0);
   const [modalResumen,setModalResumen]=useState(null);
+  const [showDetalleProductos, setShowDetalleProductos] = useState(false);
+const [productosDetalle, setProductosDetalle] = useState([]);
+const [showDetalleServicios, setShowDetalleServicios] = useState(false);
+const [serviciosDetalle, setServiciosDetalle] = useState([]);
+
+
 
   // helper: lista de ventas (id, fecha_venta) por empleado + mes
   const getVentasDeCelda = useCallback(
@@ -321,12 +363,13 @@ const {
 const onCellClick = (emp, colIndex, valor) => {
   if (!emp || !meses[colIndex]) return;
 
-  // 🔹 Obtiene las ventas del empleado en ese mes
+  // 🔹 1. Obtiene todas las ventas del empleado en ese mes
   const filas = getVentasDeCelda(emp, colIndex);
   setModalRows(filas);
 
-  // 🔹 Calcular total de compra de productos (prec_compra)
+  // 🔹 2. Calcular el total de compra de productos (equivalente a la consulta SQL)
   let totalCompra = 0;
+  const productosDetalle = [];
 
   for (const venta of filas) {
     const productos = Array.isArray(venta.detalle_ventaProductos)
@@ -336,24 +379,41 @@ const onCellClick = (emp, colIndex, valor) => {
       : [];
 
     for (const it of productos) {
-      const costo = Number(it?.tb_producto?.prec_compra) || 0;
+      const producto = it?.tb_producto;
       const cantidad = Number(it?.cantidad) || 1;
-      totalCompra += costo * cantidad;
+      const precCompra = Number(producto?.prec_compra) || 0;
+      const precVenta =
+        Number(it?.precio_unitario) ||
+        Number(producto?.prec_venta) ||
+        0;
+
+      totalCompra += cantidad * precCompra;
+
+      productosDetalle.push({
+        nombre: producto?.nombre_producto || "—",
+        cantidad,
+        precioCompra: precCompra,
+        precioVenta: precVenta,
+      });
     }
   }
 
-  // 🔹 Calcular resumen con descuentos
+  // 🔹 3. Calcular el resumen con los descuentos
   const bruto = Number(valor) || 0;
   const resumen = buildBreakdown(bruto);
 
-  // 🔹 Añadimos costo de compra y neto final
+  // 🔹 4. Agregar costo de compra y utilidad neta final
   resumen.costoCompra = totalCompra;
   resumen.netoFinal = +(resumen.neto - totalCompra).toFixed(2);
 
-  // 🔹 Guardar datos en estado del modal
+  // 🔹 5. Actualizar estados del modal
   setModalMonto(bruto);
-  setModalResumen(resumen);
+  setModalResumen(resumen);const mes = columnas[colIndex]?.label?.toUpperCase?.() ?? '';
+const nombre = (emp?.split?.(' ')?.[0] ?? emp)?.toUpperCase?.() ?? '';
+setModalTitle(`${mes} – ${nombre}`);
+
   setModalTitle(`${emp?.split?.(' ')?.[0] ?? emp} - ${columnas[colIndex]?.label}`);
+  setProductosDetalle(productosDetalle);
   setModalOpen(true);
 };
 
@@ -382,20 +442,17 @@ const onCellClick = (emp, colIndex, valor) => {
           />
         )}
       </div>
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr className="bg-primary fs-3">
-              <th style={thStyle}>Empleado</th>
-              {columnas.map((c, i) => (
-                <th 
-                    className='fs-3'
-                key={i} style={thStyle}>{c.label}</th>
-              ))}
-              <th 
-                    className='fs-3'
-              style={thStyle}>TOTAL</th>
-            </tr>
-          </thead>
+        <table  style={{ borderCollapse: 'collapse', width: '100%' }}>
+         <thead className="bg-warning text-dark">
+  <tr className="fs-3">
+    <th style={thStyle}>Empleado</th>
+    {columnas.map((c, i) => (
+      <th key={i} className="fs-3" style={thStyle}>{c.label}</th>
+    ))}
+    <th className="fs-3" style={thStyle}>TOTAL</th>
+  </tr>
+</thead>
+
           <tbody>
             {empleadosFiltrados.length === 0 && (
               <tr>
@@ -462,12 +519,22 @@ const onCellClick = (emp, colIndex, valor) => {
           )}
         </table>
       </div>
-
-      {/* Modal con tabla (id, fecha_venta) */}
-      <Dialog
-  header={modalTitle || 'Ventas'}
+{/* ✅ MODAL PRINCIPAL CON DESCUENTOS + DETALLE DE VENTAS */}
+<Dialog
+  header={
+    <div
+      style={{
+        textAlign: "center",
+        fontSize: "30px",
+        fontWeight: "700",
+        letterSpacing: "0.5px",
+      }}
+    >
+      {modalTitle || "Ventas"}
+    </div>
+  }
   visible={modalOpen}
-  style={{ width: '60rem', maxWidth: '95vw' }}
+  style={{ width: "85rem", maxWidth: "95vw" }}
   modal
   onHide={() => setModalOpen(false)}
   footer={
@@ -476,101 +543,374 @@ const onCellClick = (emp, colIndex, valor) => {
     </div>
   }
 >
-  {/* ---- Desglose de descuentos ---- */}
+  {/* ===================== DETALLE DE DESCUENTOS ===================== */}
   {modalResumen && (
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontWeight: 700, marginBottom: 8 ,textAlign:'center',fontSize:'30px'}}>Detalle de descuentos</div>
-      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: 12 }}>
+    <div style={{ marginBottom: 24 }}>
+      <div
+        style={{
+          fontWeight: 700,
+          marginBottom: 8,
+          textAlign: "center",
+          fontSize: "30px",
+        }}
+      >
+        DETALLE DE DESCUENTOS
+      </div>
+
+      <table
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          marginBottom: 12,
+        }}
+      >
         <thead>
           <tr>
-            <th className='bg-primary'style={thStyle}>Concepto</th>
-            <th className='bg-primary'style={thStyle}>Tasa</th>
-            <th className='bg-primary' style={thStyle}>Monto</th>
+            <th className="bg-primary" style={thStyle}>CONCEPTO</th>
+            <th className="bg-primary" style={thStyle}>TASA</th>
+            <th className="bg-primary" style={thStyle}>MONTO</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td style={tdStyle}>Monto bruto</td>
             <td style={tdStyle}>—</td>
-            <td style={tdStyle}><NumberFormatMoney amount={modalResumen.bruto}/></td>
+            <td style={tdStyle}>
+              <NumberFormatMoney amount={modalResumen.bruto} />
+            </td>
           </tr>
+
           <tr>
             <td style={tdStyle}>IGV</td>
-            <td style={tdStyle}>{(RATE_IGV*100).toFixed(2)} %</td>
-            <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.igv}/></td>
+            <td style={tdStyle}>{(RATE_IGV * 100).toFixed(2)} %</td>
+            <td style={{ ...tdStyle, color: "red" }}>
+              - <NumberFormatMoney amount={modalResumen.igv} />
+            </td>
           </tr>
+
           <tr>
             <td style={tdStyle}>Impuesto a la renta</td>
-            <td style={tdStyle}>{(RATE_RENTA*100).toFixed(2)} %</td>
-            <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.renta} /></td>
+            <td style={tdStyle}>{(RATE_RENTA * 100).toFixed(2)} %</td>
+            <td style={{ ...tdStyle, color: "red" }}>
+              - <NumberFormatMoney amount={modalResumen.renta} />
+            </td>
           </tr>
+
           <tr>
             <td style={tdStyle}>Tarjeta de crédito</td>
-            <td style={tdStyle}>{(RATE_TARJETA*100).toFixed(2)} %</td>
-            <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.tarjeta} /></td>
+            <td style={tdStyle}>{(RATE_TARJETA * 100).toFixed(2)} %</td>
+            <td style={{ ...tdStyle, color: "red" }}>
+              - <NumberFormatMoney amount={modalResumen.tarjeta} />
+            </td>
           </tr>
-              <tr>
-            <td style={{ ...tdStyle, fontWeight: '700' }}>INGRESO NETO</td>
+
+          <tr>
+            <td style={{ ...tdStyle, fontWeight: "700" }}>INGRESO NETO</td>
             <td style={tdStyle}>—</td>
-            <td style={{ ...tdStyle, fontWeight: '700' }}>
+            <td style={{ ...tdStyle, fontWeight: "700" }}>
               <NumberFormatMoney amount={modalResumen.neto} />
             </td>
           </tr>
+
           <tr>
-  <td style={tdStyle}>Costo de compra (productos)</td>
-  <td style={tdStyle}>—</td>
-  <td style={{...tdStyle,color:'red'}}>- <NumberFormatMoney amount={modalResumen.costoCompra} /></td>
-</tr>
-      
+            <td style={tdStyle}>
+              Costo de compra (productos)
+              <i
+                className="pi pi-eye"
+                style={{ marginLeft: 8, cursor: "pointer", color: "#007bff" }}
+                title="Ver detalle de productos"
+                onClick={() => setShowDetalleProductos(true)}
+              />
+            </td>
+            <td style={tdStyle}>—</td>
+            <td style={{ ...tdStyle, color: "red", fontWeight: "bold" }}>
+              - <NumberFormatMoney amount={modalResumen.costoCompra} />
+            </td>
+          </tr>
+
           <tr>
-  <td style={{ ...tdStyle, fontWeight: '700' }}>UTILIDAD NETA </td>
-  <td style={tdStyle}>—</td>
-  <td style={{ ...tdStyle, fontWeight: '700', color: '#007b00' }}>
-    <NumberFormatMoney amount={modalResumen.netoFinal} />
-  </td>
-</tr>
+            <td style={{ ...tdStyle, fontWeight: "700" }}>UTILIDAD NETA</td>
+            <td style={tdStyle}>—</td>
+            <td style={{ ...tdStyle, fontWeight: "700", color: "#007b00" }}>
+              <NumberFormatMoney amount={modalResumen.netoFinal} />
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
   )}
 
-  {/* ---- Tu tabla de ventas existente ---- */}
+  {/* ===================== DETALLE DE PRODUCTOS Y SERVICIOS (compacto) ===================== */}
   {modalRows.length === 0 ? (
     <div className="py-2">Sin ventas para esta celda.</div>
   ) : (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th style={thStyle}>ID</th>
-            <th style={thStyle}>VENTA PRODUCTOS</th>
-            <th style={thStyle}>VENTA SERVICIOS</th>
-            <th style={thStyle}>FECHA_VENTA</th>
-          </tr>
-        </thead>
-        <tbody>
-          {modalRows.map((row) => (
-            <tr key={row.id}>
-              <td style={tdStyle}>{row.id}</td>
-              <td style={tdStyle}>
-                <NumberFormatMoney amount={
-                  (row.detalle_ventaProductos || row.detalle_ventaproductos || [])
-                    .reduce((t, it) => t + (Number(it?.tarifa_monto) || 0), 0)
-                }/>
-              </td>
-              <td style={tdStyle}>
-                <NumberFormatMoney amount={
-                  (row.detalle_ventaservicios || [])
-                    .reduce((t, it) => t + (Number(it?.tarifa_monto) || 0), 0)
-                }/>
-              </td>
-              <td style={tdStyle}>{row.fecha_venta || ''}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      {(() => {
+        // ---- Aplanar productos y servicios del mes seleccionado
+        const flatProductos = [];
+        const flatServicios = [];
+
+        for (const row of modalRows) {
+          const productos = row.detalle_ventaProductos || row.detalle_ventaproductos || [];
+          const servicios = row.detalle_ventaservicios || [];
+
+          for (const p of productos) {
+            flatProductos.push({
+              nombre: p?.tb_producto?.nombre_producto || '—',
+              cantidad: Number(p?.cantidad) || 1,
+              pCompra: Number(p?.tb_producto?.prec_compra) || 0,
+              pVenta:
+                Number(p?.tarifa_monto) ||
+                Number(p?.precio_unitario) ||
+                Number(p?.tb_producto?.prec_venta) || 0,
+            });
+          }
+
+          for (const s of servicios) {
+            flatServicios.push({
+              nombre: s?.circus_servicio?.nombre_servicio || '—',
+              cantidad: Number(s?.cantidad) || 1,
+              duracion: s?.circus_servicio?.duracion ?? '—',
+              pVenta: Number(s?.tarifa_monto) || 0,
+            });
+          }
+        }
+
+        // ---- Totales
+        const totalPVentaProd = flatProductos.reduce((a,b)=>a + (b.pVenta * b.cantidad), 0);
+        const totalPCompraProd = flatProductos.reduce((a,b)=>a + (b.pCompra * b.cantidad), 0);
+        const totalUtilProd   = totalPVentaProd - totalPCompraProd;
+        const totalPVentaServ = flatServicios.reduce((a,b)=>a + (b.pVenta * b.cantidad), 0);
+        const totalItems = flatProductos.length + flatServicios.length;
+
+        // ---- Estilos compactos
+        const compactTh = {
+          border: '1px solid #e6e6e6',
+          padding: '6px 8px',
+          textAlign: 'center',
+          fontWeight: 700,
+          fontSize: 14,
+          background: '#fafafa',
+          whiteSpace: 'nowrap',
+        };
+        const compactTd = {
+          border: '1px solid #eee',
+          padding: '6px 8px',
+          textAlign: 'center',
+          fontSize: 14,
+          whiteSpace: 'nowrap',
+        };
+        const zebra = (i) => (i % 2 ? { background: '#fcfcfc' } : null);
+
+        return (
+          <div style={{ marginTop: 16 }}>
+            <div
+              style={{
+                fontWeight: 800,
+                marginBottom: 10,
+                textAlign: 'center',
+                fontSize: 22,
+                letterSpacing: .3,
+              }}
+            >
+              DETALLE DE PRODUCTOS Y SERVICIOS
+            </div>
+
+            {/* Resumen mini en cards */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
+                gap: 8,
+                marginBottom: 10,
+              }}
+            >
+              <div style={{padding:10,border:'1px solid #eee',borderRadius:8,background:'#fff'}}>
+                <div style={{fontSize:12,opacity:.7}}>Venta Productos</div>
+                <div style={{fontWeight:800}}>
+                  <NumberFormatMoney amount={totalPVentaProd} />
+                </div>
+              </div>
+              <div style={{padding:10,border:'1px solid #eee',borderRadius:8,background:'#fff'}}>
+                <div style={{fontSize:12,opacity:.7}}>Venta Servicios</div>
+                <div style={{fontWeight:800}}>
+                  <NumberFormatMoney amount={totalPVentaServ} />
+                </div>
+              </div>
+              <div style={{padding:10,border:'1px solid #eee',borderRadius:8,background:'#fff'}}>
+                <div style={{fontSize:12,opacity:.7}}>Ítems totales</div>
+                <div style={{fontWeight:800}}>{totalItems}</div>
+              </div>
+            </div>
+
+            {/* Dos tablas lado a lado */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0,1fr))',
+                gap: 12,
+              }}
+            >
+              {/* -------- Productos -------- */}
+              
+
+              {/* -------- Servicios -------- */}
+              <div>
+                <div style={{fontWeight:700, margin:'6px 0'}}>Servicios</div>
+                <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={compactTh}>Servicio</th>
+                      <th style={compactTh}>Cant.</th>
+                      <th style={compactTh}>Duración</th>
+                      <th style={compactTh}>P. Venta</th>
+                      <th style={compactTh}>Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flatServicios.length === 0 ? (
+                      <tr><td colSpan={5} style={compactTd}>—</td></tr>
+                    ) : flatServicios.map((s, i) => {
+                      const sub = s.pVenta * s.cantidad;
+                      return (
+                        <tr key={i} style={zebra(i)}>
+                          <td style={compactTd}>{s.nombre}</td>
+                          <td style={compactTd}>{s.cantidad}</td>
+                          <td style={compactTd}>{s.duracion}</td>
+                          <td style={{...compactTd}}>
+                            <NumberFormatMoney amount={s.pVenta} />
+                          </td>
+                          <td style={{...compactTd, fontWeight:600, color:'#007b00'}}>
+                            <NumberFormatMoney amount={sub} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {/* Totales */}
+                    <tr>
+                      <td style={{...compactTd, fontWeight:800}} colSpan={4}>TOTAL SERVICIOS</td>
+                      <td style={{...compactTd, fontWeight:800, color:'#007b00'}}>
+                        <NumberFormatMoney amount={totalPVentaServ} />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+    </>
   )}
+</Dialog>
+{/* ✅ SUBMODAL — DETALLE DE PRODUCTOS (compacto) */}
+<Dialog
+  header="Detalle de productos vendidos"
+  visible={showDetalleProductos}
+  style={{ width: "55rem", maxWidth: "95vw" }}
+  modal
+  onHide={() => setShowDetalleProductos(false)}
+  footer={
+    <div className="flex justify-end gap-2">
+      <Button label="Cerrar" onClick={() => setShowDetalleProductos(false)} />
+    </div>
+  }
+>
+  {(() => {
+    // ---- Totales
+    const totalPVentaProd = productosDetalle.reduce((a, b) => a + (b.precioVenta * b.cantidad), 0);
+    const totalPCompraProd = productosDetalle.reduce((a, b) => a + (b.precioCompra * b.cantidad), 0);
+    const totalUtilProd = totalPVentaProd - totalPCompraProd;
+
+    // ---- Estilos compactos
+    const compactTh = {
+      border: '1px solid #e6e6e6',
+      padding: '6px 8px',
+      textAlign: 'center',
+      fontWeight: 700,
+      fontSize: 14,
+      background: '#fafafa',
+      whiteSpace: 'nowrap',
+    };
+    const compactTd = {
+      border: '1px solid #eee',
+      padding: '6px 8px',
+      textAlign: 'center',
+      fontSize: 14,
+      whiteSpace: 'nowrap',
+    };
+    const zebra = (i) => (i % 2 ? { background: '#fcfcfc' } : null);
+
+    return (
+      <>
+        <div
+          style={{
+            fontWeight: 800,
+            marginBottom: 10,
+            textAlign: 'center',
+            fontSize: 20,
+            letterSpacing: .3,
+          }}
+        >
+          DETALLE DE PRODUCTOS
+        </div>
+
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            <tr>
+              <th style={compactTh}>Producto</th>
+              <th style={compactTh}>Cant.</th>
+              <th style={compactTh}>P. Venta</th>
+              <th style={compactTh}>P. Compra</th>
+              <th style={compactTh}>Utilidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            {productosDetalle.length === 0 ? (
+              <tr><td colSpan={5} style={compactTd}>No se vendieron productos.</td></tr>
+            ) : (
+              productosDetalle.map((p, i) => {
+                const venta = p.precioVenta * p.cantidad;
+                const compra = p.precioCompra * p.cantidad;
+                const util = venta - compra;
+                return (
+                  <tr key={i} style={zebra(i)}>
+                    <td style={compactTd}>{p.nombre}</td>
+                    <td style={compactTd}>{p.cantidad}</td>
+                    <td style={{...compactTd, color:'#007b00', fontWeight:600}}>
+                      <NumberFormatMoney amount={venta} />
+                    </td>
+                    <td style={{...compactTd, color:'red'}}>
+                      <NumberFormatMoney amount={compra} />
+                    </td>
+                    <td style={{...compactTd, fontWeight:700, color: util>=0 ? '#007b00' : 'red'}}>
+                      <NumberFormatMoney amount={util} />
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+
+            {/* Totales */}
+            {productosDetalle.length > 0 && (
+              <tr>
+                <td style={{...compactTd, fontWeight:800}} colSpan={2}>TOTALES</td>
+                <td style={{...compactTd, fontWeight:800, color:'#007b00'}}>
+                  <NumberFormatMoney amount={totalPVentaProd} />
+                </td>
+                <td style={{...compactTd, fontWeight:800, color:'red'}}>
+                  <NumberFormatMoney amount={totalPCompraProd} />
+                </td>
+                <td style={{...compactTd, fontWeight:800, color: totalUtilProd>=0 ? '#007b00' : 'red'}}>
+                  <NumberFormatMoney amount={totalUtilProd} />
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </>
+    );
+  })()}
 </Dialog>
 
     </>
