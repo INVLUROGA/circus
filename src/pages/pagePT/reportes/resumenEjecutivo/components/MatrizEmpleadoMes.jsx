@@ -43,7 +43,6 @@ function filtrarVentasPorMes(ventas = [], filtro) {
   });
 }
 
-// --- igual que antes
 function rankingPorEmpleado(
   ventas = [],
   {
@@ -91,12 +90,12 @@ function rankingPorEmpleado(
       const acc = getAcc(empleado);
       if (!acc) continue;
 
-      const cantidad = Number(it?.cantidad) || 0;
+      const cantidad = it?.cantidad == null ? 1 : (Number(it?.cantidad) || 0);
       const precio =
         Number(it?.tarifa_monto) ||
         Number(it?.tb_producto?.prec_venta) ||
         0;
-      const importe = precio;
+      const importe = precio*cantidad;
 
       acc.ventasProductos += importe;
       acc.cantidadProductos += cantidad;
@@ -114,7 +113,7 @@ function rankingPorEmpleado(
 
       const cantidad = Number(it?.cantidad) || 0;
       const precio = Number(it?.tarifa_monto) || 0;
-      const importe = precio;
+      const importe = precio*cantidad;
 
       acc.ventasServicios += importe;
       acc.cantidadServicios += cantidad;
@@ -147,8 +146,8 @@ export const MatrizEmpleadoMes = ({
   excluirNombres = ['LUIS', 'JESUS', 'FATIMA', 'MIA', 'KATIA', 'TIBISAY'],
 }) => {
   // --- buscadores
-const [q, setQ] = useState('');          // buscador principal (empleados)
-const [qModal, setQModal] = useState(''); // buscador dentro del modal
+const [q, setQ] = useState('');          
+const [qModal, setQModal] = useState('');
 
 const normq = (s='') =>
   s.normalize('NFKC')
@@ -177,44 +176,14 @@ const matchIncludes = (haystack, needle) =>
   const RATE_IGV = 0.18;
   const RATE_RENTA=0.03;
   const RATE_TARJETA=0.045;
-// 🎨 Estilos refinados
-const thStyle = {
-  border: '1px solid #bbb',
-  padding: '6px 10px',
-  textAlign: 'center',
-  fontWeight: '600',
-  fontSize: '16px',
-  letterSpacing: '0.3px',
-};
-
+  const RATE_COMISION = 0.10; 
 const tdStyle = {
   border: '1px solid #ccc',
   padding: '6px 8px',
   textAlign: 'center',
-  fontSize: '15px',
+  fontSize: '20px',
   verticalAlign: 'middle',
 };
-
-const innerTableStyle = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  marginTop: '2px',
-};
-
-const thInner = {
-  ...thStyle,
-  fontSize: '14px',
-  padding: '5px',
-  backgroundColor: '#eef7ff',
-};
-
-const tdInner = {
-  ...tdStyle,
-  fontSize: '14px',
-  padding: '5px',
-};
-
-
 
   // ---- estado del modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -223,10 +192,8 @@ const tdInner = {
   const [modalMonto, setModalMonto] = useState(0);
   const [modalResumen,setModalResumen]=useState(null);
   const [showDetalleProductos, setShowDetalleProductos] = useState(false);
-const [productosDetalle, setProductosDetalle] = useState([]);
-const [showDetalleServicios, setShowDetalleServicios] = useState(false);
-const [serviciosDetalle, setServiciosDetalle] = useState([]);
-
+  const [productosDetalle, setProductosDetalle] = useState([]);
+  const [empleadoObjetivo, setEmpleadoObjetivo] = useState('');
 
 
   // helper: lista de ventas (id, fecha_venta) por empleado + mes
@@ -243,7 +210,6 @@ const [serviciosDetalle, setServiciosDetalle] = useState([]);
         const v = ventasMes[i];
         const id = v?.id ?? v?.numero_transac ?? `venta_${i}_${idxMes}`;
 
-        // ¿esta venta tiene participación de ese empleado en productos o servicios?
         const productos = Array.isArray(v?.detalle_ventaProductos)
           ? v.detalle_ventaProductos
           : Array.isArray(v?.detalle_ventaproductos)
@@ -278,6 +244,7 @@ const [serviciosDetalle, setServiciosDetalle] = useState([]);
     },
     [dataVenta, meses]
   );
+  
   const buildBreakdown = (brutoNum = 0) => {
   const bruto = Number(brutoNum) || 0;
   const igv = +(bruto * RATE_IGV).toFixed(2);
@@ -302,12 +269,11 @@ const excluirSet = useMemo(() => {
       }
       return {
         label: `${f?.label ?? f?.mes?.toUpperCase?.() ?? ''} ${f?.anio ?? ''}`.trim(),
-        filtroMes: f, // guardo el filtro para accesos
+        filtroMes: f,
         map,
       };
     });
-
-    const allEmpleados = new Set();
+      const allEmpleados = new Set();
     for (const col of columnas) for (const emp of col.map.keys()) allEmpleados.add(emp);
 
     const empleados = Array.from(allEmpleados);
@@ -360,62 +326,60 @@ const {
     totalesFilaFiltrada: keepIdx.map(i => totalesFila[i]),
   };
 }, [q, empleadosOrdenados, matriz, totalesFila, excluirSet]);
-const onCellClick = (emp, colIndex, valor) => {
-  if (!emp || !meses[colIndex]) return;
+    const onCellClick = (emp, colIndex, valor) => {
+      if (!emp || !meses[colIndex]) return;
+       const objetivo = normalizeName(emp);
+       setEmpleadoObjetivo(objetivo);
+       const filas = getVentasDeCelda(emp, colIndex);
+       setModalRows(filas);
 
-  // 🔹 1. Obtiene todas las ventas del empleado en ese mes
-  const filas = getVentasDeCelda(emp, colIndex);
-  setModalRows(filas);
+      let totalCompra = 0;
+      const productosDetalle = [];
 
-  // 🔹 2. Calcular el total de compra de productos (equivalente a la consulta SQL)
-  let totalCompra = 0;
-  const productosDetalle = [];
+      for (const venta of filas) {
+        const productos = Array.isArray(venta.detalle_ventaProductos)
+          ? venta.detalle_ventaProductos
+          : Array.isArray(venta.detalle_ventaproductos)
+          ? venta.detalle_ventaproductos
+          : [];
 
-  for (const venta of filas) {
-    const productos = Array.isArray(venta.detalle_ventaProductos)
-      ? venta.detalle_ventaProductos
-      : Array.isArray(venta.detalle_ventaproductos)
-      ? venta.detalle_ventaproductos
-      : [];
+        for (const it of productos) {
+           const empProd = normalizeName(it?.empleado_producto?.nombres_apellidos_empl);
+      if (empProd !== objetivo) continue;
+          const producto = it?.tb_producto;
+          const cantidad = Number(it?.cantidad) || 1;
+          const precCompra = Number(producto?.prec_compra) || 0;
+          const precVenta =
+            Number(it?.precio_unitario) ||
+            Number(producto?.prec_venta) ||
+            0;
 
-    for (const it of productos) {
-      const producto = it?.tb_producto;
-      const cantidad = Number(it?.cantidad) || 1;
-      const precCompra = Number(producto?.prec_compra) || 0;
-      const precVenta =
-        Number(it?.precio_unitario) ||
-        Number(producto?.prec_venta) ||
-        0;
+          totalCompra += cantidad * precCompra;
 
-      totalCompra += cantidad * precCompra;
+          productosDetalle.push({
+            nombre: producto?.nombre_producto || "—",
+            cantidad,
+            precioCompra: precCompra,
+            precioVenta: precVenta,
+          });
+        }
+      }
 
-      productosDetalle.push({
-        nombre: producto?.nombre_producto || "—",
-        cantidad,
-        precioCompra: precCompra,
-        precioVenta: precVenta,
-      });
-    }
-  }
+      const bruto = Number(valor) || 0;
+      const resumen = buildBreakdown(bruto);
 
-  // 🔹 3. Calcular el resumen con los descuentos
-  const bruto = Number(valor) || 0;
-  const resumen = buildBreakdown(bruto);
+      resumen.costoCompra = totalCompra;
+      resumen.netoFinal = +(resumen.neto - totalCompra).toFixed(2);
 
-  // 🔹 4. Agregar costo de compra y utilidad neta final
-  resumen.costoCompra = totalCompra;
-  resumen.netoFinal = +(resumen.neto - totalCompra).toFixed(2);
+      setModalMonto(bruto);
+      setModalResumen(resumen);const mes = columnas[colIndex]?.label?.toUpperCase?.() ?? '';
+    const nombre = (emp?.split?.(' ')?.[0] ?? emp)?.toUpperCase?.() ?? '';
+    setModalTitle(`${mes} – ${nombre}`);
 
-  // 🔹 5. Actualizar estados del modal
-  setModalMonto(bruto);
-  setModalResumen(resumen);const mes = columnas[colIndex]?.label?.toUpperCase?.() ?? '';
-const nombre = (emp?.split?.(' ')?.[0] ?? emp)?.toUpperCase?.() ?? '';
-setModalTitle(`${mes} – ${nombre}`);
-
-  setModalTitle(`${emp?.split?.(' ')?.[0] ?? emp} - ${columnas[colIndex]?.label}`);
-  setProductosDetalle(productosDetalle);
-  setModalOpen(true);
-};
+      setModalTitle(`${emp?.split?.(' ')?.[0] ?? emp} - ${columnas[colIndex]?.label}`);
+      setProductosDetalle(productosDetalle);
+      setModalOpen(true);
+    };
 
   return (
     <>
@@ -443,7 +407,7 @@ setModalTitle(`${mes} – ${nombre}`);
         )}
       </div>
         <table  style={{ borderCollapse: 'collapse', width: '100%' }}>
-         <thead className="bg-warning text-dark">
+         <thead className="bg-primary text-dark">
   <tr className="fs-3">
     <th style={thStyle}>Empleado</th>
     {columnas.map((c, i) => (
@@ -519,7 +483,6 @@ setModalTitle(`${mes} – ${nombre}`);
           )}
         </table>
       </div>
-{/* ✅ MODAL PRINCIPAL CON DESCUENTOS + DETALLE DE VENTAS */}
 <Dialog
   header={
     <div
@@ -543,7 +506,6 @@ setModalTitle(`${mes} – ${nombre}`);
     </div>
   }
 >
-  {/* ===================== DETALLE DE DESCUENTOS ===================== */}
   {modalResumen && (
     <div style={{ marginBottom: 24 }}>
       <div
@@ -557,96 +519,97 @@ setModalTitle(`${mes} – ${nombre}`);
         DETALLE DE DESCUENTOS
       </div>
 
-      <table
-        style={{
-          borderCollapse: "collapse",
-          width: "100%",
-          marginBottom: 12,
-        }}
-      >
-        <thead>
-          <tr>
-            <th className="bg-primary" style={thStyle}>CONCEPTO</th>
-            <th className="bg-primary" style={thStyle}>TASA</th>
-            <th className="bg-primary" style={thStyle}>MONTO</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={tdStyle}>Monto bruto</td>
-            <td style={tdStyle}>—</td>
-            <td style={tdStyle}>
-              <NumberFormatMoney amount={modalResumen.bruto} />
-            </td>
-          </tr>
+     <table
+  style={{
+    borderCollapse: "collapse",
+    width: "100%",
+    marginBottom: 12,
+    fontSize: "22px",       
+  }}
+>
+  <thead>
+    <tr style={{ fontSize: "24px" }}> 
+      <th className="bg-primary" style={thStyle}>CONCEPTO</th>
+      <th className="bg-primary" style={thStyle}>TASA</th>
+      <th className="bg-primary" style={thStyle}>MONTO</th>
+    </tr>
+  </thead>
 
-          <tr>
-            <td style={tdStyle}>IGV</td>
-            <td style={tdStyle}>{(RATE_IGV * 100).toFixed(2)} %</td>
-            <td style={{ ...tdStyle, color: "red" }}>
-              - <NumberFormatMoney amount={modalResumen.igv} />
-            </td>
-          </tr>
+  <tbody style={{ fontSize: "40px" }}> {/* 👈 tamaño del cuerpo */}
+    <tr>
+      <td style={tdStyle}>Monto bruto</td>
+      <td style={tdStyle}>—</td>
+      <td style={tdStyle}>
+        <NumberFormatMoney amount={modalResumen.bruto} />
+      </td>
+    </tr>
 
-          <tr>
-            <td style={tdStyle}>Impuesto a la renta</td>
-            <td style={tdStyle}>{(RATE_RENTA * 100).toFixed(2)} %</td>
-            <td style={{ ...tdStyle, color: "red" }}>
-              - <NumberFormatMoney amount={modalResumen.renta} />
-            </td>
-          </tr>
+    <tr>
+      <td style={tdStyle}>IGV</td>
+      <td style={tdStyle}>{(RATE_IGV * 100).toFixed(2)} %</td>
+      <td style={{ ...tdStyle, color: "red" }}>
+        - <NumberFormatMoney amount={modalResumen.igv} />
+      </td>
+    </tr>
 
-          <tr>
-            <td style={tdStyle}>Tarjeta de crédito</td>
-            <td style={tdStyle}>{(RATE_TARJETA * 100).toFixed(2)} %</td>
-            <td style={{ ...tdStyle, color: "red" }}>
-              - <NumberFormatMoney amount={modalResumen.tarjeta} />
-            </td>
-          </tr>
+    <tr>
+      <td style={tdStyle}>Impuesto a la renta</td>
+      <td style={tdStyle}>{(RATE_RENTA * 100).toFixed(2)} %</td>
+      <td style={{ ...tdStyle, color: "red" }}>
+        - <NumberFormatMoney amount={modalResumen.renta} />
+      </td>
+    </tr>
 
-          <tr>
-            <td style={{ ...tdStyle, fontWeight: "700" }}>INGRESO NETO</td>
-            <td style={tdStyle}>—</td>
-            <td style={{ ...tdStyle, fontWeight: "700" }}>
-              <NumberFormatMoney amount={modalResumen.neto} />
-            </td>
-          </tr>
+    <tr>
+      <td style={tdStyle}>Tarjeta de crédito</td>
+      <td style={tdStyle}>{(RATE_TARJETA * 100).toFixed(2)} %</td>
+      <td style={{ ...tdStyle, color: "red" }}>
+        - <NumberFormatMoney amount={modalResumen.tarjeta} />
+      </td>
+    </tr>
 
-          <tr>
-            <td style={tdStyle}>
-              Costo de compra (productos)
-              <i
-                className="pi pi-eye"
-                style={{ marginLeft: 8, cursor: "pointer", color: "#007bff" }}
-                title="Ver detalle de productos"
-                onClick={() => setShowDetalleProductos(true)}
-              />
-            </td>
-            <td style={tdStyle}>—</td>
-            <td style={{ ...tdStyle, color: "red", fontWeight: "bold" }}>
-              - <NumberFormatMoney amount={modalResumen.costoCompra} />
-            </td>
-          </tr>
+    <tr>
+      <td style={{ ...tdStyle, fontWeight: "700" }}>INGRESO NETO</td>
+      <td style={tdStyle}>—</td>
+      <td style={{ ...tdStyle, fontWeight: "700" }}>
+        <NumberFormatMoney amount={modalResumen.neto} />
+      </td>
+    </tr>
 
-          <tr>
-            <td style={{ ...tdStyle, fontWeight: "700" }}>UTILIDAD NETA</td>
-            <td style={tdStyle}>—</td>
-            <td style={{ ...tdStyle, fontWeight: "700", color: "#007b00" }}>
-              <NumberFormatMoney amount={modalResumen.netoFinal} />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <tr>
+      <td style={tdStyle}>
+        Costo de compra (productos)
+        <i
+          className="pi pi-eye"
+          style={{ marginLeft: 8, cursor: "pointer", color: "#007bff" }}
+          title="Ver detalle de productos"
+          onClick={() => setShowDetalleProductos(true)}
+        />
+      </td>
+      <td style={tdStyle}>—</td>
+      <td style={{ ...tdStyle, color: "red", fontWeight: "bold" }}>
+        - <NumberFormatMoney amount={modalResumen.costoCompra} />
+      </td>
+    </tr>
+
+    <tr>
+      <td style={{ ...tdStyle, fontWeight: "700" }}>UTILIDAD</td>
+      <td style={tdStyle}>—</td>
+      <td style={{ ...tdStyle, fontWeight: "700", color: "#007b00" }}>
+        <NumberFormatMoney amount={modalResumen.netoFinal} />
+      </td>
+    </tr>
+  </tbody>
+</table>
+
     </div>
   )}
 
-  {/* ===================== DETALLE DE PRODUCTOS Y SERVICIOS (compacto) ===================== */}
   {modalRows.length === 0 ? (
     <div className="py-2">Sin ventas para esta celda.</div>
   ) : (
     <>
       {(() => {
-        // ---- Aplanar productos y servicios del mes seleccionado
         const flatProductos = [];
         const flatServicios = [];
 
@@ -654,26 +617,47 @@ setModalTitle(`${mes} – ${nombre}`);
           const productos = row.detalle_ventaProductos || row.detalle_ventaproductos || [];
           const servicios = row.detalle_ventaservicios || [];
 
-          for (const p of productos) {
-            flatProductos.push({
-              nombre: p?.tb_producto?.nombre_producto || '—',
-              cantidad: Number(p?.cantidad) || 1,
-              pCompra: Number(p?.tb_producto?.prec_compra) || 0,
-              pVenta:
-                Number(p?.tarifa_monto) ||
-                Number(p?.precio_unitario) ||
-                Number(p?.tb_producto?.prec_venta) || 0,
-            });
-          }
+          const pagos = Array.isArray(row.detalleVenta_pagoVenta)
+          ? row.detalleVenta_pagoVenta
+          :Array.isArray(row.detalleVenta_pagoVenta)
+          ? row.detalleVenta_pagoVenta
+          :[];
+          const formasPago=Array.from(new Set(
+            pagos.map(p=>
+              p?.parametro_forma_pago?.label_param ??
+              p?.id_forma_pago ??
+              null
+            ).filter(Boolean)
+          ));
+          const formaPagoStr = formasPago.join(' / ') ||'' ;
+
+         for (const p of productos) {
+  const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
+  if (empProd !== empleadoObjetivo) continue;     
+  flatProductos.push({
+    nombre: p?.tb_producto?.nombre_producto || '—',
+    cantidad: p?.cantidad == null ? 1 : Number(p.cantidad),
+    pCompra: Number(p?.tb_producto?.prec_compra) || 0,
+    pVenta:
+      Number(p?.tarifa_monto) ||
+      Number(p?.precio_unitario) ||
+      Number(p?.tb_producto?.prec_venta) || 0,
+  });
+}
+
 
           for (const s of servicios) {
-            flatServicios.push({
-              nombre: s?.circus_servicio?.nombre_servicio || '—',
-              cantidad: Number(s?.cantidad) || 1,
-              duracion: s?.circus_servicio?.duracion ?? '—',
-              pVenta: Number(s?.tarifa_monto) || 0,
-            });
-          }
+            const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
+  if (empServ !== empleadoObjetivo) continue;
+           flatServicios.push({
+    nombre: s?.circus_servicio?.nombre_servicio || '—',
+    cantidad: s?.cantidad == null ? 1 : Number(s.cantidad),
+    duracion: s?.circus_servicio?.duracion ?? '—',
+    pVenta: Number(s?.tarifa_monto) || 0,
+    formasPago: formaPagoStr,
+    tarifa: Number(s?.tarifa_monto) || 0,
+  });
+}
         }
 
         // ---- Totales
@@ -686,10 +670,10 @@ setModalTitle(`${mes} – ${nombre}`);
         // ---- Estilos compactos
         const compactTh = {
           border: '1px solid #e6e6e6',
-          padding: '6px 8px',
+          padding: '20px 18px',
           textAlign: 'center',
-          fontWeight: 700,
-          fontSize: 14,
+          fontWeight: 700,   
+          fontSize: 20 ,
           background: '#fafafa',
           whiteSpace: 'nowrap',
         };
@@ -697,10 +681,47 @@ setModalTitle(`${mes} – ${nombre}`);
           border: '1px solid #eee',
           padding: '6px 8px',
           textAlign: 'center',
-          fontSize: 14,
+          fontSize: 19,
           whiteSpace: 'nowrap',
         };
         const zebra = (i) => (i % 2 ? { background: '#fcfcfc' } : null);
+        // --- Agrupar servicios repetidos (mismo ID + forma de pago + tarifa)
+const agruparServicios = (items = []) => {
+  const m = new Map();
+  for (const it of items) {
+    const idServ =
+      it.id_servicio ??
+      it.circus_servicio?.id_servicio ??
+      null;
+
+    // Clave única: servicio + forma de pago + precio
+    const key = idServ
+      ? `id:${idServ}|fp:${it.formasPago || ''}|pv:${Number(it.tarifa) || 0}`
+      : `nom:${normalizeName(it.nombre || '')}|fp:${it.formasPago || ''}|pv:${Number(it.tarifa) || 0}`;
+
+    if (!m.has(key)) {
+      m.set(key, {
+        nombre: it.nombre || it?.circus_servicio?.nombre_servicio || '—',
+        duracion: it.duracion ?? it?.circus_servicio?.duracion ?? '—',
+        pVenta: Number(it.tarifa) || 0,
+        formasPago: it.formasPago || '',
+        cantidad: 0,
+      });
+    }
+
+    const acc = m.get(key);
+    acc.cantidad += Number(it.cantidad) || 0;
+  }
+  return Array.from(m.values());
+};
+
+const serviciosAgrupados = agruparServicios(flatServicios);
+
+// Totales con servicios agrupados
+const totalPVentaServs = serviciosAgrupados.reduce(
+  (a, b) => a + b.pVenta * b.cantidad,
+  0
+);
 
         return (
           <div style={{ marginTop: 16 }}>
@@ -710,104 +731,118 @@ setModalTitle(`${mes} – ${nombre}`);
                 marginBottom: 10,
                 textAlign: 'center',
                 fontSize: 22,
+                backgroundColor:'yellow',
                 letterSpacing: .3,
               }}
             >
               DETALLE DE PRODUCTOS Y SERVICIOS
             </div>
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, minmax(0,1fr))',
+    gap: 8,
+    marginBottom: 10,
+  }}
+>
+   <div style={{ padding: 10, border: '1px solid #eee', borderRadius: 8, background: '#fff' }}>
+    <div style={{ fontSize: 15, opacity: 0.7 }}>Cantidad de productos</div>
+    <div style={{ fontWeight: 800, fontSize: 25 }}>
+      {flatProductos.length}
+    </div>
+  </div>
+  <div style={{ padding: 10, border: '1px solid #eee', borderRadius: 8, background: '#fff' }}>
+    <div style={{ fontSize: 15, opacity: 0.7 }}>Venta Productos</div>
+    <div style={{ fontWeight: 800, fontSize: 25 }}>
+      <NumberFormatMoney amount={totalPVentaProd} />
+    </div>
+  </div>
+    <div style={{ padding: 10, border: '1px solid #eee', borderRadius: 8, background: '#fff' }}>
+    <div style={{ fontSize: 15, opacity: 0.7 }}>Cantidad de servicios</div>
+    <div style={{ fontWeight: 800, fontSize: 25 }}>
+      {flatServicios.length}
+    </div>
+  </div>
+  <div style={{ padding: 10, border: '1px solid #eee', borderRadius: 8, background: '#fff' }}>
+    <div style={{ fontSize: 15, opacity: 0.7 }}>Venta Servicios</div>
+    <div style={{ fontWeight: 800, fontSize: 25 }}>
+      <NumberFormatMoney amount={totalPVentaServs} />
+    </div>
 
-            {/* Resumen mini en cards */}
+  </div>
+</div>
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
-                gap: 8,
-                marginBottom: 10,
-              }}
-            >
-              <div style={{padding:10,border:'1px solid #eee',borderRadius:8,background:'#fff'}}>
-                <div style={{fontSize:12,opacity:.7}}>Venta Productos</div>
-                <div style={{fontWeight:800}}>
-                  <NumberFormatMoney amount={totalPVentaProd} />
-                </div>
-              </div>
-              <div style={{padding:10,border:'1px solid #eee',borderRadius:8,background:'#fff'}}>
-                <div style={{fontSize:12,opacity:.7}}>Venta Servicios</div>
-                <div style={{fontWeight:800}}>
-                  <NumberFormatMoney amount={totalPVentaServ} />
-                </div>
-              </div>
-              <div style={{padding:10,border:'1px solid #eee',borderRadius:8,background:'#fff'}}>
-                <div style={{fontSize:12,opacity:.7}}>Ítems totales</div>
-                <div style={{fontWeight:800}}>{totalItems}</div>
+  style={{
+    display: 'flex',
+    justifyContent: 'center',   
+    alignItems: 'flex-start',   
+    gap: 20,
+    width: '100%',
+  }}
+>
+   <div
+  style={{
+    display: 'flex',
+  justifyContent: 'center',
+  width :'100%'   
+  }}
+>
+  
+  <div style={{ marginTop: 20, justifySelf: 'center', width: 'max-content' }}>
+    <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: 'center' }}>
+      SERVICIOS
+    </div>
+    <table style={{ borderCollapse: 'collapse', margin: '0 auto', minWidth: '750px' }}>
+  <thead>
+    <tr>
+      <th className='bg-primary' style={compactTh}>Servicio</th>
+      <th className='bg-primary' style={compactTh}>Cant.</th>
+      <th className='bg-primary' style={compactTh}>Duración</th>
+      <th className='bg-primary' style={compactTh}>Forma Pago</th>
+      <th className='bg-primary' style={compactTh}>P.Venta</th>
+    </tr>
+  </thead>
+  <tbody>
+    {serviciosAgrupados.length === 0 ? (
+      <tr><td colSpan={5} style={compactTd}>—</td></tr>
+    ) : (
+      serviciosAgrupados.map((s, i) => (
+        <tr key={i} style={zebra(i)}>
+          <td style={compactTd}>{s.nombre}</td>
+          <td style={compactTd}>{s.cantidad}</td>
+          <td style={compactTd}>{s.duracion}</td>
+          <td style={compactTd}>{s.formasPago}</td>
+          <td style={{ ...compactTd, fontWeight: 600 }}>
+            <NumberFormatMoney amount={s.pVenta * s.cantidad} />
+          </td>
+        </tr>
+      ))
+    )}
+    <tr>
+      <td style={{ ...compactTd, fontWeight: 800, textAlign: 'right' }}>TOTAL SERVICIOS</td>
+      <td style={compactTd}></td>
+      <td style={compactTd}></td>
+      <td style={compactTd}></td>
+      <td style={{ ...compactTd, fontWeight: 800, color: '#007b00' }}>
+        <NumberFormatMoney amount={totalPVentaServ} />
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+  </div>
+</div>
               </div>
             </div>
-
-            {/* Dos tablas lado a lado */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0,1fr))',
-                gap: 12,
-              }}
-            >
-              {/* -------- Productos -------- */}
-              
-
-              {/* -------- Servicios -------- */}
-              <div>
-                <div style={{fontWeight:700, margin:'6px 0'}}>Servicios</div>
-                <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-                  <thead>
-                    <tr>
-                      <th style={compactTh}>Servicio</th>
-                      <th style={compactTh}>Cant.</th>
-                      <th style={compactTh}>Duración</th>
-                      <th style={compactTh}>P. Venta</th>
-                      <th style={compactTh}>Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {flatServicios.length === 0 ? (
-                      <tr><td colSpan={5} style={compactTd}>—</td></tr>
-                    ) : flatServicios.map((s, i) => {
-                      const sub = s.pVenta * s.cantidad;
-                      return (
-                        <tr key={i} style={zebra(i)}>
-                          <td style={compactTd}>{s.nombre}</td>
-                          <td style={compactTd}>{s.cantidad}</td>
-                          <td style={compactTd}>{s.duracion}</td>
-                          <td style={{...compactTd}}>
-                            <NumberFormatMoney amount={s.pVenta} />
-                          </td>
-                          <td style={{...compactTd, fontWeight:600, color:'#007b00'}}>
-                            <NumberFormatMoney amount={sub} />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {/* Totales */}
-                    <tr>
-                      <td style={{...compactTd, fontWeight:800}} colSpan={4}>TOTAL SERVICIOS</td>
-                      <td style={{...compactTd, fontWeight:800, color:'#007b00'}}>
-                        <NumberFormatMoney amount={totalPVentaServ} />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
         );
       })()}
     </>
   )}
 </Dialog>
-{/* ✅ SUBMODAL — DETALLE DE PRODUCTOS (compacto) */}
 <Dialog
   header="Detalle de productos vendidos"
   visible={showDetalleProductos}
-  style={{ width: "55rem", maxWidth: "95vw" }}
+  style={{textAlign:'center', width: "80rem", maxWidth: "95vw" }}  
   modal
   onHide={() => setShowDetalleProductos(false)}
   footer={
@@ -818,96 +853,196 @@ setModalTitle(`${mes} – ${nombre}`);
 >
   {(() => {
     // ---- Totales
-    const totalPVentaProd = productosDetalle.reduce((a, b) => a + (b.precioVenta * b.cantidad), 0);
-    const totalPCompraProd = productosDetalle.reduce((a, b) => a + (b.precioCompra * b.cantidad), 0);
-    const totalUtilProd = totalPVentaProd - totalPCompraProd;
+ const agruparProductos = (items = []) => {
+    const m = new Map();
+    for (const it of items) {
+      const idProd =
+        it.id_producto ??
+        it.id ??
+        it.tb_producto?.id_producto ?? null;
 
-    // ---- Estilos compactos
-    const compactTh = {
-      border: '1px solid #e6e6e6',
-      padding: '6px 8px',
+      // Evita mezclar productos con distinto precio unitario
+      const key = idProd
+        ? `id:${idProd}|pv:${Number(it.precioVenta)||0}|pc:${Number(it.precioCompra)||0}`
+        : `nom:${normalizeName(it.nombre||'')}|pv:${Number(it.precioVenta)||0}|pc:${Number(it.precioCompra)||0}`;
+
+      if (!m.has(key)) {
+        m.set(key, {
+          nombre: it.nombre || '—',
+          // guarda precios unitarios para multiplicar por la cantidad total
+          precioVentaU: Number(it.precioVenta) || 0,
+          precioCompraU: Number(it.precioCompra) || 0,
+          cantidad: 0,
+        });
+      }
+      const acc = m.get(key);
+      acc.cantidad += Number(it.cantidad) || 0;
+    }
+    return Array.from(m.values());
+  };
+
+  const productosAgrupados = agruparProductos(productosDetalle);
+
+  const totalPVentaProd  = productosAgrupados
+    .reduce((a, b) => a + (b.precioVentaU  * b.cantidad), 0);
+  const totalPCompraProd = productosAgrupados
+    .reduce((a, b) => a + (b.precioCompraU * b.cantidad), 0);
+  const totalUtilProd    = totalPVentaProd - totalPCompraProd;
+
+    const th = {
+      border: '1px solid #ccc',
+      padding: '14px 12px',
       textAlign: 'center',
       fontWeight: 700,
-      fontSize: 14,
-      background: '#fafafa',
+      fontSize: 18,
+      background: '#f5f5f5',
       whiteSpace: 'nowrap',
     };
-    const compactTd = {
-      border: '1px solid #eee',
-      padding: '6px 8px',
+    const td = {
+      border: '1px solid #ddd',
+      padding: '8px 10px',
       textAlign: 'center',
-      fontSize: 14,
+      fontSize: 16,
       whiteSpace: 'nowrap',
     };
     const zebra = (i) => (i % 2 ? { background: '#fcfcfc' } : null);
 
+   
+  return (
+    <>
+     <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+ <thead>
+  <tr>
+    <th style={th}>Producto</th>
+    <th style={th}>Cant.</th>
+    <th style={th}>P. Venta</th>
+     <th style={th}>IGV</th>
+    <th style={th}>Tarjeta</th>
+   
+    <th style={th}>Renta</th>
+    <th style={th}>P. Compra</th>
+    <th style={th}>Utilidad Bruta</th> 
+    <th style={th}>Comisión</th>      
+          
+    <th style={th}>Utilidad</th>  
+  </tr>
+</thead>
+<tbody>
+  {productosAgrupados.length === 0 ? (
+    <tr><td colSpan={10} style={td}>No se vendieron productos.</td></tr>
+  ) : (
+    productosAgrupados.map((p, i) => {
+      const venta   = p.precioVentaU * p.cantidad;
+      const compra  = p.precioCompraU * p.cantidad;
+      const tarjeta = venta * RATE_TARJETA;
+      const igv     = venta * RATE_IGV;
+      const renta   = venta * RATE_RENTA;
+
+      // Utilidad base (antes de comisión)
+      const utilBase = venta - tarjeta - igv - renta - compra;
+
+      // Comisión calculada sobre la utilidad base
+      const comision = utilBase * RATE_COMISION; // usa Math.max(utilBase,0) si no quieres comisión con util. negativa
+
+      // Utilidad final
+      const utilFinal = utilBase - comision;
+
+      return (
+        <tr key={i} style={zebra(i)}>
+          <td style={td}>{p.nombre}</td>
+          <td style={td}>{p.cantidad}</td>
+
+          <td style={{ ...td, fontWeight: 600, color: '#007b00' }}>
+            <NumberFormatMoney amount={p.precioVentaU} />
+          </td>
+ <td style={{ ...td, color: 'red' }}>
+            -<NumberFormatMoney amount={igv} />
+          </td>
+          <td style={{ ...td, color: 'red' }}>
+            -<NumberFormatMoney amount={tarjeta} />
+          </td>
+         
+          <td style={{ ...td, color: 'red' }}>
+            -<NumberFormatMoney amount={renta} />
+          </td>
+
+          <td style={{ ...td, color: 'red' }}>
+            <NumberFormatMoney amount={compra} />
+          </td>
+          <td style={{ ...td, fontWeight: 600 ,color:'green'}}>
+            <NumberFormatMoney amount={utilBase} />
+          </td>
+<td style={{ ...td, color: 'red' }}>
+            -<NumberFormatMoney amount={comision} />
+          </td>
+          <td style={{ ...td, fontWeight: 700, color: utilFinal >= 0 ? '#007b00' : 'red' }}>
+            <NumberFormatMoney amount={utilFinal} />
+          </td>
+        </tr>
+      );
+    })
+  )}
+
+  {(() => {
+    const totalPVentaProd  = productosAgrupados.reduce((a,b)=> a + (b.precioVentaU  * b.cantidad), 0);
+    const totalPCompraProd = productosAgrupados.reduce((a,b)=> a + (b.precioCompraU * b.cantidad), 0);
+    const totalTarjeta     = totalPVentaProd * RATE_TARJETA;
+    const totalIGV         = totalPVentaProd * RATE_IGV;
+    const totalRenta       = totalPVentaProd * RATE_RENTA;
+
+    const totalUtilBase    = totalPVentaProd - totalTarjeta - totalIGV - totalRenta - totalPCompraProd;
+    const totalComision    = totalUtilBase * RATE_COMISION; 
+    const totalUtilFinal   = totalUtilBase - totalComision;
+const totalCantidad = productosAgrupados.reduce((a, b) => a + b.cantidad, 0);
+
     return (
-      <>
-        <div
-          style={{
-            fontWeight: 800,
-            marginBottom: 10,
-            textAlign: 'center',
-            fontSize: 20,
-            letterSpacing: .3,
-          }}
-        >
-          DETALLE DE PRODUCTOS
-        </div>
+    <tr>
+  <td style={{ ...td, fontWeight: 800 }}>TOTALES</td>
 
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={compactTh}>Producto</th>
-              <th style={compactTh}>Cant.</th>
-              <th style={compactTh}>P. Venta</th>
-              <th style={compactTh}>P. Compra</th>
-              <th style={compactTh}>Utilidad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {productosDetalle.length === 0 ? (
-              <tr><td colSpan={5} style={compactTd}>No se vendieron productos.</td></tr>
-            ) : (
-              productosDetalle.map((p, i) => {
-                const venta = p.precioVenta * p.cantidad;
-                const compra = p.precioCompra * p.cantidad;
-                const util = venta - compra;
-                return (
-                  <tr key={i} style={zebra(i)}>
-                    <td style={compactTd}>{p.nombre}</td>
-                    <td style={compactTd}>{p.cantidad}</td>
-                    <td style={{...compactTd, color:'#007b00', fontWeight:600}}>
-                      <NumberFormatMoney amount={venta} />
-                    </td>
-                    <td style={{...compactTd, color:'red'}}>
-                      <NumberFormatMoney amount={compra} />
-                    </td>
-                    <td style={{...compactTd, fontWeight:700, color: util>=0 ? '#007b00' : 'red'}}>
-                      <NumberFormatMoney amount={util} />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
+  {/* 👉 Nueva celda para la suma total de cantidades */}
+  <td style={{ ...td, fontWeight: 800 }}>
+    {totalCantidad}
+  </td>
 
-            {/* Totales */}
-            {productosDetalle.length > 0 && (
-              <tr>
-                <td style={{...compactTd, fontWeight:800}} colSpan={2}>TOTALES</td>
-                <td style={{...compactTd, fontWeight:800, color:'#007b00'}}>
-                  <NumberFormatMoney amount={totalPVentaProd} />
-                </td>
-                <td style={{...compactTd, fontWeight:800, color:'red'}}>
-                  <NumberFormatMoney amount={totalPCompraProd} />
-                </td>
-                <td style={{...compactTd, fontWeight:800, color: totalUtilProd>=0 ? '#007b00' : 'red'}}>
-                  <NumberFormatMoney amount={totalUtilProd} />
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+  <td style={{ ...td, fontWeight: 800, color: '#007b00' }}>
+    <NumberFormatMoney amount={totalPVentaProd} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: 'red' }}>
+    <NumberFormatMoney amount={totalIGV} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: 'red' }}>
+    <NumberFormatMoney amount={totalTarjeta} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: 'red' }}>
+    <NumberFormatMoney amount={totalRenta} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: 'red' }}>
+    <NumberFormatMoney amount={totalPCompraProd} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: 'green' }}>
+    <NumberFormatMoney amount={totalUtilBase} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: 'red' }}>
+    <NumberFormatMoney amount={totalComision} />
+  </td>
+
+  <td style={{ ...td, fontWeight: 800, color: totalUtilFinal >= 0 ? '#007b00' : 'red' }}>
+    <NumberFormatMoney amount={totalUtilFinal} />
+  </td>
+</tr>
+
+    );
+  })()}
+</tbody>
+
+</table>
+
       </>
     );
   })()}
@@ -916,7 +1051,6 @@ setModalTitle(`${mes} – ${nombre}`);
     </>
   );
 };
-
 // estilos
 const thStyle = {
   border: '1px solid #ccc',
@@ -924,10 +1058,4 @@ const thStyle = {
   textAlign: 'center',
   fontWeight: 'bold',
   fontSize :'20px'
-};
-const tdStyle = {
-  border: '1px solid #ccc',
-  padding: '8px',
-  textAlign: 'center',
-  fontSize : '18px'
 };

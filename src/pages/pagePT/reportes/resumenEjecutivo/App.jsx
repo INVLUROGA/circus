@@ -185,14 +185,14 @@
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
-              datoEstadistico="Cant. Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+              datoEstadistico="Total Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
-              datoEstadistico="Ventas Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
+              datoEstadistico="Cant. Ventas " // o "Cant. Ventas", "Ventas Productos", etc.
             />
           </Col>
           <Col lg={12}>
