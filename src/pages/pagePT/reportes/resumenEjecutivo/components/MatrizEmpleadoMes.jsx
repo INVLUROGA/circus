@@ -512,7 +512,7 @@ const onGrandTotalClick = () => {
         productosAgrupados: [], serviciosAgrupados: [], serviciosOrdenados: [],
         totalPVentaProd: 0, totalPVentaServs: 0, totalPCompraProd: 0,
         totalTarjeta: 0, totalIGV: 0, totalRenta: 0, totalUtilBase: 0, totalComision: 0, totalUtilFinal: 0,
-        totalCantidad: 0, totalPorMetodo: {}, methodsToShow: [], activeMethodsModal: []
+        totalCantidad: 0, totalPorMetodo: {}, methodsToShow: []
       };
     }
 
@@ -974,7 +974,7 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
   </div>
 )}
   <div style={{ display: "flex", justifyContent: "center", width: "100%",marginTop:"100px" }}>
-  <div style={{ marginTop: 6, width: "max-content", position: "relative" }}>
+  <div style={{ marginTop: 6, position: "relative" }}>
     <div
       style={{
         fontWeight: 700,
@@ -1132,18 +1132,21 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
     </table>
   </div>
 </div>
-
-            <div style={{ marginTop: 20, justifySelf: "center", width: "max-content",marginTop:"100px" }}>
+            <div style={{  justifySelf: "center",marginTop:"100px" }}>
               <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
                 PRODUCTOS VENDIDOS
               </div>
 
-        <table
- style={{ ...baseTableStyle,
-    minWidth: 950,
-    margin: "0 auto",
+<table
+  style={{
+    ...baseTableStyle,
+    width: "100%",       // fuerza ancho completo
+    minWidth: 0,         // evita mínimo heredado
+    margin: 0,           // elimina centrado por márgenes
+    tableLayout: "fixed" // reparte el ancho entre columnas
   }}
 >
+
   <thead>
     <tr>
       <th className="bg-primary" style={thStyle}>Item</th>
