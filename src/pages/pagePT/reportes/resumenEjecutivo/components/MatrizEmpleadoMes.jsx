@@ -1140,13 +1140,12 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
 <table
   style={{
     ...baseTableStyle,
-    width: "100%",       // fuerza ancho completo
-    minWidth: 0,         // evita mínimo heredado
-    margin: 0,           // elimina centrado por márgenes
-    tableLayout: "fixed" // reparte el ancho entre columnas
+    width: "100%",      
+    minWidth: 0,        
+    margin: 0,           
+    tableLayout: "fixed" 
   }}
 >
-
   <thead>
     <tr>
       <th className="bg-primary" style={thStyle}>Item</th>
