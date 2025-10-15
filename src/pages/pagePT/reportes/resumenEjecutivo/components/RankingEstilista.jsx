@@ -14,18 +14,45 @@ const mesAIndice = (m = '') => {
 };
 
 // --- Filtra ventas por { mes, anio } (usa UTC para fechas con "Z")
-function filtrarVentasPorMes(ventas = [], filtro) {
+// dentro de RankingEstilista.jsx
+
+// reemplaza filtrarVentasPorMes por esta versión con fromDay/toDay
+  // ✅ Versión correcta: acepta initialDay y cutDay como parámetros
+function filtrarVentasPorMes(
+  ventas = [],
+  filtro,
+  initialDayArg = 1,
+  cutDayArg
+) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
-  const monthIdx = mesAIndice(filtro.mes);
+
+  const mapa = {
+    enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,
+    julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11
+  };
+  const monthIdx = mapa[String(filtro.mes).toLowerCase().trim()] ?? -1;
   const yearNum = Number(filtro.anio);
   if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
 
-  return ventas.filter(v => {
-    const d = new Date(v?.fecha_venta);
-    if (isNaN(d)) return false;
-    return d.getUTCFullYear() === yearNum && d.getUTCMonth() === monthIdx;
+  // límites de día según el mes/año
+  const lastDay = new Date(Date.UTC(yearNum, monthIdx + 1, 0)).getUTCDate();
+
+  // usa los valores del filtro si vienen, si no los que te pasan por props
+  const from = Math.max(1, Math.min(Number(filtro.fromDay ?? initialDayArg ?? 1), lastDay));
+  const to   = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));
+
+  return ventas.filter((v) => {
+    const d = new Date(v?.fecha_venta ?? v?.createdAt ?? v?.fecha);
+    if (Number.isNaN(d.getTime())) return false;
+    return (
+      d.getUTCFullYear() === yearNum &&
+      d.getUTCMonth() === monthIdx &&
+      d.getUTCDate() >= from &&
+      d.getUTCDate() <= to
+    );
   });
 }
+
 
 // --- Construye ranking por empleado
 function rankingPorEmpleado(ventas = []) {
@@ -106,7 +133,7 @@ function TablaRanking({ titulo, ventas }) {
         <table style={{ borderCollapse: 'collapse', width: '100%' }}>
           <thead>
             <tr className='bg-primary fs-3'>
-              <th style={thStyle}>Empleado</th>
+              <th style={thStyle}>Colaborador</th>
               <th style={thStyle}>Total Ventas</th>
               <th style={thStyle}>Cant. Ventas</th>
               <th style={thStyle}>Ventas Productos</th>
@@ -141,13 +168,13 @@ function TablaRanking({ titulo, ventas }) {
 
 // --- Componente principal ---
 // filtrarFecha puede ser: { label, anio, mes }  O  [ { ... }, { ... } ]
-export const RankingEstilista = ({ dataVenta = [], filtrarFecha }) => {
+export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1, cutDay }) => {
   // Si pasan varios meses, pinto una tabla por cada mes.
   if (Array.isArray(filtrarFecha)) {
     return (
       <div>
         {filtrarFecha.map((f, i) => {
-          const ventasMes = filtrarVentasPorMes(dataVenta, f);
+const ventasMes = filtrarVentasPorMes(dataVenta, f, initialDay, cutDay);
           const titulo = `${f?.label ?? f?.mes?.toUpperCase?.() ?? ''} ${f?.anio ?? ''}`.trim();
           return <TablaRanking key={i} titulo={titulo} ventas={ventasMes} />;
         })}
@@ -156,7 +183,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha }) => {
   }
 
   // Si pasan un único filtro (o ninguno), muestro una sola tabla.
-  const ventasFiltradas = filtrarVentasPorMes(dataVenta, filtrarFecha);
+const ventasFiltradas = filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay);
   const tituloUnico = filtrarFecha
     ? `${filtrarFecha?.label ?? filtrarFecha?.mes?.toUpperCase?.()} ${filtrarFecha?.anio ?? ''}`.trim()
     : 'Todos los meses';
@@ -175,4 +202,5 @@ const tdStyle = {
   border: '1px solid #ccc',
   padding: '8px',
   textAlign: 'center',
+  fontSize: '20px',
 };

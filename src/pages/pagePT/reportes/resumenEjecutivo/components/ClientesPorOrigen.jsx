@@ -3,8 +3,8 @@ import React from "react";
 /**
  * ClientsByOriginTable
  * --------------------------------------------------------------
- * Tabla: "CLIENTES POR ORIGEN DEL 1 HASTA <cutDay>".
- * Agrupa por id_origen (mapeado con originMap). Cuenta clientes únicos por mes y origen.
+ * Tabla: "CLIENTES POR ORIGEN DEL <initialDay> HASTA <cutDay>".
+ * Cuenta clientes únicos por origen y por mes (o ventas si uniqueByClient = false).
  *
  * Props:
  *  - ventas: Array<{ fecha_venta: ISOString, id_cli: number|string, id_origen: number|string }>
@@ -14,7 +14,7 @@ import React from "react";
  *  - originMap?: Record<string|number, string>
  *  - uniqueByClient?: boolean // default true (si false, cuenta ventas)
  */
-export const ClientesPorOrigen=({
+export const ClientesPorOrigen = ({
   ventas = [],
   fechas = [],
   initialDay = 1,
@@ -29,21 +29,13 @@ export const ClientesPorOrigen=({
 }) => {
   // --------------------------- Helpers ---------------------------
   const MESES = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "setiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
+    "enero","febrero","marzo","abril","mayo","junio",
+    "julio","agosto","setiembre","octubre","noviembre","diciembre",
   ];
 
-  const aliasMes = (m) => (m === "septiembre" ? "setiembre" : String(m || "").toLowerCase());
+  const aliasMes = (m) =>
+    (m === "septiembre" ? "setiembre" : String(m || "").toLowerCase());
+
   const monthIdx = (mes) => MESES.indexOf(aliasMes(mes));
 
   const toLimaDate = (iso) => {
@@ -51,8 +43,8 @@ export const ClientesPorOrigen=({
     try {
       const d = new Date(iso);
       const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
-      return new Date(utcMs - 5 * 60 * 60000);
-    } catch (_) {
+      return new Date(utcMs - 5 * 60 * 60000); // UTC-5
+    } catch {
       return null;
     }
   };
@@ -65,8 +57,8 @@ export const ClientesPorOrigen=({
   };
 
   // --------------------------- Aggregation ---------------------------
-  // Prepara estructura de meses visibles
-  const monthKeys = fechas.map((f) => ({
+  // Meses visibles (en el orden llegado por `fechas`)
+  const monthKeys = (fechas || []).map((f) => ({
     key: `${f.anio}-${aliasMes(f.mes)}`,
     anio: Number(f.anio),
     mes: aliasMes(f.mes),
@@ -74,7 +66,7 @@ export const ClientesPorOrigen=({
     idx: monthIdx(f.mes),
   }));
 
-  // Map claveMes -> Map origin -> Set/contador
+  // Estructura: Map<keyMes, Map<origin, Set|number>>
   const base = new Map();
   monthKeys.forEach((m) => base.set(m.key, new Map()));
 
@@ -88,9 +80,9 @@ export const ClientesPorOrigen=({
     const dia = d.getDate();
     if (dia < from || dia > to) continue;
 
-    const mes = MESES[d.getMonth()];
-    const keyMes = `${d.getFullYear()}-${mes}`;
-    if (!base.has(keyMes)) continue; // sólo contamos lo que se muestra en columnas
+    const mesAliased = MESES[d.getMonth()];
+    const keyMes = `${d.getFullYear()}-${mesAliased}`;
+    if (!base.has(keyMes)) continue; // sólo contamos lo que se muestra
 
     const originId = v?.id_origen ?? 0;
     const origin = labelOfOrigin(originId);
@@ -107,19 +99,16 @@ export const ClientesPorOrigen=({
     }
   }
 
-  // Reunir todos los orígenes presentes (incluye los que aparezcan en originMap aunque estén en 0)
+  // Orígenes presentes + los del originMap (aunque queden en 0)
   const allOrigins = new Set();
-  // Desde los datos
-  for (const m of base.values()) {
-    for (const o of m.keys()) allOrigins.add(o);
-  }
-  // Desde el mapa de referencia
-  Object.values(originMap || {}).forEach((name) => allOrigins.add(String(name).toUpperCase()));
+  for (const m of base.values()) for (const o of m.keys()) allOrigins.add(o);
+  Object.values(originMap || {}).forEach((name) =>
+    allOrigins.add(String(name).toUpperCase())
+  );
 
-  const orderedOrigins = Array.from(allOrigins);
-  // Orden: los del originMap primero en el orden que vinieron, luego el resto alfabético
+  // Orden base: primero en el orden del originMap, luego alfabético
   const prefer = Object.values(originMap || {}).map((n) => String(n).toUpperCase());
-  orderedOrigins.sort((a, b) => {
+  const orderedOrigins = Array.from(allOrigins).sort((a, b) => {
     const ia = prefer.indexOf(a);
     const ib = prefer.indexOf(b);
     if (ia !== -1 && ib !== -1) return ia - ib;
@@ -136,15 +125,33 @@ export const ClientesPorOrigen=({
     return uniqueByClient ? v.size : Number(v);
   };
 
+  const lastMonthKey = monthKeys[monthKeys.length - 1]?.key;
+
+  const sortedOrigins = React.useMemo(() => {
+    if (!lastMonthKey) return orderedOrigins;
+    return [...orderedOrigins].sort((a, b) => {
+      const vb = getCount(lastMonthKey, b);
+      const va = getCount(lastMonthKey, a);
+      if (vb !== va) return vb - va; // descendente por último mes
+      const sumA = monthKeys.reduce((acc, m) => acc + getCount(m.key, a), 0);
+      const sumB = monthKeys.reduce((acc, m) => acc + getCount(m.key, b), 0);
+      return sumB - sumA; // desempate por total
+    });
+  }, [orderedOrigins, monthKeys, lastMonthKey]);
+const filteredOrigins = React.useMemo(() => {
+  return sortedOrigins.filter((origin) => {
+    if (!origin || origin === "0" || origin.trim() === "") return false;
+    const total = monthKeys.reduce((acc, m) => acc + getCount(m.key, origin), 0);
+    return total > 0;
+  });
+}, [sortedOrigins, monthKeys]);
   // --------------------------- Styles ---------------------------
   const C = {
     black: "#000000",
-    red: "#EEBE00",
+    gold: "#EEBE00",
     white: "#ffffff",
     border: "1px solid #333",
-    headRow: "#e9eef6",
   };
-  
 
   const sTitle = {
     background: C.black,
@@ -153,35 +160,61 @@ export const ClientesPorOrigen=({
     padding: "25px 12px",
     fontWeight: 700,
     letterSpacing: 0.2,
-    fontSize: 25
+    fontSize: 25,
   };
 
   const sTable = { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" };
-  const sHeadLeft = { background: C.red, color: C.white, padding: "10px", border: C.border, textAlign: "left", width: 260 };
-  const sHead = { background: C.red, color: C.white, padding: "10px", border: C.border, textAlign: "center" };
-  const sCell = { background: C.white, color: "#000", padding: "10px", border: C.border, fontSize: 17, textAlign: "center" };
+  const sHeadLeft = {
+    background: C.gold,
+    color: C.white,
+    padding: "10px",
+    border: C.border,
+    textAlign: "left",
+    width: 260,
+  };
+  const sHead = {
+    background: C.gold,
+    color: C.white,
+    padding: "10px",
+    border: C.border,
+    textAlign: "center",
+  };
+  const sCell = {
+    background: C.white,
+    color: "#000",
+    padding: "10px",
+    border: C.border,
+    fontSize: 17,
+    textAlign: "center",
+  };
   const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700, fontSize: 15 };
 
   // --------------------------- Render ---------------------------
   return (
     <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
-      <div style={sTitle}>CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}</div>
+      <div style={sTitle}>
+        CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}
+      </div>
 
       <table style={sTable}>
         <thead>
           <tr>
-            <th style={sHeadLeft}>MES</th>
+            <th style={sHeadLeft}>ORIGEN</th>
             {monthKeys.map((m) => (
-              <th key={m.key} style={sHead}>{m.label}</th>
+              <th key={m.key} style={sHead}>
+                {m.label}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {orderedOrigins.map((origin) => (
+          {filteredOrigins.map((origin) => (
             <tr key={origin}>
               <td style={sCellLeft}>{origin}</td>
               {monthKeys.map((m) => (
-                <td key={`${m.key}-${origin}`} style={sCell}>{getCount(m.key, origin)}</td>
+                <td key={`${m.key}-${origin}`} style={sCell}>
+                  {getCount(m.key, origin)}
+                </td>
               ))}
             </tr>
           ))}
@@ -189,4 +222,4 @@ export const ClientesPorOrigen=({
       </table>
     </div>
   );
-}
+};
