@@ -11,7 +11,8 @@ import { GraficoLinealInversionRedes } from "./components/GraficoLinealInversion
 import { RankingEstilista } from "./components/RankingEstilista";
 import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
 import { TopControls } from "./components/TopControls";
-import { MatrizServicios } from "./components/MatrizServicios";
+import  MatrizServicios from "./components/MatrizServicios";
+import { GraficoServicios } from "./components/GraficoServicios";
 
 const generarMesesDinamicos = (cantidad = 8, baseMonth1to12, baseYear) => {
   const meses = ["enero","febrero","marzo","abril","mayo","junio",
@@ -96,7 +97,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
 
       {/* SELECTORES */}
       <div className="header-centrado">
-        <TopControls
+        <TopControls  
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
           initDay={initDay}
@@ -217,7 +218,14 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
     cutDay={cutDay}
   />
 </Col>
-
+<Col lg={12} className="mt-2">
+  <GraficoServicios
+    ventas={dataVentas}
+    fechas={mesesDinamicos}
+    initialDay={initDay}
+    cutDay={cutDay}
+  />
+</Col>
       </Row>
     </>
   );
