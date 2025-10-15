@@ -156,8 +156,8 @@
                     fechas={mesesDinamicos}
                     ventas={dataVentas}
                     initialDay={initDay}
-                    cutDay={cutDay}            // día de corte opcional (1..31)
-                    // referenceMonth={"agosto"} // opcional; si lo omites, usa el último mes con datos
+                    cutDay={cutDay}           
+                  
                   />
               </Col>
               <Col lg={12}>
@@ -171,35 +171,42 @@
           </Col>
           <Col lg={12}>
           <RankingEstilista dataVenta={dataVentas}  filtrarFecha={[
-                    { label: 'SEPTIEMBRE',anio: '2025', mes: 'septiembre' },
+                    { label: 'OCTUBRE',anio: '2025', mes: 'octubre' },
           ]}/>
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
-              datoEstadistico="Total Ventas" // o "Cant. Ventas", "Ventas Productos", etc.
+              datoEstadistico="Total Ventas"
+              cutDay={cutDay}
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
-              datoEstadistico="Total Servicios" // o "Cant. Ventas", "Ventas Productos", etc.
+              datoEstadistico="Total Servicios" 
+                            cutDay={cutDay}
+
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
-              datoEstadistico="Cant. Ventas " // o "Cant. Ventas", "Ventas Productos", etc.
+              datoEstadistico="Cant. Ventas " 
+                            cutDay={cutDay}
+
             />
           </Col>
           <Col lg={12}>
           <MatrizEmpleadoMes
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
-              datoEstadistico="Ventas Productos" // o "Cant. Ventas", "Ventas Productos", etc.
+              datoEstadistico="Ventas Productos" 
+                            cutDay={cutDay}
+
             />
           </Col>
         </Row>
