@@ -127,6 +127,25 @@ export const MatrizEmpleadoMes = ({
   const [q, setQ] = useState('');
   const normq = (s='') => s.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
   const matchIncludes = (haystack, needle) => normq(haystack).includes(normq(needle));
+// Normaliza etiquetas entrantes (quita tildes, puntos, dobles espacios, etc.)
+const normalizeMetricLabel = (s = "") =>
+  String(s)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // sin tildes
+    .replace(/\./g, " ")                               // puntos -> espacio (can.t -> can t)
+    .replace(/\s+/g, " ")                              // colapsa espacios
+    .trim()
+    .toUpperCase();
+
+// Aliases aceptados -> etiqueta canónica usada en METRIC_MAP
+const METRIC_ALIASES = {
+  "CANT VENTAS": "Cant. Ventas",
+  "CAN T VENTAS": "Cant. Ventas",
+  "CAN T  VENTAS": "Cant. Ventas",
+  "CAN.T VENTAS": "Cant. Ventas",
+  "CANTIDAD VENTAS": "Cant. Ventas",
+  "CANTIDAD DE VENTAS": "Cant. Ventas",
+  "CANT VENTA": "Cant. Ventas",
+};
 
   const METRIC_MAP = {
     'Total Ventas': 'totalVentas',
@@ -136,7 +155,9 @@ export const MatrizEmpleadoMes = ({
     'Ventas Servicios': 'ventasServicios',
     'Cant. Servicios': 'cantidadServicios',
   };
-  const metricKey = METRIC_MAP[datoEstadistico] ?? 'totalVentas';
+  const canonicalMetric =
+   METRIC_ALIASES[normalizeMetricLabel(datoEstadistico)] || datoEstadistico;
+ const metricKey = METRIC_MAP[canonicalMetric] ?? 'totalVentas';
   const isMoney = ['totalVentas','ventasProductos','ventasServicios'].includes(metricKey);
   const meses = Array.isArray(filtrarFecha) ? filtrarFecha : [filtrarFecha].filter(Boolean);
 
@@ -714,11 +735,21 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
   width: '100%',
   margin: '24px auto',   
 };
+const DISPLAY_LABEL = {
+  "Total Ventas": "Total de ventas",
+  "Cant. Ventas": "Cantidad de ventas",
+  "Ventas Productos": "Ventas de productos",
+  "Cant. Productos": "Cantidad de productos",
+  "Ventas Servicios": "Ventas de servicios",
+  "Cant. Servicios": "Cantidad de servicios",
+};
+const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
+
 
   return (
     <>
       <div style={{ overflowX: 'auto' }}>
-        <div style={{ marginBottom: 8, fontWeight: 700,fontSize:"30px",textAlign:"center" }}>Métrica: {datoEstadistico}</div>
+        <div style={{ marginBottom: 8, fontWeight: 700,fontSize:"30px",textAlign:"center" }}> {headerPretty}</div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
             value={q}

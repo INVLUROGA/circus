@@ -1,7 +1,6 @@
 import { NumberFormatMoney } from '@/components/CurrencyMask';
 import React from 'react';
 
-// --- helper: mes en español -> índice (0..11)
 const mesAIndice = (m = '') => {
   const k = m.trim().toLowerCase();
   const mapa = {
@@ -13,11 +12,6 @@ const mesAIndice = (m = '') => {
   return mapa[k] ?? -1;
 };
 
-// --- Filtra ventas por { mes, anio } (usa UTC para fechas con "Z")
-// dentro de RankingEstilista.jsx
-
-// reemplaza filtrarVentasPorMes por esta versión con fromDay/toDay
-  // ✅ Versión correcta: acepta initialDay y cutDay como parámetros
 function filtrarVentasPorMes(
   ventas = [],
   filtro,
@@ -37,7 +31,6 @@ function filtrarVentasPorMes(
   // límites de día según el mes/año
   const lastDay = new Date(Date.UTC(yearNum, monthIdx + 1, 0)).getUTCDate();
 
-  // usa los valores del filtro si vienen, si no los que te pasan por props
   const from = Math.max(1, Math.min(Number(filtro.fromDay ?? initialDayArg ?? 1), lastDay));
   const to   = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));
 
@@ -54,7 +47,6 @@ function filtrarVentasPorMes(
 }
 
 
-// --- Construye ranking por empleado
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
   const ventasPorEmpleado = new Map();
@@ -134,42 +126,72 @@ function TablaRanking({ titulo, ventas }) {
           <thead>
             <tr className='bg-primary fs-3'>
               <th style={thStyle}>Colaborador</th>
-              <th style={thStyle}>Total Ventas</th>
-              <th style={thStyle}>Cant. Ventas</th>
-              <th style={thStyle}>Ventas Productos</th>
-              <th style={thStyle}>Cant. Productos</th>
+                            <th style={thStyle}>cantidad de clientes</th>
+
+              <th style={thStyle}>Cantidad Servicios</th>
               <th style={thStyle}>Ventas Servicios</th>
-              <th style={thStyle}>Cant. Servicios</th>
+              <th style={thStyle}>Cantidad Productos</th>
+              <th style={thStyle}>Ventas Productos</th>
+               <th style={thStyle}>Total Ventas</th>
             </tr>
           </thead>
-          <tbody>
-            {ranking.map((r, idx) => (
-              <tr key={idx}>
-                <td style={tdStyle}>{r.empleado.split(' ')[0]}</td>
-                <td style={tdStyle}><NumberFormatMoney amount={r.totalVentas} /></td>
-                <td style={tdStyle}>{r.cantidadVentas}</td>
-                <td style={tdStyle}><NumberFormatMoney amount={r.ventasProductos} /></td>
-                <td style={tdStyle}>{r.cantidadProductos}</td>
-                <td style={tdStyle}><NumberFormatMoney amount={r.ventasServicios} /></td>
-                <td style={tdStyle}>{r.cantidadServicios}</td>
-              </tr>
-            ))}
-            {ranking.length === 0 && (
-              <tr>
-                <td style={tdStyle} colSpan={7}>Sin datos para este periodo</td>
-              </tr>
-            )}
-          </tbody>
+     <tbody>
+  {ranking.map((r, idx) => (
+    <tr key={idx}>
+      <td style={tdStyle}>{r.empleado.split(' ')[0]}</td>
+      <td style={tdStyle}>{r.cantidadVentas}</td>
+      <td style={tdStyle}>{r.cantidadServicios}</td>
+      <td style={tdStyle}><NumberFormatMoney amount={r.ventasServicios} /></td>
+      <td style={tdStyle}>{r.cantidadProductos}</td>
+      <td style={tdStyle}><NumberFormatMoney amount={r.ventasProductos} /></td>
+      <td style={tdStyle}><NumberFormatMoney amount={r.totalVentas} /></td>
+    </tr>
+  ))}
+
+  {ranking.length > 0 && (
+    <tr className="bg-primary text-white fw-bold">
+      <td style={tdStyle}>TOTAL</td>
+      <td style={tdStyle}>
+        {ranking.reduce((a, b) => a + b.cantidadVentas, 0)}
+      </td>
+      <td style={tdStyle}>
+        {ranking.reduce((a, b) => a + b.cantidadServicios, 0)}
+      </td>
+      <td style={tdStyle}>
+        <NumberFormatMoney
+          amount={ranking.reduce((a, b) => a + b.ventasServicios, 0)}
+        />
+      </td>
+      <td style={tdStyle}>
+        {ranking.reduce((a, b) => a + b.cantidadProductos, 0)}
+      </td>
+      <td style={tdStyle}>
+        <NumberFormatMoney
+          amount={ranking.reduce((a, b) => a + b.ventasProductos, 0)}
+        />
+      </td>
+      <td style={tdStyle}>
+        <NumberFormatMoney
+          amount={ranking.reduce((a, b) => a + b.totalVentas, 0)}
+        />
+      </td>
+    </tr>
+  )}
+
+  {ranking.length === 0 && (
+    <tr>
+      <td style={tdStyle} colSpan={7}>Sin datos para este periodo</td>
+    </tr>
+  )}
+</tbody>
+
         </table>
       </div>
     </div>
   );
 }
 
-// --- Componente principal ---
-// filtrarFecha puede ser: { label, anio, mes }  O  [ { ... }, { ... } ]
 export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1, cutDay }) => {
-  // Si pasan varios meses, pinto una tabla por cada mes.
   if (Array.isArray(filtrarFecha)) {
     return (
       <div>
@@ -182,7 +204,6 @@ const ventasMes = filtrarVentasPorMes(dataVenta, f, initialDay, cutDay);
     );
   }
 
-  // Si pasan un único filtro (o ninguno), muestro una sola tabla.
 const ventasFiltradas = filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay);
   const tituloUnico = filtrarFecha
     ? `${filtrarFecha?.label ?? filtrarFecha?.mes?.toUpperCase?.()} ${filtrarFecha?.anio ?? ''}`.trim()

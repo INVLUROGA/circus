@@ -171,7 +171,7 @@ export default function MatrizServicios({
         }}
       >
         SERVICIOS (CANTIDADES) –{" "}
-        {lastMonth ? `${MESES.indexOf(lastMonth.mName) + 1}/${lastMonth.y}` : ""}{" "}
+        {lastMonth ? `${lastMonth.mName.toUpperCase()}/${lastMonth.y}` : ""}{" "}
         (DEL {initialDay} AL {cutDay ?? "FIN DE MES"})
       </div>
 
@@ -215,7 +215,6 @@ export default function MatrizServicios({
                   {t || ""}
                 </td>
               ))}
-              {/* 🔹 La celda del total general se mueve debajo de la última columna */}
             </tr>
             <tr>
               <td

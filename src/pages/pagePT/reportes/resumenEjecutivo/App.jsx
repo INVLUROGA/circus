@@ -12,7 +12,6 @@ import { RankingEstilista } from "./components/RankingEstilista";
 import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
 import { TopControls } from "./components/TopControls";
 import  MatrizServicios from "./components/MatrizServicios";
-import { GraficoServicios } from "./components/GraficoServicios";
 
 const generarMesesDinamicos = (cantidad = 8, baseMonth1to12, baseYear) => {
   const meses = ["enero","febrero","marzo","abril","mayo","junio",
@@ -40,7 +39,6 @@ export const App = ({ id_empresa }) => {
     obtenerLeads(599);
   }, [id_empresa]);
 
-  // === estado global de control ===
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [cutDay, setCutDay] = useState(new Date().getDate());
   const [initDay, setInitDay] = useState(1);
@@ -107,7 +105,6 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
           year={year}
         />
       </div>
-
       {/* CONTENIDO PRINCIPAL */}
       <Row>
         <Col lg={12} className="pt-0">
@@ -121,7 +118,6 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
                 cutDay={cutDay}
               />
             </Col>
-
             <Col lg={12}>
               <ClientesPorOrigen
                 ventas={dataVentas}
@@ -148,7 +144,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
 
         {/* COMPARATIVOS Y GRÁFICOS */}
         <Col lg={12}>
-          <Row>
+          <Row className="gx-3 gy-4">
             <Col lg={12} className="mb-4">
               <ComparativoVsActual
                 fechas={mesesDinamicos}
@@ -167,7 +163,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
         </Col>
 
         {/* RANKING DINÁMICO */}
-        <Col lg={12}>
+        <Col lg={12} className="mb-5">
           <RankingEstilista
             dataVenta={dataVentas}
             filtrarFecha={filtrarFechaRanking}
@@ -177,7 +173,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
         </Col>
 
         {/* MATRICES */}
-        <Col lg={12}>
+        <Col lg={12}className="mb-5">
           <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={mesesEmpleados}
@@ -185,23 +181,16 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
             cutDay={cutDay}
           />
         </Col>
-        <Col lg={12}>
-          <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={mesesEmpleados}
-            datoEstadistico="Total Servicios"
-            cutDay={cutDay}
-          />
-        </Col>
-        <Col lg={12}>
-          <MatrizEmpleadoMes
-            dataVenta={dataVentas}
-            filtrarFecha={mesesEmpleados}
-            datoEstadistico="Cant. Ventas"
-            cutDay={cutDay}
-          />
-        </Col>
-        <Col lg={12}>
+     
+          <Col lg={12} className="mb-5">
+            <MatrizEmpleadoMes
+              dataVenta={dataVentas}
+              filtrarFecha={mesesEmpleados}
+              datoEstadistico="Cant. Ventas"
+              cutDay={cutDay}
+            />
+          </Col>
+        <Col lg={12}className="mb-5">
           <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={mesesEmpleados}
@@ -209,19 +198,19 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
             cutDay={cutDay}
           />
         </Col>
+        <Col lg={12} className="mb-5">
+  <MatrizEmpleadoMes
+    dataVenta={dataVentas}
+    filtrarFecha={mesesEmpleados}
+    datoEstadistico="Cant. Productos"   // ← esta es la que faltaba
+    cutDay={cutDay}
+  />
+</Col>
         <Col lg={12}>
   <MatrizServicios
     ventas={dataVentas}
     fechas={mesesDinamicos}
     selectedMonth={selectedMonth}
-    initialDay={initDay}
-    cutDay={cutDay}
-  />
-</Col>
-<Col lg={12} className="mt-2">
-  <GraficoServicios
-    ventas={dataVentas}
-    fechas={mesesDinamicos}
     initialDay={initDay}
     cutDay={cutDay}
   />

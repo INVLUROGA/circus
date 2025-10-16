@@ -68,8 +68,10 @@ export function GraficoServicios({
           v?.tb_ventum?.tb_empleado?.nombres_apellidos_empl ||
           v?.tb_ventum?.tb_empleado?.nombre_empl ||
           "";
-        const emp = firstNameUpper(empFull);
+   const emp = firstNameUpper(empFull);
+if (!emp) continue;
 
+   
         const srv =
           it?.circus_servicio?.nombre_servicio ||
           it?.nombre_servicio ||
@@ -135,14 +137,35 @@ export function GraficoServicios({
     },
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2 },
-    xaxis: {
-      categories: services.map((s) => String(s).toUpperCase()),
-      labels: { rotate: -45, trim: true, style: { fontSize: "11px" } },
+xaxis: {
+  categories: services.map((s) => {
+    const upper = String(s).toUpperCase();
+    // 🔹 Si tiene más de 12 caracteres, dividimos en 2 líneas
+    if (upper.length > 12) {
+      const mid = Math.ceil(upper.length / 2);
+      return upper.slice(0, mid) + "\n" + upper.slice(mid);
+    }
+    return upper;
+  }),
+  labels: {
+    rotate: -90,
+    rotateAlways: true,
+    offsetY: 10,
+    style: {
+      fontSize: "11px",
+      fontWeight: 700,
+      colors: "#900",
+      whiteSpace: "normal",
     },
-    yaxis: { title: { text: "Cantidad" } },
-    legend: { position: "top" },
-    grid: { padding: { left: 8, right: 8 } },
-    tooltip: { shared: true, intersect: false },
+    formatter: (val) => val, // 🔹 conserva los \n como saltos de línea
+  },
+  tickPlacement: "on",
+},
+grid: {
+  padding: { bottom: 180, left: 8, right: 8 }, // 🔹 da espacio para los nombres largos
+},
+
+
   }), [services, stacked]);
 
   return (
