@@ -1,3 +1,4 @@
+import { auto } from "@popperjs/core";
 import React, { useMemo } from "react";
 
 export default function MatrizServicios({
@@ -5,13 +6,17 @@ export default function MatrizServicios({
   fechas = [],
   initialDay = 1,
   cutDay = null,
+  serviciosConCostoLista = null,
+  maxColsPorTabla = 12, 
 }) {
+  // ====== Utils ======
   const MESES = [
     "enero","febrero","marzo","abril","mayo","junio",
     "julio","agosto","setiembre","octubre","noviembre","diciembre"
   ];
   const aliasMes = (m) =>
     (m === "septiembre" ? "setiembre" : String(m || "").toLowerCase());
+  const norm = (s) => String(s ?? "").trim().toUpperCase();
 
   const toLimaDate = (iso) => {
     if (!iso) return null;
@@ -27,20 +32,65 @@ export default function MatrizServicios({
   const firstNameUpper = (full = "") =>
     String(full).trim().split(/\s+/)[0]?.toUpperCase() || "—";
 
+  const chunk = (arr, size) => {
+    const out = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  };
+
+  // ====== Mes a mostrar ======
   const lastMonth = useMemo(() => {
     if (!fechas?.length) return null;
     const f = fechas[fechas.length - 1];
     return { y: Number(f.anio), mName: aliasMes(f.mes) };
   }, [fechas]);
 
-  const { employees, services, matrix, colTotals, grandTotal } = useMemo(() => {
-    const employeesSet = new Set();
-    const servicesSet = new Set();
-    const matrix = new Map();
+  // ====== Lista blanca (según tu query) ======
+  // NOTA: “RETIRO DE GEL” tiene precio_compra 0 => queda fuera.
+  const CON_COSTO_WHITELIST = useMemo(() => {
+    const base = [
+      "GOLD FILLER",
+      "K-PACK JOICO",
+      "OIRCH OIL RECONSTRUCTION",
+      "SENJAL MULTIVITAMINICO",
+      "WELLAPLEX",
+      "ALISADO ORGANICO",
+      // "RETIRO DE GEL" no, porque precio_compra = 0.00
+    ];
+    const lista = Array.isArray(serviciosConCostoLista) && serviciosConCostoLista.length
+      ? serviciosConCostoLista.map(norm)
+      : base.map(norm);
+    return new Set(lista);
+  }, [serviciosConCostoLista]);
 
-    if (!lastMonth) {
-      return { employees: [], services: [], matrix, colTotals: [], grandTotal: 0 };
-    }
+  const precioCompraOf = (it) => {
+    const raw = it?.circus_servicio?.precio_compra ?? it?.precio_compra ?? null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  // función robusta para saber si va a “con costo”
+  const esConCosto = (it, srv) => {
+    const pc = precioCompraOf(it);
+    if (pc != null && pc > 0) return true;
+    if (CON_COSTO_WHITELIST.has(norm(srv))) return true;
+    return false;
+  };
+
+  const newBucket = () => ({ empSet: new Set(), srvSet: new Set(), matrix: new Map() });
+  const noCosto  = newBucket();
+  const conCosto = newBucket();
+
+  const pushToBucket = (bucket, emp, srv, qty) => {
+    bucket.empSet.add(emp);
+    bucket.srvSet.add(srv);
+    if (!bucket.matrix.has(emp)) bucket.matrix.set(emp, new Map());
+    const row = bucket.matrix.get(emp);
+    row.set(srv, (row.get(srv) || 0) + qty);
+  };
+
+  useMemo(() => {
+    if (!lastMonth) return;
 
     const monthIdx = MESES.indexOf(lastMonth.mName);
     const now = new Date();
@@ -60,10 +110,7 @@ export default function MatrizServicios({
       const day = d.getDate();
       if (day < from || day > to) continue;
 
-      const detalles = Array.isArray(v?.detalle_ventaservicios)
-      
-        ? v.detalle_ventaservicios
-        : [];
+      const detalles = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
       for (const it of detalles) {
         const empFull =
           it?.empleado_servicio?.nombres_apellidos_empl ||
@@ -75,46 +122,50 @@ export default function MatrizServicios({
           it?.circus_servicio?.nombre_servicio ||
           it?.nombre_servicio ||
           "—";
-      if (!emp || emp === "—") continue;
-      const qty = it?.cantidad == null ? 1 : Number(it.cantidad) || 0;
-        employeesSet.add(emp);
-        servicesSet.add(srv);
+        if (!emp || emp === "—") continue;
 
-        if (!matrix.has(emp)) matrix.set(emp, new Map());
-        const row = matrix.get(emp);
-        row.set(srv, (row.get(srv) || 0) + qty);
+        const qty = it?.cantidad == null ? 1 : Number(it.cantidad) || 0;
+        const bucket = esConCosto(it, srv) ? conCosto : noCosto;
+        pushToBucket(bucket, emp, srv, qty);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventas, lastMonth, initialDay, cutDay]);
 
-    const employees = Array.from(employeesSet);
-    const services = Array.from(servicesSet);
+  // ====== Ordenar por totales ======
+  const ordenarBucket = (bucket) => {
+    const employees = Array.from(bucket.empSet);
+    const services  = Array.from(bucket.srvSet);
 
     const serviceTotals = new Map();
     for (const s of services) {
-      let sum = 0;
-      for (const e of employees) sum += matrix.get(e)?.get(s) || 0;
-      serviceTotals.set(s, sum);
+      serviceTotals.set(
+        s,
+        employees.reduce((a, e) => a + (bucket.matrix.get(e)?.get(s) || 0), 0)
+      );
     }
-    services.sort((a, b) => (serviceTotals.get(b) || 0) - (serviceTotals.get(a) || 0));
-    const empTotals= new Map();
-    for(const e of employees){
-      let sum=0;
-      for(const s of services) sum+=(matrix.get(e)?.get(s) || 0);
-      empTotals.set(e,sum);
-    }
-    employees.sort((a,b)=>(empTotals.get(b)||0) -(empTotals.get(a) ||0));
-
-    const colTotals = services.map((s) =>
-      employees.reduce((acc, e) => acc + (matrix.get(e)?.get(s) || 0), 0)
+    services.sort(
+      (a, b) => (serviceTotals.get(b) - serviceTotals.get(a)) || norm(a).localeCompare(norm(b))
     );
-    const grandTotal = colTotals.reduce((a, b) => a + b, 0);
 
-    return { employees, services, matrix, colTotals, grandTotal };
-  }, [ventas, lastMonth, initialDay, cutDay]);
+    const empTotals = new Map();
+    for (const e of employees) {
+      empTotals.set(
+        e,
+        services.reduce((a, s) => a + (bucket.matrix.get(e)?.get(s) || 0), 0)
+      );
+    }
+    employees.sort(
+      (a, b) => (empTotals.get(b) - empTotals.get(a)) || norm(a).localeCompare(norm(b))
+    );
 
-  const getQty = (emp, srv) => matrix.get(emp)?.get(srv) || 0;
+    return { employees, services, matrix: bucket.matrix };
+  };
 
-  // --- estilos ---
+  const sinCostoData = useMemo(() => ordenarBucket(noCosto), []);
+  const conCostoData = useMemo(() => ordenarBucket(conCosto), []);
+
+  // ====== Estilos ======
   const C = { head: "#EEBE00", border: "#333", white: "#fff", black: "#000" };
   const sTable = {
     width: "100%",
@@ -131,108 +182,124 @@ export default function MatrizServicios({
     fontWeight: 800,
     fontSize: 15,
   };
-  const thLeft = {
-    ...th,
-    textAlign: "center",
-    width: 100, 
-    whiteSpace: "normal", 
-    wordBreak: "break-word",
-  };
+  const thLeft = { ...th, textAlign: "center", width: 110, whiteSpace: "normal", wordBreak: "break-word" };
   const td = {
     background: C.white,
     color: C.black,
     padding: "8px",
     border: `1px solid ${C.border}`,
     textAlign: "center",
-    fontSize: 15,
+    fontSize: 20,
     fontWeight: 700,
   };
-  const tdLeft = {
-    ...td,
-    background: C.head,
-    color: C.black,
-    fontSize: 16,
-    wordBreak: "break-word",
-    whiteSpace: "normal",
+  const tdLeft = { ...td, background: C.head, color: C.black, fontSize: 16 };
+
+  const tituloBloque = (texto) => (
+    <div
+      style={{
+        background: C.black,
+        color: "#fff",
+        textAlign: "center",
+        padding: "20px 12px",
+        fontWeight: 800,
+        letterSpacing: 0.3,
+        fontSize: 22,
+        margin: "18px 0 8px",
+      }}
+    >
+      {texto}
+    </div>
+  );
+
+  // ====== Renderizar un dataset en “n” tablas de hasta maxColsPorTabla ======
+  const renderDataset = ({ title }, data) => {
+    if (!data.services.length) {
+      return (
+        <>
+          {tituloBloque(title)}
+          <div style={{ textAlign: "center", padding: 16, opacity: 0.7 }}>Sin datos</div>
+        </>
+      );
+    }
+
+    const getQty = (emp, srv) => data.matrix.get(emp)?.get(srv) || 0;
+    const columnasEnChunks = chunk(data.services, Math.max(1, maxColsPorTabla));
+
+    return (
+      <>
+        {tituloBloque(title)}
+        <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+          {columnasEnChunks.map((cols, idxChunk) => {
+            const colTotals = cols.map(
+              (s) => data.employees.reduce((acc, e) => acc + (data.matrix.get(e)?.get(s) || 0), 0)
+            );
+            return (
+              <table key={idxChunk} style={sTable}>
+                <thead>
+                  <tr>
+                    <th style={thLeft}>COLABORADOR</th>
+                    {cols.map((s) => (
+                      <th key={s} style={th}>{norm(s)}</th>
+                    ))}
+                    <th style={th}>TOTAL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.employees.map((emp) => {
+                    const totalRow = cols.reduce((a, s) => a + getQty(emp, s), 0);
+                    return (
+                      <tr key={emp}>
+                        <td style={tdLeft}>{emp}</td>
+                        {cols.map((srv) => (
+                          <td key={`${emp}-${srv}`} style={td}>{getQty(emp, srv)}</td>
+                        ))}
+                        <td style={{ ...td, fontWeight: 900 }}>{totalRow}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-primary text-black" style={{ color: "#000", fontSize: 22 }}>
+                    <td style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
+                    {colTotals.map((t, i) => (
+                      <td key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                        {t || ""}
+                      </td>
+                    ))}
+                    <td style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                      {colTotals.reduce((a, b) => a + b, 0)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            );
+          })}
+        </div>
+      </>
+    );
   };
 
-  return (
-    <div style={{ marginBottom:"100px", fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif",marginTop:100 }}>
-      <div
-        style={{
-          background: C.black,
-          color: "#fff",
-          textAlign: "center",
-          padding: "20px 12px",
-          fontWeight: 800,
-          letterSpacing: 0.3,
-          fontSize: 22,
-          marginBottom: 8,
-        }}
-      >
-        SERVICIOS (CANTIDADES) –{" "}
-        {lastMonth ? `${lastMonth.mName.toUpperCase()}/${lastMonth.y}` : ""}{" "}
-        (DEL {initialDay} AL {cutDay ?? "FIN DE MES"})
-      </div>
+  // ====== Render ======
+  const rango = lastMonth ? ` – ${lastMonth.mName.toUpperCase()}/${lastMonth.y}` : "";
+  const corte = cutDay ? ` (DEL ${initialDay} AL ${cutDay})` : "";
 
-      <table style={sTable}>
-        <thead>
-          <tr>
-            <th style={thLeft}>COLABORADOR</th>
-            {services.map((s) => (
-              <th key={s} style={th}>
-                {String(s).toUpperCase()}
-              </th>
-            ))}
-       
-          </tr>
-        </thead>
-        <tbody>
-          {employees.map((emp) => (
-            <tr key={emp}>
-              <td style={tdLeft}>{emp}</td>
-              {services.map((srv) => (
-                <td key={`${emp}-${srv}`} style={td}>
-                  {getQty(emp, srv) }
-                </td>
-              ))}
-            </tr>
-          ))}
-          {employees.length === 0 && (
-            <tr>
-              <td style={td} colSpan={services.length + 1}>
-                Sin datos para este periodo
-              </td>
-            </tr>
-          )}
-        </tbody>
-        {employees.length > 0 && (
-          <tfoot>
-            <tr>
-              <td style={{ ...tdLeft, fontWeight: 900 }}>TOTAL</td>
-              {colTotals.map((t, i) => (
-                <td key={`tot-${i}`} style={{ ...td, fontWeight: 900 }}>
-                  {t || ""}
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <td
-                colSpan={services.length}
-                style={{
-                  border: "none",
-                  textAlign: "right",
-                  fontWeight: 900,
-                  fontSize: 18,
-                  paddingTop: 10,
-                }}
-              >
-                TOTAL GENERAL: {grandTotal}
-              </td>
-            </tr>
-          </tfoot>
-        )}
-      </table>
+  return (
+    <div
+      style={{
+        marginBottom: "100px",
+        fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif",
+        marginTop: 100,
+      }}
+    >
+      {renderDataset(
+        { title: `SERVICIOS (SIN COSTO – PRECIO_COMPRA NULO)${rango}${corte}` },
+        sinCostoData
+      )}
+
+      {renderDataset(
+        { title: `SERVICIOS (CON COSTO – PRECIO_COMPRA > 0)${rango}${corte}` },
+        conCostoData
+      )}
     </div>
   );
 }

@@ -1041,6 +1041,11 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
     <th className="bg-primary" style={thStyle}>Servicio</th>
     <th className="bg-primary" style={thStyle}>Cant.</th>
     <th className="bg-primary" style={thStyle}>Precio<br/>Unitario</th>
+    <th
+  className="bg-primary"
+  style={thStyle}
+  dangerouslySetInnerHTML={{ __html: "Venta<br/>Total" }}
+/>
     {modalData.methodsToShow.map((m) => (
       <th
         key={m}
@@ -1051,11 +1056,7 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
         }}
       />
     ))}
-<th
-  className="bg-primary"
-  style={thStyle}
-  dangerouslySetInnerHTML={{ __html: "Venta<br/>Total" }}
-/>
+
   </tr>
 </thead>
 
@@ -1096,7 +1097,12 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
           {s.pVenta ? <NumberFormatMoney amount={s.pVenta} /> : "—"}
         </td>
 
-        {/* Métodos */}
+      
+        {/* Total línea */}
+        <td style={{ ...tdStyle, fontWeight: 600 }}>
+          <NumberFormatMoney amount={totalLinea} />
+        </td>
+          {/* Métodos */}
         {modalData.methodsToShow.map((m, idx) => {
           let val = vals[m] || 0;
           if (idx === 0 && Math.abs(delta) >= 0.01) { val = round2(val + delta); delta = 0; }
@@ -1106,11 +1112,8 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
             </td>
           );
         })}
-        {/* Total línea */}
-        <td style={{ ...tdStyle, fontWeight: 600 }}>
-          <NumberFormatMoney amount={totalLinea} />
-        </td>
       </tr>
+
     );
   })}
 
@@ -1181,9 +1184,9 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
     <tr>
       <th className="bg-primary" style={thStyle}>Item</th>
       <th className="bg-primary" style={thStyle}>Producto</th>
-      <th className="bg-primary" style={thStyle}>Cant.</th>
-      <th className="bg-primary" style={thStyle}>P. Unitario</th>
-      <th className="bg-primary" style={thStyle}>P. Venta</th>
+      <th className="bg-primary" style={thStyle}>Cantidad</th>
+      <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
+      <th className="bg-primary" style={thStyle}>Precio <br/>    Venta</th>
       <th className="bg-primary" style={thStyle}>IGV<br/>(-18%)</th>
       <th className="bg-primary" style={thStyle}>Tarjeta<br/>(-4.5%)</th>
       <th className="bg-primary" style={thStyle}>Renta<br/>(-3%)</th>

@@ -169,6 +169,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
             filtrarFecha={filtrarFechaRanking}
             initialDay={initDay}
             cutDay={cutDay}
+
           />
         </Col>
 
@@ -202,7 +203,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
   <MatrizEmpleadoMes
     dataVenta={dataVentas}
     filtrarFecha={mesesEmpleados}
-    datoEstadistico="Cant. Productos"   // ← esta es la que faltaba
+    datoEstadistico="Cant. Productos"  
     cutDay={cutDay}
   />
 </Col>
