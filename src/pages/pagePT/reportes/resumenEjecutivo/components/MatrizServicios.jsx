@@ -1,13 +1,16 @@
-import { auto } from "@popperjs/core";
 import React, { useMemo } from "react";
 
 export default function MatrizServicios({
   ventas = [],
-  fechas = [],
+  fechas = [],            // [{label, anio, mes}]
   initialDay = 1,
   cutDay = null,
-  serviciosConCostoLista = null,
-  maxColsPorTabla = 12, 
+  // === Opciones data-driven para “CON TRATAMIENTO” ===
+  serviciosConCostoIds = null,   // e.g. [12,45,77]
+  esTratamiento = null,          // (detalleServicio) => boolean
+  // === Compatibilidad hacia atrás (por nombre) ===
+  serviciosConCostoLista = null, // ["Wellaplex","..."]
+  maxColsPorTabla = 12,
 }) {
   // ====== Utils ======
   const MESES = [
@@ -38,16 +41,20 @@ export default function MatrizServicios({
     return out;
   };
 
-  // ====== Mes a mostrar ======
+  // ====== Mes a mostrar (último de `fechas`) ======
   const lastMonth = useMemo(() => {
     if (!fechas?.length) return null;
     const f = fechas[fechas.length - 1];
     return { y: Number(f.anio), mName: aliasMes(f.mes) };
   }, [fechas]);
 
-  // ====== Lista blanca (según tu query) ======
-  // NOTA: “RETIRO DE GEL” tiene precio_compra 0 => queda fuera.
-  const CON_COSTO_WHITELIST = useMemo(() => {
+  // ====== Helpers de “con costo / tratamiento” ======
+  const idsSet = useMemo(
+    () => new Set(Array.isArray(serviciosConCostoIds) ? serviciosConCostoIds : []),
+    [serviciosConCostoIds]
+  );
+
+  const NOMBRES_WHITELIST = useMemo(() => {
     const base = [
       "GOLD FILLER",
       "K-PACK JOICO",
@@ -55,7 +62,6 @@ export default function MatrizServicios({
       "SENJAL MULTIVITAMINICO",
       "WELLAPLEX",
       "ALISADO ORGANICO",
-      // "RETIRO DE GEL" no, porque precio_compra = 0.00
     ];
     const lista = Array.isArray(serviciosConCostoLista) && serviciosConCostoLista.length
       ? serviciosConCostoLista.map(norm)
@@ -69,32 +75,43 @@ export default function MatrizServicios({
     return Number.isFinite(n) ? n : null;
   };
 
-  // función robusta para saber si va a “con costo”
-  const esConCosto = (it, srv) => {
+  const idServicioOf = (it) =>
+    it?.circus_servicio?.id_servicio ??
+    it?.id_servicio ??
+    it?.tb_servicio?.id_servicio ??
+    null;
+
+  const esConCosto = (it, srvName) => {
+    // 1) Predicado externo manda
+    if (typeof esTratamiento === "function") return !!esTratamiento(it);
+
+    // 2) Por ID desde props
+    const idSrv = idServicioOf(it);
+    if (idSrv != null && idsSet.has(idSrv)) return true;
+
+    // 3) Por nombre (compatibilidad)
+    if (NOMBRES_WHITELIST.has(norm(srvName))) return true;
+
+    // 4) Fallback por precio
     const pc = precioCompraOf(it);
-    if (pc != null && pc > 0) return true;
-    if (CON_COSTO_WHITELIST.has(norm(srv))) return true;
-    return false;
+    return pc != null && pc > 0;
   };
 
-  const newBucket = () => ({ empSet: new Set(), srvSet: new Set(), matrix: new Map() });
-  const noCosto  = newBucket();
-  const conCosto = newBucket();
+  // ====== Cálculo puro (depende de cutDay, initialDay, ventas, etc.) ======
+  const { sinCostoData, conCostoData } = useMemo(() => {
+    const mkBucket = () => ({ empSet: new Set(), srvSet: new Set(), matrix: new Map() });
+    const noCosto  = mkBucket();
+    const conCosto = mkBucket();
 
-  const pushToBucket = (bucket, emp, srv, qty) => {
-    bucket.empSet.add(emp);
-    bucket.srvSet.add(srv);
-    if (!bucket.matrix.has(emp)) bucket.matrix.set(emp, new Map());
-    const row = bucket.matrix.get(emp);
-    row.set(srv, (row.get(srv) || 0) + qty);
-  };
-
-  useMemo(() => {
-    if (!lastMonth) return;
+    if (!lastMonth) {
+      const empty = { employees: [], services: [], matrix: new Map() };
+      return { sinCostoData: empty, conCostoData: empty };
+    }
 
     const monthIdx = MESES.indexOf(lastMonth.mName);
     const now = new Date();
     const lastDayOfMonth = new Date(lastMonth.y, monthIdx + 1, 0).getDate();
+
     let to = Number(cutDay || lastDayOfMonth);
     if (now.getFullYear() === lastMonth.y && now.getMonth() === monthIdx) {
       to = clamp(to, 1, now.getDate());
@@ -102,11 +119,20 @@ export default function MatrizServicios({
     const from = clamp(Number(initialDay || 1), 1, lastDayOfMonth);
     to = clamp(to, from, lastDayOfMonth);
 
+    const pushToBucket = (bucket, emp, srv, qty) => {
+      bucket.empSet.add(emp);
+      bucket.srvSet.add(srv);
+      if (!bucket.matrix.has(emp)) bucket.matrix.set(emp, new Map());
+      const row = bucket.matrix.get(emp);
+      row.set(srv, (row.get(srv) || 0) + qty);
+    };
+
     for (const v of ventas) {
       const d = toLimaDate(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
       if (!d) continue;
       if (d.getFullYear() !== lastMonth.y) continue;
       if (MESES[d.getMonth()] !== lastMonth.mName) continue;
+
       const day = d.getDate();
       if (day < from || day > to) continue;
 
@@ -118,6 +144,7 @@ export default function MatrizServicios({
           v?.tb_ventum?.tb_empleado?.nombre_empl ||
           "";
         const emp = firstNameUpper(empFull);
+
         const srv =
           it?.circus_servicio?.nombre_servicio ||
           it?.nombre_servicio ||
@@ -129,43 +156,43 @@ export default function MatrizServicios({
         pushToBucket(bucket, emp, srv, qty);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ventas, lastMonth, initialDay, cutDay]);
 
-  // ====== Ordenar por totales ======
-  const ordenarBucket = (bucket) => {
-    const employees = Array.from(bucket.empSet);
-    const services  = Array.from(bucket.srvSet);
+    const ordenarBucket = (bucket) => {
+      const employees = Array.from(bucket.empSet);
+      const services  = Array.from(bucket.srvSet);
 
-    const serviceTotals = new Map();
-    for (const s of services) {
-      serviceTotals.set(
-        s,
-        employees.reduce((a, e) => a + (bucket.matrix.get(e)?.get(s) || 0), 0)
+      const serviceTotals = new Map();
+      for (const s of services) {
+        serviceTotals.set(
+          s,
+          employees.reduce((a, e) => a + (bucket.matrix.get(e)?.get(s) || 0), 0)
+        );
+      }
+      services.sort(
+        (a, b) => (serviceTotals.get(b) - serviceTotals.get(a)) || norm(a).localeCompare(norm(b))
       );
-    }
-    services.sort(
-      (a, b) => (serviceTotals.get(b) - serviceTotals.get(a)) || norm(a).localeCompare(norm(b))
-    );
 
-    const empTotals = new Map();
-    for (const e of employees) {
-      empTotals.set(
-        e,
-        services.reduce((a, s) => a + (bucket.matrix.get(e)?.get(s) || 0), 0)
+      const empTotals = new Map();
+      for (const e of employees) {
+        empTotals.set(
+          e,
+          services.reduce((a, s) => a + (bucket.matrix.get(e)?.get(s) || 0), 0)
+        );
+      }
+      employees.sort(
+        (a, b) => (empTotals.get(b) - empTotals.get(a)) || norm(a).localeCompare(norm(b))
       );
-    }
-    employees.sort(
-      (a, b) => (empTotals.get(b) - empTotals.get(a)) || norm(a).localeCompare(norm(b))
-    );
 
-    return { employees, services, matrix: bucket.matrix };
-  };
+      return { employees, services, matrix: bucket.matrix };
+    };
 
-  const sinCostoData = useMemo(() => ordenarBucket(noCosto), []);
-  const conCostoData = useMemo(() => ordenarBucket(conCosto), []);
+    return {
+      sinCostoData: ordenarBucket(noCosto),
+      conCostoData: ordenarBucket(conCosto),
+    };
+  }, [ventas, lastMonth, initialDay, cutDay, idsSet, NOMBRES_WHITELIST, esTratamiento]);
 
-  // ====== Estilos ======
+  // ====== Estilos (los tuyos) ======
   const C = { head: "#EEBE00", border: "#333", white: "#fff", black: "#000" };
   const sTable = {
     width: "100%",
@@ -211,7 +238,6 @@ export default function MatrizServicios({
     </div>
   );
 
-  // ====== Renderizar un dataset en “n” tablas de hasta maxColsPorTabla ======
   const renderDataset = ({ title }, data) => {
     if (!data.services.length) {
       return (
@@ -260,13 +286,13 @@ export default function MatrizServicios({
                 </tbody>
                 <tfoot>
                   <tr className="bg-primary text-black" style={{ color: "#000", fontSize: 22 }}>
-                    <td style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
+                    <td className="bg-primary text-black" style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
                     {colTotals.map((t, i) => (
-                      <td key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                      <td className="bg-primary text-black" key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
                         {t || ""}
                       </td>
                     ))}
-                    <td style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                    <td className="bg-primary text-black" style={{ ...td, fontWeight: 900, fontSize: 22 }}>
                       {colTotals.reduce((a, b) => a + b, 0)}
                     </td>
                   </tr>
@@ -292,12 +318,12 @@ export default function MatrizServicios({
       }}
     >
       {renderDataset(
-        { title: `SERVICIOS (SIN COSTO – PRECIO_COMPRA NULO)${rango}${corte}` },
+        { title: `SERVICIOS ${rango}${corte}` },
         sinCostoData
       )}
 
       {renderDataset(
-        { title: `SERVICIOS (CON COSTO – PRECIO_COMPRA > 0)${rango}${corte}` },
+        { title: `SERVICIOS (CON TRATAMIENTO)${rango}${corte}` },
         conCostoData
       )}
     </div>

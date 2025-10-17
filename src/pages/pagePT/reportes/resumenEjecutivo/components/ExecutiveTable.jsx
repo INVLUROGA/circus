@@ -177,13 +177,13 @@ export default function ExecutiveTable({
   const rows = [
     { key: "mkInv", label: "INVERSIÓN REDES", type: "money" },
     { key: "mkLeads", label: "LEADS", type: "int" },
-    { key: "mkCpl", label: "CPL", type: "float2" },
+    { key: "mkCpl", label: "COSTO POR LEADS", type: "float2" },
     { key: "totalServ", label: "VENTA SERVICIOS", type: "money" },
-    { key: "ticketServ", label: "TICKET PROMEDIO SERV.", type: "money" },
+    { key: "ticketServ", label: "TICKET PROMEDIO SERVICIOS", type: "money" },
     { key: "totalProd", label: "VENTA PRODUCTOS", type: "money" },
     { key: "cantProd", label: "CANTIDAD PRODUCTOS", type: "int" },
     { key: "cantServ", label: "CANTIDAD SERVICIOS", type: "int" },
-    { key: "ticketProd", label: "TICKET PROMEDIO PROD.", type: "money" },
+    { key: "ticketProd", label: "TICKET PROMEDIO PRODUCTOS", type: "money" },
   ];
 
   // Precalcular métricas por columna (mes)
@@ -234,7 +234,7 @@ export default function ExecutiveTable({
   };
 
   const sThLeft = { ...sThMes, textAlign: "left", width: 260, fontSize: 20};
-  const sCell = { border, padding: "8px 10px", fontSize: 13, background: cWhite, fontSize: 20 };
+  const sCell = { border, padding: "8px 10px", background: cWhite, fontSize: 20 };
   const sCellBold = { ...sCell, fontWeight: 700, fontSize: 17 };
 
   const sRowBlack = { background: cBlack, color: cWhite, fontWeight: 700 };
@@ -291,7 +291,7 @@ export default function ExecutiveTable({
 
           {/* CAC */}
           <tr>
-            <td style={sCellBold}>CAC (S/)</td>
+            <td style={sCellBold}>CALCULO ADQUISICION DE CLIENTES </td>
             {perMonth.map((m, idx) => (
               <td key={idx} style={sCell}>
                 {fmtNum(m.metrics?.mkCac || 0, 2)}
