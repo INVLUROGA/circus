@@ -240,79 +240,155 @@ export default function ExecutiveTable({
   const sRowBlack = { background: cBlack, color: cWhite, fontWeight: 700 };
   const sRowRed = { color: cWhite, fontWeight: 800 };
 
-  return (
-    <div style={sWrap}>
-      <div style={sHeader}>
-        INFORME GERENCIAL HASTA EL {cutDay} DE CADA MES
-      </div>
+ return (
+  <div style={sWrap}>
+    <div style={sHeader}>
+      INFORME GERENCIAL HASTA EL {cutDay} DE CADA MES
+    </div>
 
-      <table style={sTable}>
-        <thead>
-          <tr  className="bg-primary">
-            <th style={sThLeft}>MES</th>
-            {perMonth.map((m, idx) => (
-              <th key={idx} style={sThMes}>
-                <div>
-                  {m.label}
-                </div>
+    <table style={sTable}>
+      <thead>
+        <tr className="bg-primary">
+          <th className="bg-black" style={sThLeft}>MES</th>
+          {perMonth.map((m, idx) => {
+            const isLast = idx === perMonth.length - 1;
+            return (
+              <th
+                key={idx}
+                style={{
+                  ...sThMes,
+                  background: isLast ? "#c00000" : "#000000",
+                  color: "#fff",
+                  fontSize: isLast ? 24 : 20,
+                }}
+              >
+                <div>{m.label}</div>
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.key}>
-              <td style={sCellBold}>{r.label}</td>
-              {perMonth.map((m, idx) => {
-                const val = m.metrics?.[r.key] ?? 0;
-                let txt = "";
-                if (r.type === "money") txt = fmtMoney(val);
-                else if (r.type === "float2") txt = fmtNum(val, 2);
-                else txt = fmtNum(val, 0);
-                return (
-                  <td key={idx} style={sCell}>
-                    {txt}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+            );
+          })}
+        </tr>
+      </thead>
 
-          {/* Fila negra: TOTAL MES */}
-          <tr style={sRowBlack}>
-            <td style={{ ...sCellBold, background: "transparent", color: cWhite }}>TOTAL MES</td>
-            {perMonth.map((m, idx) => (
-              <td key={idx} style={{ ...sCellBold, background: "transparent", color: cWhite }}>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.key}>
+            <td style={sCellBold}>{r.label}</td>
+            {perMonth.map((m, idx) => {
+              const val = m.metrics?.[r.key] ?? 0;
+              let txt = "";
+              if (r.type === "money") txt = fmtMoney(val);
+              else if (r.type === "float2") txt = fmtNum(val, 2);
+              else txt = fmtNum(val, 0);
+              const isLast = idx === perMonth.length - 1;
+              return (
+                <td
+                  key={idx}
+                  style={{
+                    ...sCell,
+                    background: isLast ? "#c00000" : sCell.background,
+                    color: isLast ? "#fff" : sCell.color,
+                    fontWeight: isLast ? 700 : "normal",
+                    fontSize: isLast ? 25 : sCell.fontSize,
+                  }}
+                >
+                  {txt}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+
+        {/* Fila negra: TOTAL MES */}
+        <tr style={sRowBlack}>
+          <td
+            style={{
+              ...sCellBold,
+              background: "transparent",
+              color: cWhite,
+            }}
+          >
+            TOTAL MES
+          </td>
+          {perMonth.map((m, idx) => {
+            const isLast = idx === perMonth.length - 1;
+            return (
+              <td
+                key={idx}
+                style={{
+                  ...sCellBold,
+                  background: isLast ? "#c00000" : "transparent",
+                  color: "#fff",
+                  fontSize: isLast ? 25 : "20px",
+                }}
+              >
                 {fmtMoney(m.metrics?.totalMes || 0)}
               </td>
-            ))}
-          </tr>
+            );
+          })}
+        </tr>
 
-          {/* CAC */}
-          <tr>
-            <td style={sCellBold}>CALCULO ADQUISICION DE CLIENTES </td>
-            {perMonth.map((m, idx) => (
-              <td key={idx} style={sCell}>
+        {/* CAC */}
+        <tr>
+          <td style={sCellBold}>CALCULO ADQUISICION DE CLIENTES</td>
+          {perMonth.map((m, idx) => {
+            const isLast = idx === perMonth.length - 1;
+            return (
+              <td
+                key={idx}
+                style={{
+                  ...sCell,
+                  background: isLast ? "#c00000" : sCell.background,
+                  color: isLast ? "#fff" : sCell.color,
+                  fontWeight: isLast ? 700 : "normal",
+                  fontSize: isLast ? 25 : sCell.fontSize,
+                }}
+              >
                 {fmtNum(m.metrics?.mkCac || 0, 2)}
               </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
+            );
+          })}
+        </tr>
+      </tbody>
+    </table>
 
-      {/* Bandas Rojas Inferiores */}
-      <table style={{ ...sTable,}}>
-        <thead>
-          <tr style={sRowRed} className="bg-primary">
-            <th style={{ ...sThLeft, background: "transparent", color: cWhite }}>VENTA TOTAL <br/> ACUMULADA POR MES</th>
-            {perMonth.map((m, idx) => (
-              <th key={idx} style={{ ...sThMes, background: "transparent", color: cWhite }}>
-                {fmtMoney(m.metrics?.totalMesFull  || 0)}
+    {/* Banda Roja Inferior */}
+    <table style={sTable}>
+      <thead>
+        <tr
+          style={{
+            ...sRowRed,
+            background: "#ffc000", 
+            color: "#000",
+          }}
+        >
+          <th
+            style={{
+              ...sThLeft,
+              background: "transparent",
+              color: "#000",
+            }}
+          >
+            VENTA TOTAL <br /> ACUMULADA POR MES
+          </th>
+          {perMonth.map((m, idx) => {
+            const isLast = idx === perMonth.length - 1;
+            return (
+              <th
+                key={idx}
+                style={{
+                  ...sThMes,
+                  background: isLast ? "#c00000" : "#ffc000", // 👈 mantiene amarillo, solo última col roja
+                  color: isLast ? "#fff" : "#000",
+                  fontSize: isLast ? 25 : sThMes.fontSize,
+                }}
+              >
+                {fmtMoney(m.metrics?.totalMesFull || 0)}
               </th>
-            ))}
-          </tr>
-        </thead>
-      </table>
-    </div>
-  );
+            );
+          })}
+        </tr>
+      </thead>
+    </table>
+  </div>
+);
 }

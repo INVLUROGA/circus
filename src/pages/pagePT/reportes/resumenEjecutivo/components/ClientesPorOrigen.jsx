@@ -184,42 +184,68 @@ const filteredOrigins = React.useMemo(() => {
     color: "#000",
     padding: "10px",
     border: C.border,
-    fontSize: 17,
+    fontSize: 19,
     textAlign: "center",
   };
   const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700, fontSize: 15 };
 
   // --------------------------- Render ---------------------------
   return (
-    <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
-      <div style={sTitle}>
-        CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}
-      </div>
+  <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
+    <div style={sTitle}>
+      CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}
+    </div>
 
-      <table style={sTable}>
-        <thead>
-          <tr>
-            <th style={sHeadLeft}>ORIGEN</th>
-            {monthKeys.map((m) => (
-              <th key={m.key} style={sHead}>
+    <table style={sTable}>
+      <thead>
+        <tr>
+          <th style={sHeadLeft}>ORIGEN</th>
+          {monthKeys.map((m, idx) => {
+            const isLast = idx === monthKeys.length - 1;
+            return (
+              <th
+                key={m.key}
+                style={{
+                  ...sHead,
+                  background: isLast ? "#c00000" : sHead.background,
+                  color: "#fff",
+                  fontSize: isLast ? 22 : sHead.fontSize,
+                }}
+              >
                 {m.label}
               </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredOrigins.map((origin) => (
-            <tr key={origin}>
-              <td style={sCellLeft}>{origin}</td>
-              {monthKeys.map((m) => (
-                <td key={`${m.key}-${origin}`} style={sCell}>
-                  {getCount(m.key, origin)}
+            );
+          })}
+        </tr>
+      </thead>
+
+      <tbody>
+        {filteredOrigins.map((origin) => (
+          <tr key={origin}>
+            <td style={sCellLeft}>{origin}</td>
+
+            {monthKeys.map((m, idx) => {
+              const value = getCount(m.key, origin);
+              const isLast = idx === monthKeys.length - 1;
+              return (
+                <td
+                  key={`${m.key}-${origin}`}
+                  style={{
+                    ...sCell,
+                    background: isLast ? "#c00000" : sCell.background,
+                    color: isLast ? "#fff" : sCell.color,
+                    fontWeight: isLast ? 700 : "normal",
+                    fontSize: isLast ? 22 : sCell.fontSize,
+                  }}
+                >
+                  {value}
                 </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+}

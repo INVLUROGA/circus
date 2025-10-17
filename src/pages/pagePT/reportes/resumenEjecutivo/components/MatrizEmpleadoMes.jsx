@@ -727,7 +727,7 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
     };
   }, [modalOpen, modalRows, empleadoObjetivo, headerLabel, normalizePagoMethod]);
 
-  const thStyle = { border: '1px solid #ccc', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '22px' };
+  const thStyle = { border: '1px solid #ccc', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '20px' };
   const tdStyle = { border: '1px solid #ccc', padding: '6px 8px', textAlign: 'center', fontSize: '24px', verticalAlign: 'middle' };
   const tdTotales = {border:'1px solid #ccc',  textAlign:'center', fontSize:'28px'}
   const baseTableStyle = {
@@ -1182,7 +1182,18 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
 >
   <thead>
     <tr>
-      <th className="bg-primary" style={thStyle}>Item</th>
+<th
+  className="bg-primary"
+  style={{
+    ...thStyle,
+    width: "60px",
+    minWidth: "60px",
+    maxWidth: "60px",
+    textAlign: "center"
+  }}
+>
+  Item
+</th>
       <th className="bg-primary" style={thStyle}>Producto</th>
       <th className="bg-primary" style={thStyle}>Cantidad</th>
       <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
@@ -1225,19 +1236,21 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
         return (
           <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
             {/* ITEM */}
-            <td style={{ ...tdStyle, fontWeight: 700, width: 64, textAlign: "center" }}>
+            <td className='bg-primary' style={{ ...tdStyle,    width: "60px", 
+    minWidth: "60px",
+    maxWidth: "60px", textAlign: "center" }}>
               {i + 1}
             </td>
 
             {/* PRODUCTO */}
-            <td
+            <td className='bg-primary text-dark'
               style={{
                 ...tdStyle,
                 textAlign: "left",
-                fontWeight: 600,
+                fontWeight: 700,
                 whiteSpace: "normal",
                 wordWrap: "break-word",
-                maxWidth: 250,
+                maxWidth: 750,
               }}
             >
               {p.nombre}
