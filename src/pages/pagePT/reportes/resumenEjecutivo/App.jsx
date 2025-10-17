@@ -11,14 +11,16 @@ import { GraficoLinealInversionRedes } from "./components/GraficoLinealInversion
 import { RankingEstilista } from "./components/RankingEstilista";
 import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
 import { TopControls } from "./components/TopControls";
-import  MatrizServicios from "./components/MatrizServicios";
-
+import MatrizServicios from "./components/MatrizServicios";
+import axios from "axios";
 const generarMesesDinamicos = (cantidad = 8, baseMonth1to12, baseYear) => {
-  const meses = ["enero","febrero","marzo","abril","mayo","junio",
-                 "julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const meses = [
+    "enero","febrero","marzo","abril","mayo","junio",
+    "julio","agosto","septiembre","octubre","noviembre","diciembre"
+  ];
   const mesesLabel = meses.map(m => m.toUpperCase());
 
-  const baseMonthIdx = (baseMonth1to12 ?? (new Date().getMonth()+1)) - 1;
+  const baseMonthIdx = (baseMonth1to12 ?? (new Date().getMonth() + 1)) - 1;
   const y = baseYear ?? new Date().getFullYear();
 
   const out = [];
@@ -30,12 +32,17 @@ const generarMesesDinamicos = (cantidad = 8, baseMonth1to12, baseYear) => {
   return out;
 };
 
-
 export const App = ({ id_empresa }) => {
-  const { obtenerTablaVentas, dataVentas, obtenerLeads, dataLead, dataLeadPorMesAnio } = useVentasStore();
+  const {
+    obtenerTablaVentas,
+    dataVentas,
+    obtenerLeads,
+    dataLead,
+    dataLeadPorMesAnio
+  } = useVentasStore();
 
-  useEffect(() => { 
-    obtenerTablaVentas(599); 
+  useEffect(() => {
+    obtenerTablaVentas(599);
     obtenerLeads(599);
   }, [id_empresa]);
 
@@ -44,21 +51,51 @@ export const App = ({ id_empresa }) => {
   const [initDay, setInitDay] = useState(1);
   const year = new Date().getFullYear();
 
-const mesesDinamicos = useMemo(() => generarMesesDinamicos(8,selectedMonth,year), [selectedMonth, year]);
-const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year), [selectedMonth, year]);
+ const [canalParams, setCanalParams] = useState([]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await axios.get(
+          "http://localhost:4000/api/parametros/get_params/inversion/redes"
+        );        const mapped = (Array.isArray(data) ? data : []).map(d => ({
+               id_param: (d.value),
+        label_param: (d.label),
+        }));
+        setCanalParams(mapped);
+     } catch (e) {
+      console.warn("No se pudieron cargar canalParams, uso fallback 1514/1515:", e?.message);
+      setCanalParams([
+        { id_param: "1514", label_param: "TIKTOK ADS" },
+        { id_param: "1515", label_param: "META ADS"  },
+      ]);
+    }
+  })();
+}, []);
+  const mesesDinamicos = useMemo(
+    () => generarMesesDinamicos(8, selectedMonth, year),
+    [selectedMonth, year]
+  );
+  const mesesEmpleados = useMemo(
+    () => generarMesesDinamicos(5, selectedMonth, year),
+    [selectedMonth, year]
+  );
+
+  // === Columnas para tabla legacy (si la usas en algún lugar) ===
   const columns = useMemo(
     () => mesesDinamicos.map(m => ({ key: m.mes, label: m.label, currency: "S/." })),
     [mesesDinamicos]
   );
 
+  // (opcional, lo dejas si lo usas en otra parte)
   const marketing = {
     inversion_redes: { marzo: 1098, abril: 3537, mayo: 4895, junio: 4622, julio: 4697, agosto: 5119, septiembre: 0 },
-    leads:           { marzo: 84, abril: 214, mayo: 408, junio: 462, julio: 320, agosto: 417, septiembre: 0 },
-    cpl:             { marzo: 13.07, abril: 16.53, mayo: 12, junio: 10, julio: 14.68, agosto: 12.28, septiembre: 0 },
+    leads:           { marzo: 84,   abril: 214,  mayo: 408,  junio: 462,  julio: 320,  agosto: 417,  septiembre: 0 },
+    cpl:             { marzo: 13.07,abril: 16.53,mayo: 12,   junio: 10,   julio: 14.68,agosto: 12.28,septiembre: 0 },
     cac:             { marzo: null, abril: null, mayo: null, junio: null, julio: null, agosto: null, septiembre: 0 },
   };
 
+  // (opcional)
   const tableData = useMemo(() => ventasToExecutiveData({
     ventas: dataVentas,
     columns,
@@ -67,12 +104,88 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
     marketing,
     cutDay,
     initDay,
-    footerFullMonth: true
+    footerFullMonth: true,
   }), [dataVentas, columns, marketing, cutDay, initDay]);
 
-  const dataMkt = buildDataMktByMonth(dataLead, initDay, cutDay);
+  // === DATA MKT BASE (leads + inversión por mes, dentro del rango de días) ===
+  const dataMkt = useMemo(
+    () => buildDataMktByMonth(dataLead, initDay, cutDay,canalParams),
+    [dataLead, initDay, cutDay,canalParams]
+  );
 
-  // === generación dinámica del filtro para RankingEstilista ===
+  // === Helpers para CAC con tus IDs reales (1452 FB, 1453 IG, 1454 WHATSAPP) ===
+  const DIGITAL_ORIGIN_IDS = useMemo(() => new Set([1452, 1453, 1454]), []);
+  const toDateSafe = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+  const countDigitalClientsForMonth = (ventasList, anio, mesNombre, fromDay, cut) => {
+    const MESES = [
+      "enero","febrero","marzo","abril","mayo","junio",
+      "julio","agosto","septiembre","octubre","noviembre","diciembre"
+    ];
+    const mLower = String(mesNombre).toLowerCase();
+    const monthIdx = MESES.indexOf(mLower);
+    if (monthIdx < 0) return 0;
+
+    const uniques = new Set();
+
+    for (const v of (ventasList || [])) {
+      const d = toDateSafe(v?.fecha_venta || v?.fecha || v?.createdAt);
+      if (!d) continue;
+      if (d.getFullYear() !== Number(anio)) continue;
+      if (d.getMonth() !== monthIdx) continue;
+
+      const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const from = Math.max(1, Math.min(Number(fromDay || 1), last));
+      const to   = Math.max(from, Math.min(Number(cut || last), last));
+      const dia  = d.getDate();
+      if (dia < from || dia > to) continue;
+
+      const idOrigen = Number(v?.id_origen ?? v?.origen);
+      if (!Number.isNaN(idOrigen) && DIGITAL_ORIGIN_IDS.has(idOrigen)) {
+        const idCli =
+          v?.id_cli ??
+          v?.tb_cliente?.id_cli ??
+          v?.tb_ventum?.id_cli ??
+          v?.venta?.id_cli ??
+          v?.id;
+        if (idCli != null) uniques.add(String(idCli));
+      }
+    }
+
+    return uniques.size;
+  };
+
+  // === Enriquecer dataMkt con CAC real por mes visible ===
+  const dataMktWithCac = useMemo(() => {
+    const base = { ...(dataMkt || {}) };
+
+    for (const f of mesesDinamicos) {
+      const mesKey = f.mes === "septiembre" ? "setiembre" : f.mes; // compatibilidad
+      const key = `${f.anio}-${mesKey}`;
+      const obj = { ...(base[key] || {}) };
+
+      // inversión mensual cruda (sin 3.7 aquí)
+      const inversion = Number(
+        obj.inversiones_redes ?? obj.inversion_redes ?? obj.inv ?? 0
+      );
+
+      // clientes digitales (únicos) del mes/rango
+      const clientes = countDigitalClientsForMonth(
+        dataVentas || [], f.anio, f.mes, initDay, cutDay
+      );
+
+      obj.clientes_digitales = clientes;
+      obj.cac = clientes > 0 ? inversion / clientes : 0;
+
+      base[key] = obj;
+    }
+    return base;
+  }, [dataMkt, dataVentas, mesesDinamicos, initDay, cutDay, countDigitalClientsForMonth]);
+
+  // === Utilidades para filtros y matrices ===
   const mesesLabel = [
     "ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO",
     "JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"
@@ -88,14 +201,14 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
     return [{ label: mesLabel, anio: year.toString(), mes: mesNombre }];
   }, [selectedMonth, year]);
 
-  // === render principal ===
+  // === Render principal ===
   return (
     <>
       <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
 
       {/* SELECTORES */}
       <div className="header-centrado">
-        <TopControls  
+        <TopControls
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
           initDay={initDay}
@@ -105,6 +218,7 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
           year={year}
         />
       </div>
+
       {/* CONTENIDO PRINCIPAL */}
       <Row>
         <Col lg={12} className="pt-0">
@@ -113,18 +227,19 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
               <ExecutiveTable
                 ventas={dataVentas}
                 fechas={mesesDinamicos}
-                dataMktByMonth={dataMkt}
+                dataMktByMonth={dataMktWithCac} 
                 initialDay={initDay}
                 cutDay={cutDay}
               />
             </Col>
+
             <Col lg={12}>
               <ClientesPorOrigen
                 ventas={dataVentas}
                 fechas={mesesDinamicos}
                 initialDay={initDay}
                 cutDay={cutDay}
-                  selectedMonth={selectedMonth}
+                selectedMonth={selectedMonth}
                 originMap={{
                   1458: "WALKING",
                   1457: "VIP",
@@ -169,12 +284,11 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
             filtrarFecha={filtrarFechaRanking}
             initialDay={initDay}
             cutDay={cutDay}
-
           />
         </Col>
 
         {/* MATRICES */}
-        <Col lg={12}className="mb-5">
+        <Col lg={12} className="mb-5">
           <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={mesesEmpleados}
@@ -182,16 +296,17 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
             cutDay={cutDay}
           />
         </Col>
-     
-          <Col lg={12} className="mb-5">
-            <MatrizEmpleadoMes
-              dataVenta={dataVentas}
-              filtrarFecha={mesesEmpleados}
-              datoEstadistico="Cant. Ventas"
-              cutDay={cutDay}
-            />
-          </Col>
-        <Col lg={12}className="mb-5">
+
+        <Col lg={12} className="mb-5">
+          <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={mesesEmpleados}
+            datoEstadistico="Cant. Ventas"
+            cutDay={cutDay}
+          />
+        </Col>
+
+        <Col lg={12} className="mb-5">
           <MatrizEmpleadoMes
             dataVenta={dataVentas}
             filtrarFecha={mesesEmpleados}
@@ -199,23 +314,25 @@ const mesesEmpleados = useMemo(() => generarMesesDinamicos(5,selectedMonth,year)
             cutDay={cutDay}
           />
         </Col>
+
         <Col lg={12} className="mb-5">
-  <MatrizEmpleadoMes
-    dataVenta={dataVentas}
-    filtrarFecha={mesesEmpleados}
-    datoEstadistico="Cant. Productos"  
-    cutDay={cutDay}
-  />
-</Col>
+          <MatrizEmpleadoMes
+            dataVenta={dataVentas}
+            filtrarFecha={mesesEmpleados}
+            datoEstadistico="Cant. Productos"
+            cutDay={cutDay}
+          />
+        </Col>
+
         <Col lg={12}>
-  <MatrizServicios
-    ventas={dataVentas}
-    fechas={mesesDinamicos}
-    selectedMonth={selectedMonth}
-    initialDay={initDay}
-    cutDay={cutDay}
-  />
-</Col>
+          <MatrizServicios
+            ventas={dataVentas}
+            fechas={mesesDinamicos}
+            selectedMonth={selectedMonth}
+            initialDay={initDay}
+            cutDay={cutDay}
+          />
+        </Col>
       </Row>
     </>
   );
