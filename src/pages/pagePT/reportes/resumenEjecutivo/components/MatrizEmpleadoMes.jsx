@@ -1120,10 +1120,10 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
   {modalData.serviciosOrdenados.length > 0 && (
     <tr className='bg-primary text-dark'>
       <td style={tdStyle} />
-      <td  style={{ ...tdTotales, fontWeight: 800, textAlign: "right",WebkitTextFillColor: "black" }}>
+      <td  style={{ ...tdTotales, fontWeight: 800, textAlign: "right",WebkitTextFillColor: "white" }}>
         TOTAL SERVICIOS
       </td>
-      <td style={{ ...tdTotales, fontWeight: 800 ,WebkitTextFillColor: "black"}}>
+      <td style={{ ...tdTotales, fontWeight: 800 ,WebkitTextFillColor: "white"}}>
         {modalData.serviciosOrdenados.reduce((a, b) => a + (Number(b.cantidad) || 0), 0)}
       </td>
       <td style={{ ...tdTotales, fontWeight: 800 }} />
@@ -1149,11 +1149,11 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
         return (
           <>
             {modalData.methodsToShow.map((m) => (
-              <td key={m} style={{ ...tdTotales, fontWeight: 800,WebkitTextFillColor: "black" }}>
+              <td key={m} style={{ ...tdTotales, fontWeight: 800,WebkitTextFillColor: "white" }}>
                 <NumberFormatMoney amount={totalsByMethod[m]} />
               </td>
             ))}
-            <td style={{ ...tdTotales, fontWeight: 800, color: "#007b00" }}>
+            <td style={{ ...tdTotales, fontWeight: 800, color: "white" }}>
               <NumberFormatMoney amount={totalPVentaServs} />
             </td>
           </>
@@ -1304,32 +1304,32 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
     <tr style={{ backgroundColor: "var(--primary-color)" }}>
          <td className="bg-primary text-dark" style={{ ...tdTotales, fontWeight: 1000 }}>
       </td>
-      <td className="bg-primary " style={{ ...tdTotales, fontWeight: 1000,WebkitTextFillColor: "black" }}>
+      <td className="bg-primary " style={{ ...tdTotales, fontWeight: 1000,WebkitTextFillColor: "white" }}>
         TOTALES
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "black" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
         {modalData.totalCantidad}
       </td>
       <td className="bg-primary" style={{ ...tdTotales }} />
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "#007b00" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalPVentaProd} />
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "red" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalIGV} />
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "red" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalTarjeta} />
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "red" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalRenta} />
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "red" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalPCompraProd} />
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "#007b00" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalUtilBase} />
       </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "red" }}>
+      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "white" }}>
         <NumberFormatMoney amount={modalData.totalComision} />
       </td>
       <td
@@ -1337,8 +1337,8 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
         style={{
           ...tdTotales,
           fontWeight: 800,
-          color: modalData.totalUtilFinal >= 0 ? "#007b00" : "red",
-          WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "#007b00" : "red",
+          color: modalData.totalUtilFinal >= 0 ? "white" : "red",
+          WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "white" : "red",
         }}
       >
         <NumberFormatMoney amount={modalData.totalUtilFinal} />

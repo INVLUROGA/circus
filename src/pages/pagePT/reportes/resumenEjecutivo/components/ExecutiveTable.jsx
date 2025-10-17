@@ -240,7 +240,6 @@ export default function ExecutiveTable({
   const sRowBlack = { background: cBlack, color: cWhite, fontWeight: 700 };
   const sRowRed = { color: cWhite, fontWeight: 800 };
 
-  // --------------------------- Render ---------------------------
   return (
     <div style={sWrap}>
       <div style={sHeader}>

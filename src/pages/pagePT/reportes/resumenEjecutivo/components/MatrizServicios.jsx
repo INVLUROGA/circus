@@ -2,14 +2,12 @@ import React, { useMemo } from "react";
 
 export default function MatrizServicios({
   ventas = [],
-  fechas = [],            // [{label, anio, mes}]
+  fechas = [],            
   initialDay = 1,
   cutDay = null,
-  // === Opciones data-driven para “CON TRATAMIENTO” ===
-  serviciosConCostoIds = null,   // e.g. [12,45,77]
-  esTratamiento = null,          // (detalleServicio) => boolean
-  // === Compatibilidad hacia atrás (por nombre) ===
-  serviciosConCostoLista = null, // ["Wellaplex","..."]
+  serviciosConCostoIds = null,  
+  esTratamiento = null,         
+  serviciosConCostoLista = null, 
   maxColsPorTabla = 12,
 }) {
   // ====== Utils ======
@@ -62,6 +60,7 @@ export default function MatrizServicios({
       "SENJAL MULTIVITAMINICO",
       "WELLAPLEX",
       "ALISADO ORGANICO",
+      "RETIRO DE GEL"
     ];
     const lista = Array.isArray(serviciosConCostoLista) && serviciosConCostoLista.length
       ? serviciosConCostoLista.map(norm)
@@ -82,17 +81,13 @@ export default function MatrizServicios({
     null;
 
   const esConCosto = (it, srvName) => {
-    // 1) Predicado externo manda
     if (typeof esTratamiento === "function") return !!esTratamiento(it);
 
-    // 2) Por ID desde props
     const idSrv = idServicioOf(it);
     if (idSrv != null && idsSet.has(idSrv)) return true;
 
-    // 3) Por nombre (compatibilidad)
     if (NOMBRES_WHITELIST.has(norm(srvName))) return true;
 
-    // 4) Fallback por precio
     const pc = precioCompraOf(it);
     return pc != null && pc > 0;
   };
@@ -279,20 +274,20 @@ export default function MatrizServicios({
                         {cols.map((srv) => (
                           <td key={`${emp}-${srv}`} style={td}>{getQty(emp, srv)}</td>
                         ))}
-                        <td style={{ ...td, fontWeight: 900 }}>{totalRow}</td>
+                        <td className="bg-primary" style={{ ...td, fontWeight: 900,fontSize:22 }}>{totalRow}</td>
                       </tr>
                     );
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-primary text-black" style={{ color: "#000", fontSize: 22 }}>
-                    <td className="bg-primary text-black" style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
+                  <tr className="bg-primary " style={{ color: "#000", fontSize: 22 }}>
+                    <td className="bg-primary " style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
                     {colTotals.map((t, i) => (
-                      <td className="bg-primary text-black" key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                      <td className="bg-primary " key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
                         {t || ""}
                       </td>
                     ))}
-                    <td className="bg-primary text-black" style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                    <td className="bg-primary" style={{ ...td, fontWeight: 900, fontSize: 22 }}>
                       {colTotals.reduce((a, b) => a + b, 0)}
                     </td>
                   </tr>
@@ -305,7 +300,6 @@ export default function MatrizServicios({
     );
   };
 
-  // ====== Render ======
   const rango = lastMonth ? ` – ${lastMonth.mName.toUpperCase()}/${lastMonth.y}` : "";
   const corte = cutDay ? ` (DEL ${initialDay} AL ${cutDay})` : "";
 

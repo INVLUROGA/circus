@@ -126,7 +126,7 @@ function TablaRanking({ titulo, ventas, excluirNombres = [] }) {
           <tbody>
             {ranking.map((r, idx) => (
               <tr key={idx}>
-                <td style={tdStyle}>{r.empleado.split(" ")[0]}</td>
+                <td className='bg-primary' style={tdStyle}>{r.empleado.split(" ")[0]}</td>
                 <td style={tdStyle}>{r.cantidadVentas}</td>
                 <td style={tdStyle}>{r.cantidadServicios}</td>
                 <td style={tdStyle}>
@@ -136,7 +136,7 @@ function TablaRanking({ titulo, ventas, excluirNombres = [] }) {
                 <td style={tdStyle}>
                   <NumberFormatMoney amount={r.ventasProductos} />
                 </td>
-                <td style={tdStyle}>
+                <td className='bg-primary' style={tdStyle}>
                   <NumberFormatMoney amount={r.totalVentas} />
                 </td>
               </tr>
