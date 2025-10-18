@@ -179,7 +179,7 @@ export const RankingEstilista = ({
   filtrarFecha,
   initialDay = 1,
   cutDay,
-  excluirNombres = ["LUIS", "JESUS", "FATIMA", "MIA", "KATIA", "TIBISAY"],
+  excluirNombres = ["LUIS", "JESUS", "FATIMA", "MIA", "TIBISAY"],
 }) => {
   if (Array.isArray(filtrarFecha)) {
     return (

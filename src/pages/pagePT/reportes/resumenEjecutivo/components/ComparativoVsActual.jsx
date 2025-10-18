@@ -172,21 +172,42 @@ export const ComparativoVsActual=({
   const sCellBold = { ...sCell, fontWeight: 700, fontSize: 17 };
   const sRowShade = { background: C.greyRow };
 
-  const MoneyCell = ({ value }) => {
-    const v = Number(value || 0);
-    const neg = v < 0;
-    return (
-      <td style={{ ...sCellBold, color: neg ? C.green : C.red_1 }}>
-        {fmtDeltaMoney(v)}
-      </td>
-    );
-  };
+const MoneyCell = ({ value, isLast }) => {
+  const v = Number(value || 0);
+  const neg = v < 0;
+  return (
+    <td
+      style={{
+        ...sCellBold,
+        background: isLast ? "#EEBE00" : sCellBold.background,
+        color: isLast ? "#fff" : neg ? C.green : C.red_1,
+        fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
+        fontWeight: isLast ? 800 : sCellBold.fontWeight,
+      }}
+    >
+      {fmtDeltaMoney(v)}
+    </td>
+  );
+};
 
-  const PctCell = ({ value }) => {
-    const v = Number(value || 0);
-    const neg = v < 0;
-    return <td style={{ ...sCellBold, color: neg ? C.green : C.red_1 }}>{fmtPct(v)}</td>;
-  };
+const PctCell = ({ value, isLast }) => {
+  const v = Number(value || 0);
+  const neg = v < 0;
+  return (
+    <td
+      style={{
+        ...sCellBold,
+        background: isLast ? "#EEBE00" : sCellBold.background,
+        color: isLast ? "#fff" : neg ? C.green : C.red_1,
+        fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
+        fontWeight: isLast ? 800 : sCellBold.fontWeight,
+      }}
+    >
+      {fmtPct(v)}
+    </td>
+  );
+};
+
 
   const MonthHead = ({ col }) => (
     <th style={sHead}>
@@ -196,87 +217,171 @@ export const ComparativoVsActual=({
   );
 
   // --------------------------- Render ---------------------------
-  return (
-    <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
-      <div style={sTitle}>COMPARATIVO MENSUAL VS MES ACTUAL</div>
+ return (
+  <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
+    <div style={sTitle}>COMPARATIVO MENSUAL VS MES ACTUAL</div>
 
-      {/* SERVICIOS */}
-      <table style={sTable}>
-        <thead>
-          <tr>
-            <th style={sHeadLeft}>SERVICIOS</th>
-            {columns.map((c) => (
-              <MonthHead key={c.key} col={c} />
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={{ ...sCellBold, textAlign: "left" }}>VENTAS</td>
-            {columns.map((c) => (
-              <MoneyCell key={c.key} value={c.delta.serv} />
-            ))}
-          </tr>
-          <tr style={sRowShade}>
-            <td style={{ ...sCellBold, textAlign: "left" }}>%</td>
-            {columns.map((c) => (
-              <PctCell key={c.key} value={c.pct.serv} />
-            ))}
-          </tr>
-        </tbody>
-      </table>
+    {/* SERVICIOS */}
+    <table style={sTable}>
+      <thead>
+        <tr>
+          <th style={sHeadLeft}>SERVICIOS</th>
+          {columns.map((c) => (
+            <MonthHead key={c.key} col={c} />
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td
+            style={{
+              ...sCellBold,
+              textAlign: "left",
+              background: "#EEBE00",
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            VENTAS
+          </td>
+          {columns.map((c, idx) => (
+            <MoneyCell
+              key={c.key}
+              value={c.delta.serv}
+              isLast={idx === columns.length - 1}
+            />
+          ))}
+        </tr>
+        <tr style={sRowShade}>
+          <td
+            style={{
+              ...sCellBold,
+              textAlign: "left",
+              background: "#EEBE00",
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            %
+          </td>
+          {columns.map((c, idx) => (
+            <PctCell
+              key={c.key}
+              value={c.pct.serv}
+              isLast={idx === columns.length - 1}
+            />
+          ))}
+        </tr>
+      </tbody>
+    </table>
 
-      {/* PRODUCTOS */}
-      <table style={{ ...sTable, marginTop: 12 }}>
-        <thead>
-          <tr>
-            <th style={sHeadLeft}>PRODUCTOS</th>
-            {columns.map((c) => (
-              <MonthHead key={c.key} col={c} />
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={{ ...sCellBold, textAlign: "left" }}>VENTAS</td>
-            {columns.map((c) => (
-              <MoneyCell key={c.key} value={c.delta.prod} />
-            ))}
-          </tr>
-          <tr style={sRowShade}>
-            <td style={{ ...sCellBold, textAlign: "left" }}>%</td>
-            {columns.map((c) => (
-              <PctCell key={c.key} value={c.pct.prod} />
-            ))}
-          </tr>
-        </tbody>
-      </table>
+    {/* PRODUCTOS */}
+    <table style={{ ...sTable, marginTop: 12 }}>
+      <thead>
+        <tr>
+          <th style={sHeadLeft}>PRODUCTOS</th>
+          {columns.map((c) => (
+            <MonthHead key={c.key} col={c} />
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td
+            style={{
+              ...sCellBold,
+              textAlign: "left",
+              background: "#EEBE00",
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            VENTAS
+          </td>
+          {columns.map((c, idx) => (
+            <MoneyCell
+              key={c.key}
+              value={c.delta.prod}
+              isLast={idx === columns.length - 1}
+            />
+          ))}
+        </tr>
+        <tr style={sRowShade}>
+          <td
+            style={{
+              ...sCellBold,
+              textAlign: "left",
+              background: "#EEBE00",
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            %
+          </td>
+          {columns.map((c, idx) => (
+            <PctCell
+              key={c.key}
+              value={c.pct.prod}
+              isLast={idx === columns.length - 1}
+            />
+          ))}
+        </tr>
+      </tbody>
+    </table>
 
-      {/* TOTAL */}
-      <table style={{ ...sTable, marginTop: 12 }}>
-        <thead>
-          <tr>
-            <th style={sHeadLeft}>TOTAL</th>
-            {columns.map((c) => (
-              <MonthHead key={c.key} col={c} />
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={{ ...sCellBold, textAlign: "left" }}>VENTAS</td>
-            {columns.map((c) => (
-              <MoneyCell key={c.key} value={c.delta.total} />
-            ))}
-          </tr>
-          <tr style={sRowShade}>
-            <td style={{ ...sCellBold, textAlign: "left" }}>%</td>
-            {columns.map((c) => (
-              <PctCell key={c.key} value={c.pct.total} />
-            ))}
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
+    {/* TOTAL */}
+    <table style={{ ...sTable, marginTop: 12 }}>
+      <thead>
+        <tr>
+          <th style={sHeadLeft}>TOTAL</th>
+          {columns.map((c) => (
+            <MonthHead key={c.key} col={c} />
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td
+            style={{
+              ...sCellBold,
+              textAlign: "left",
+              background: "#EEBE00",
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            VENTAS
+          </td>
+          {columns.map((c, idx) => (
+            <MoneyCell
+              key={c.key}
+              value={c.delta.total}
+              isLast={idx === columns.length - 1}
+            />
+          ))}
+        </tr>
+        <tr style={sRowShade}>
+          <td
+            style={{
+              ...sCellBold,
+              textAlign: "left",
+              background: "#EEBE00",
+              color: "#fff",
+              fontWeight: 800,
+            }}
+          >
+            %
+          </td>
+          {columns.map((c, idx) => (
+            <PctCell
+              key={c.key}
+              value={c.pct.total}
+              isLast={idx === columns.length - 1}
+            />
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+);
 }

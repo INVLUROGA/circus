@@ -207,7 +207,7 @@ const filteredOrigins = React.useMemo(() => {
                 key={m.key}
                 style={{
                   ...sHead,
-                  background: isLast ? "#c00000" : sHead.background,
+                  background: isLast ? "#ffc000" : sHead.background,
                   color: "#fff",
                   fontSize: isLast ? 22 : sHead.fontSize,
                 }}
@@ -222,7 +222,16 @@ const filteredOrigins = React.useMemo(() => {
       <tbody>
         {filteredOrigins.map((origin) => (
           <tr key={origin}>
-            <td style={sCellLeft}>{origin}</td>
+<td
+  style={{
+    ...sCellLeft,
+    background: "#EEBE00",
+    color: "#fff",
+    fontWeight: 800,
+  }}
+>
+  {origin}
+</td>
 
             {monthKeys.map((m, idx) => {
               const value = getCount(m.key, origin);
@@ -232,7 +241,7 @@ const filteredOrigins = React.useMemo(() => {
                   key={`${m.key}-${origin}`}
                   style={{
                     ...sCell,
-                    background: isLast ? "#c00000" : sCell.background,
+                    background: isLast ? "#ffc000" : sCell.background,
                     color: isLast ? "#fff" : sCell.color,
                     fontWeight: isLast ? 700 : "normal",
                     fontSize: isLast ? 22 : sCell.fontSize,

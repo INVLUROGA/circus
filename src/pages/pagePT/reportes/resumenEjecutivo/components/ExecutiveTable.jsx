@@ -140,11 +140,9 @@ const mkLeadsTikTok =
     };
   };
 
-  // Orden original (no lo movemos); inyectaremos 2 filas justo DESPUÉS de "LEADS"
   const rows = [
     { key: "mkInv",      label: "INVERSIÓN REDES",           type: "money" },
     { key: "mkLeads",    label: "LEADS",                     type: "int"   },
-    // ⬇⬇ Las filas “LEADS — META” y “LEADS — TIKTOK” se pintan manualmente tras esta
     { key: "mkCpl",      label: "COSTO POR LEADS",           type: "float2"},
     { key: "totalServ",  label: "VENTA SERVICIOS",           type: "money" },
     { key: "ticketServ", label: "TICKET PROMEDIO SERVICIOS", type: "money" },
@@ -181,9 +179,9 @@ const mkLeadsTikTok =
   };
   const sTable = { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" };
   const sThMes = { color: cWhite, border, textAlign: "center", fontWeight: 700, fontSize: 20, padding: "10px" };
-  const sThLeft = { ...sThMes, textAlign: "left", width: 260, fontSize: 20 };
-  const sCell = { border, padding: "8px 10px", background: cWhite, fontSize: 20 };
-  const sCellBold = { ...sCell, fontWeight: 700, fontSize: 17 };
+  const sThLeft = { ...sThMes, textAlign: "center", width: 260, fontSize: 20 };
+  const sCell = { border, padding: "8px 10px", background: cWhite, fontSize: 20,textAlign:"center" };
+  const sCellBold = {  border, padding: "8px 10px",background: cWhite, fontWeight: 700, fontSize: 17 };
   const sRowBlack = { background: cBlack, color: cWhite, fontWeight: 700 };
   const gold = "#ffc000";
   const red = "#c00000";
@@ -191,7 +189,7 @@ const mkLeadsTikTok =
   // helper para celdas con “última columna en rojo”
   const cellStyle = (isLast) => ({
     ...sCell,
-    background: isLast ? red : "#fff",
+    background: isLast ? gold : "#fff",
     color: isLast ? "#fff" : sCell.color,
     fontWeight: isLast ? 700 : "normal",
     fontSize: isLast ? 25 : sCell.fontSize,
@@ -212,7 +210,7 @@ const mkLeadsTikTok =
           <tr>
             <th style={{ ...sThLeft, background: gold, color: "#000" }}>MES</th>
             {perMonth.map((m, idx) => {
-              const isLast = idx === perMonth.length - 1;
+              const isLast = idx === perMonth.length ;
               return (
                 <th key={idx} style={thStyle(isLast)}>
                   <div>{m.label}</div>
@@ -227,8 +225,16 @@ const mkLeadsTikTok =
             <React.Fragment key={r.key}>
               {/* fila original */}
               <tr>
-                <td style={sCellBold}>{r.label}</td>
-                {perMonth.map((m, idx) => {
+<td
+  style={{
+    ...sCellBold,
+    background: gold,
+    color: "#000",
+    fontWeight: 800,
+  }}
+>
+  {r.label}
+</td>                {perMonth.map((m, idx) => {
                   const val = m.metrics?.[r.key] ?? 0;
                   let txt = "";
                   if (r.type === "money") txt = fmtMoney(val);
@@ -247,7 +253,12 @@ const mkLeadsTikTok =
               {r.key === "mkLeads" && (
                 <>
                   <tr>
-                    <td style={sCellBold}>LEADS — META</td>
+                    <td   style={{
+    ...sCellBold,
+    background: gold,
+    color: "#000",
+    fontWeight: 800,
+  }}>LEADS — META</td>
                     {perMonth.map((m, idx) => {
                       const isLast = idx === perMonth.length - 1;
                       const val = m.metrics?.mkLeadsMeta ?? 0;
@@ -259,7 +270,12 @@ const mkLeadsTikTok =
                     })}
                   </tr>
                   <tr>
-                    <td style={sCellBold}>LEADS — TIKTOK</td>
+                    <td   style={{
+    ...sCellBold,
+    background: gold,
+    color: "#000",
+    fontWeight: 800,
+  }}>LEADS — TIKTOK</td>
                     {perMonth.map((m, idx) => {
                       const isLast = idx === perMonth.length - 1;
                       const val = m.metrics?.mkLeadsTikTok ?? 0;
@@ -277,11 +293,11 @@ const mkLeadsTikTok =
 
           {/* TOTAL MES al corte */}
           <tr style={sRowBlack}>
-            <td style={{ ...sCellBold, background: "transparent", color: "#fff" }}>TOTAL MES</td>
+            <td style={{ ...sCellBold, background: "transparent", color: "#fff" }}>VENTA TOTAL AL {cutDay}</td>
             {perMonth.map((m, idx) => {
               const isLast = idx === perMonth.length - 1;
               return (
-                <td key={idx} style={{ ...sCellBold, background: isLast ? red : "transparent", color: "#fff", fontSize: isLast ? 25 : 20 }}>
+                <td key={idx} style={{ ...sCellBold, background : "transparent", color: "#fff", fontSize: isLast ? 25 : 24 }}>
                   {fmtMoney(m.metrics?.totalMes || 0)}
                 </td>
               );
@@ -290,7 +306,12 @@ const mkLeadsTikTok =
 
           {/* CAC */}
           <tr>
-            <td style={sCellBold}>CALCULO ADQUISICION DE CLIENTES</td>
+            <td   style={{
+    ...sCellBold,
+    background: gold,
+    color: "#000",
+    fontWeight: 800,
+  }}>CALCULO ADQUISICION DE CLIENTES</td>
             {perMonth.map((m, idx) => {
               const isLast = idx === perMonth.length - 1;
               return (
@@ -306,14 +327,14 @@ const mkLeadsTikTok =
       {/* Banda inferior */}
       <table style={sTable}>
         <thead>
-          <tr style={{ color: "#fff", fontWeight: 800, background: gold, color: "#000" }}>
-            <th style={{ ...sThLeft, background: "transparent", color: "#000" }}>
+          <tr style={{ color: "#fff", fontWeight: 800, background: gold }}>
+            <th style={{ ...sThLeft, }}>
               VENTA TOTAL <br /> ACUMULADA POR MES
             </th>
             {perMonth.map((m, idx) => {
               const isLast = idx === perMonth.length - 1;
               return (
-                <th key={idx} style={{ ...sThMes, background: isLast ? red : gold, color: isLast ? "#fff" : "#000", fontSize: isLast ? 25 : sThMes.fontSize }}>
+                <th key={idx} style={{ ...sThMes, background: isLast ? gold : gold, color: isLast ? "#fff" : "#fff", fontSize: isLast ? 25 : sThMes.fontSize }}>
                   {fmtMoney(m.metrics?.totalMesFull || 0)}
                 </th>
               );
