@@ -65,10 +65,10 @@ const customcomandas = { id_cli: 0, observacion: '', status_remove: 0 }
 export const ModalCustomComanda2 = ({
   onHide,
   show,
-  // pásame estos arreglos desde tu store/prop:
-  productos = [],              // [{id, nombre_producto, prec_venta, ...}]
-  servicios = [],              // [{id, nombre_servicio, precio, ...}]
-  colaboradores = []           // [{value, label}]
+  
+  productos = [],              
+  servicios = [],             
+  colaboradores = []           
 }) => {
   const { obtenerClientes, DataClientes, onPostComandas } = useComandasStore()
   const { id_cli, observacion, status_remove, onInputChange, onInputChangeReact, onResetForm } = useForm(customcomandas)

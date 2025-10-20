@@ -1,37 +1,45 @@
 import { NumberFormatMoney } from '@/components/CurrencyMask';
 import React from 'react';
 
-// --- helper: mes en español -> índice (0..11)
 const mesAIndice = (m = '') => {
   const k = m.trim().toLowerCase();
   const mapa = {
-    'enero': 0, 'febrero': 1, 'marzo': 2, 'abril': 3,
-    'mayo': 4, 'junio': 5, 'julio': 6, 'agosto': 7,
-    'septiembre': 8, 'setiembre': 8, 'octubre': 9,
-    'noviembre': 10, 'diciembre': 11,
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9,
+    noviembre: 10, diciembre: 11,
   };
   return mapa[k] ?? -1;
 };
 
-// --- Filtra ventas por { mes, anio } (usa UTC para fechas con "Z")
-function filtrarVentasPorMes(ventas = [], filtro) {
+function filtrarVentasPorMes(ventas = [], filtro, initialDayArg = 1, cutDayArg) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
-  const monthIdx = mesAIndice(filtro.mes);
+  const mapa = {
+    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9,
+    noviembre: 10, diciembre: 11,
+  };
+  const monthIdx = mapa[String(filtro.mes).toLowerCase().trim()] ?? -1;
   const yearNum = Number(filtro.anio);
   if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
+  const lastDay = new Date(Date.UTC(yearNum, monthIdx + 1, 0)).getUTCDate();
+  const from = Math.max(1, Math.min(Number(filtro.fromDay ?? initialDayArg ?? 1), lastDay));
+  const to = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));
 
-  return ventas.filter(v => {
-    const d = new Date(v?.fecha_venta);
-    if (isNaN(d)) return false;
-    return d.getUTCFullYear() === yearNum && d.getUTCMonth() === monthIdx;
+  return ventas.filter((v) => {
+    const d = new Date(v?.fecha_venta ?? v?.createdAt ?? v?.fecha);
+    if (Number.isNaN(d.getTime())) return false;
+    return (
+      d.getUTCFullYear() === yearNum &&
+      d.getUTCMonth() === monthIdx &&
+      d.getUTCDate() >= from &&
+      d.getUTCDate() <= to
+    );
   });
 }
 
-// --- Construye ranking por empleado
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
   const ventasPorEmpleado = new Map();
-
   const getAcc = (empleado) => {
     if (!map.has(empleado)) {
       map.set(empleado, {
@@ -50,34 +58,26 @@ function rankingPorEmpleado(ventas = []) {
 
   for (const v of ventas) {
     const idVenta = v?.id ?? v?.numero_transac;
-
-    // Productos
     if (Array.isArray(v?.detalle_ventaProductos)) {
       for (const it of v.detalle_ventaProductos) {
         const empleado = it?.empleado_producto?.nombres_apellidos_empl;
         if (!empleado) continue;
-
         const cantidad = Number(it?.cantidad) || 0;
         const precio = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
         const importe = precio * cantidad;
-
         const acc = getAcc(empleado);
         acc.ventasProductos += importe;
         acc.cantidadProductos += cantidad;
         ventasPorEmpleado.get(empleado).add(idVenta);
       }
     }
-
-    // Servicios
     if (Array.isArray(v?.detalle_ventaservicios)) {
       for (const it of v.detalle_ventaservicios) {
         const empleado = it?.empleado_servicio?.nombres_apellidos_empl;
         if (!empleado) continue;
-
         const cantidad = Number(it?.cantidad) || 0;
         const precio = Number(it?.tarifa_monto) || 0;
         const importe = precio * cantidad;
-
         const acc = getAcc(empleado);
         acc.ventasServicios += importe;
         acc.cantidadServicios += cantidad;
@@ -92,44 +92,79 @@ function rankingPorEmpleado(ventas = []) {
     acc.cantidadVentas = ventasPorEmpleado.get(empleado)?.size ?? 0;
     out.push(acc);
   }
-
   return out.sort((a, b) => b.totalVentas - a.totalVentas);
 }
 
-// --- Tabla reutilizable para un mes ---
-function TablaRanking({ titulo, ventas }) {
-  const ranking = rankingPorEmpleado(ventas);
+function TablaRanking({ titulo, ventas, excluirNombres = [] }) {
+  const rankingBase = rankingPorEmpleado(ventas);
+
+  const excluirSet = new Set(excluirNombres.map(n => n.trim().toUpperCase()));
+  const ranking = rankingBase.filter(r => {
+    const nombreCompleto = r.empleado?.toUpperCase?.() || "";
+    const primerNombre = nombreCompleto.split(" ")[0] || "";
+    return !(
+      excluirSet.has(primerNombre) ||
+      [...excluirSet].some(n => nombreCompleto.includes(n))
+    );
+  });
+
   return (
     <div style={{ marginBottom: 24 }}>
-      {/* {titulo && <h4 style={{ margin: '12px 0' }}>{titulo}</h4>} */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
-            <tr className='bg-primary fs-3'>
-              <th style={thStyle}>Empleado</th>
-              <th style={thStyle}>Total Ventas</th>
-              <th style={thStyle}>Cant. Ventas</th>
-              <th style={thStyle}>Ventas Productos</th>
-              <th style={thStyle}>Cant. Productos</th>
+            <tr className="bg-primary fs-3">
+              <th style={thStyle}>Colaborador</th>
+              <th style={thStyle}>Cantidad de clientes</th>
+              <th style={thStyle}>Cantidad Servicios</th>
               <th style={thStyle}>Ventas Servicios</th>
-              <th style={thStyle}>Cant. Servicios</th>
+              <th style={thStyle}>Cantidad Productos</th>
+              <th style={thStyle}>Ventas Productos</th>
+              <th style={thStyle}>Total Ventas</th>
             </tr>
           </thead>
           <tbody>
             {ranking.map((r, idx) => (
               <tr key={idx}>
-                <td style={tdStyle}>{r.empleado.split(' ')[0]}</td>
-                <td style={tdStyle}><NumberFormatMoney amount={r.totalVentas} /></td>
+                <td className='bg-primary' style={tdStyle}>{r.empleado.split(" ")[0]}</td>
                 <td style={tdStyle}>{r.cantidadVentas}</td>
-                <td style={tdStyle}><NumberFormatMoney amount={r.ventasProductos} /></td>
-                <td style={tdStyle}>{r.cantidadProductos}</td>
-                <td style={tdStyle}><NumberFormatMoney amount={r.ventasServicios} /></td>
                 <td style={tdStyle}>{r.cantidadServicios}</td>
+                <td style={tdStyle}>
+                  <NumberFormatMoney amount={r.ventasServicios} />
+                </td>
+                <td style={tdStyle}>{r.cantidadProductos}</td>
+                <td style={tdStyle}>
+                  <NumberFormatMoney amount={r.ventasProductos} />
+                </td>
+                <td className='bg-primary' style={tdStyle}>
+                  <NumberFormatMoney amount={r.totalVentas} />
+                </td>
               </tr>
             ))}
+
+            {ranking.length > 0 && (
+              <tr className="bg-primary text-white fw-bold">
+                <td style={tdStyle}>TOTAL</td>
+                <td style={tdStyle}>{ranking.reduce((a, b) => a + b.cantidadVentas, 0)}</td>
+                <td style={tdStyle}>{ranking.reduce((a, b) => a + b.cantidadServicios, 0)}</td>
+                <td style={tdStyle}>
+                  <NumberFormatMoney amount={ranking.reduce((a, b) => a + b.ventasServicios, 0)} />
+                </td>
+                <td style={tdStyle}>{ranking.reduce((a, b) => a + b.cantidadProductos, 0)}</td>
+                <td style={tdStyle}>
+                  <NumberFormatMoney amount={ranking.reduce((a, b) => a + b.ventasProductos, 0)} />
+                </td>
+                <td style={tdStyle}>
+                  <NumberFormatMoney amount={ranking.reduce((a, b) => a + b.totalVentas, 0)} />
+                </td>
+              </tr>
+            )}
+
             {ranking.length === 0 && (
               <tr>
-                <td style={tdStyle} colSpan={7}>Sin datos para este periodo</td>
+                <td style={tdStyle} colSpan={7}>
+                  Sin datos para este periodo
+                </td>
               </tr>
             )}
           </tbody>
@@ -139,40 +174,50 @@ function TablaRanking({ titulo, ventas }) {
   );
 }
 
-// --- Componente principal ---
-// filtrarFecha puede ser: { label, anio, mes }  O  [ { ... }, { ... } ]
-export const RankingEstilista = ({ dataVenta = [], filtrarFecha }) => {
-  // Si pasan varios meses, pinto una tabla por cada mes.
+export const RankingEstilista = ({
+  dataVenta = [],
+  filtrarFecha,
+  initialDay = 1,
+  cutDay,
+  excluirNombres = ["LUIS", "JESUS", "FATIMA", "MIA", "TIBISAY"],
+}) => {
   if (Array.isArray(filtrarFecha)) {
     return (
       <div>
         {filtrarFecha.map((f, i) => {
-          const ventasMes = filtrarVentasPorMes(dataVenta, f);
-          const titulo = `${f?.label ?? f?.mes?.toUpperCase?.() ?? ''} ${f?.anio ?? ''}`.trim();
-          return <TablaRanking key={i} titulo={titulo} ventas={ventasMes} />;
+          const ventasMes = filtrarVentasPorMes(dataVenta, f, initialDay, cutDay);
+          const titulo = `${f?.label ?? f?.mes?.toUpperCase?.() ?? ""} ${f?.anio ?? ""}`.trim();
+          return (
+            <TablaRanking
+              key={i}
+              titulo={titulo}
+              ventas={ventasMes}
+              excluirNombres={excluirNombres}
+            />
+          );
         })}
       </div>
     );
   }
 
-  // Si pasan un único filtro (o ninguno), muestro una sola tabla.
-  const ventasFiltradas = filtrarVentasPorMes(dataVenta, filtrarFecha);
+  const ventasFiltradas = filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay);
   const tituloUnico = filtrarFecha
-    ? `${filtrarFecha?.label ?? filtrarFecha?.mes?.toUpperCase?.()} ${filtrarFecha?.anio ?? ''}`.trim()
-    : 'Todos los meses';
+    ? `${filtrarFecha?.label ?? filtrarFecha?.mes?.toUpperCase?.()} ${filtrarFecha?.anio ?? ""}`.trim()
+    : "Todos los meses";
 
-  return <TablaRanking titulo={tituloUnico} ventas={ventasFiltradas} />;
+  return <TablaRanking titulo={tituloUnico} ventas={ventasFiltradas} excluirNombres={excluirNombres} />;
 };
 
 const thStyle = {
-  border: '1px solid #ccc',
-  padding: '8px',
-  textAlign: 'center',
-  fontWeight: 'bold',
+  border: "1px solid #ccc",
+  padding: "8px",
+  textAlign: "center",
+  fontWeight: "bold",
 };
 
 const tdStyle = {
-  border: '1px solid #ccc',
-  padding: '8px',
-  textAlign: 'center',
+  border: "1px solid #ccc",
+  padding: "8px",
+  textAlign: "center",
+  fontSize: "20px",
 };
