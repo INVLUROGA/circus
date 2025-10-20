@@ -107,13 +107,11 @@ export const App = ({ id_empresa }) => {
     footerFullMonth: true,
   }), [dataVentas, columns, marketing, cutDay, initDay]);
 
-  // === DATA MKT BASE (leads + inversión por mes, dentro del rango de días) ===
   const dataMkt = useMemo(
     () => buildDataMktByMonth(dataLead, initDay, cutDay,canalParams),
     [dataLead, initDay, cutDay,canalParams]
   );
 
-  // === Helpers para CAC con tus IDs reales (1452 FB, 1453 IG, 1454 WHATSAPP) ===
   const DIGITAL_ORIGIN_IDS = useMemo(() => new Set([1452, 1453, 1454]), []);
   const toDateSafe = (iso) => {
     if (!iso) return null;
@@ -158,21 +156,18 @@ export const App = ({ id_empresa }) => {
     return uniques.size;
   };
 
-  // === Enriquecer dataMkt con CAC real por mes visible ===
   const dataMktWithCac = useMemo(() => {
     const base = { ...(dataMkt || {}) };
 
     for (const f of mesesDinamicos) {
-      const mesKey = f.mes === "septiembre" ? "setiembre" : f.mes; // compatibilidad
+      const mesKey = f.mes === "septiembre" ? "setiembre" : f.mes; 
       const key = `${f.anio}-${mesKey}`;
       const obj = { ...(base[key] || {}) };
 
-      // inversión mensual cruda (sin 3.7 aquí)
       const inversion = Number(
         obj.inversiones_redes ?? obj.inversion_redes ?? obj.inv ?? 0
       );
 
-      // clientes digitales (únicos) del mes/rango
       const clientes = countDigitalClientsForMonth(
         dataVentas || [], f.anio, f.mes, initDay, cutDay
       );
@@ -185,7 +180,6 @@ export const App = ({ id_empresa }) => {
     return base;
   }, [dataMkt, dataVentas, mesesDinamicos, initDay, cutDay, countDigitalClientsForMonth]);
 
-  // === Utilidades para filtros y matrices ===
   const mesesLabel = [
     "ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO",
     "JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE"
@@ -223,7 +217,7 @@ export const App = ({ id_empresa }) => {
       <Row>
         <Col lg={12} className="pt-0">
           <Row>
-            <Col lg={12} className="mb-4">
+            <Col lg={12} className="mb-5">
               <ExecutiveTable
                 ventas={dataVentas}
                 fechas={mesesDinamicos}
@@ -233,7 +227,7 @@ export const App = ({ id_empresa }) => {
               />
             </Col>
 
-            <Col lg={12}>
+            <Col lg={12} className="mb-8">
               <ClientesPorOrigen
                 ventas={dataVentas}
                 fechas={mesesDinamicos}
@@ -260,7 +254,7 @@ export const App = ({ id_empresa }) => {
         {/* COMPARATIVOS Y GRÁFICOS */}
         <Col lg={12}>
           <Row className="gx-3 gy-4">
-            <Col lg={12} className="mb-4">
+            <Col lg={12} className="mb-6">
               <ComparativoVsActual
                 fechas={mesesDinamicos}
                 ventas={dataVentas}

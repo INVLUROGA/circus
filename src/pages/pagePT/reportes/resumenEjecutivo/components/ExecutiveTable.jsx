@@ -186,7 +186,6 @@ const mkLeadsTikTok =
   const gold = "#ffc000";
   const red = "#c00000";
 
-  // helper para celdas con “última columna en rojo”
   const cellStyle = (isLast) => ({
     ...sCell,
     background: isLast ? gold : "#fff",

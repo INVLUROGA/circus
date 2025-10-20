@@ -2,7 +2,7 @@ export function buildDataMktByMonth(
   dataMkt = [],
   initialDay = 1,
   cutDay = 21,
-  canalParams = [] // puedes pasar []
+  canalParams = [] 
 ) {
   const MESES = [
     "enero","febrero","marzo","abril","mayo","junio",
@@ -27,7 +27,6 @@ export function buildDataMktByMonth(
     }
   };
 
-  // ---- 1) Mapa id -> slug (OBJETO, no array) ----
   const idToSlug = {};
   for (const p of (Array.isArray(canalParams) ? canalParams : [])) {
     const id = String(p?.id_param ?? p?.id ?? p?.value ?? "").trim();
@@ -37,7 +36,6 @@ export function buildDataMktByMonth(
     else if (label.includes("meta") || label.includes("face")) idToSlug[id] = "meta";
   }
 
-  // Posibles llaves del ID canal
   const getCanalId = (it) =>
     it?.id_red ??
     it?.idRed ??
@@ -57,8 +55,8 @@ export function buildDataMktByMonth(
         inversiones_redes: 0,
         leads: 0,
         clientes_digitales: 0,
-        por_red: {},        // inversión por canal
-        leads_por_red: {},  // leads por canal
+        por_red: {},        
+        leads_por_red: {},  
         cpl_por_red: {},
         cac_por_red: {},
         cpl: 0,
@@ -75,7 +73,6 @@ export function buildDataMktByMonth(
 
   const acc = Object.create(null);
 
-  // ---- 2) Recorrer cada registro ----
   for (const it of (Array.isArray(dataMkt) ? dataMkt : [])) {
     const d = toLimaDate(it?.fecha);
     if (!d) continue;
@@ -104,12 +101,10 @@ export function buildDataMktByMonth(
       : "";
     const slug = (slugParam || slugLabel || "").toLowerCase();
 
-    // Totales globales
     acc[key].inversiones_redes += inv;
     acc[key].leads += leads;
     acc[key].clientes_digitales += clientes;
 
-    // Por canal
    const chKey = id || slug; 
   if (chKey) {+    add(acc[key].por_red, chKey, inv);
     add(acc[key].leads_por_red, chKey, leads);
