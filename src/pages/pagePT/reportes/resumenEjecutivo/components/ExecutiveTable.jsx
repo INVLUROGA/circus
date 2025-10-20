@@ -161,7 +161,7 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
 
   const rows = [
     { key: "mkInv",      label: "INVERSIÓN REDES",           type: "money" },
-
+     
     { key: "mkLeads",    label: "LEADS",                     type: "int"   },
     { key: "mkCpl",      label: "COSTO POR LEADS",           type: "float2"},
     { key: "totalServ",  label: "VENTA SERVICIOS",           type: "money" },
