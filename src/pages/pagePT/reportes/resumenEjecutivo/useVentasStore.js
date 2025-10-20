@@ -74,85 +74,88 @@ function desestructurarVentas(ventas) {
 }
 
 function rankingPorEmpleado(ventas = []) {
-  const map = new Map(); // empleado -> acumulador
-  const ventasPorEmpleado = new Map(); // empleado -> Set(id_venta) para contar ventas únicas
+	const map = new Map(); // empleado -> acumulador
+	const ventasPorEmpleado = new Map(); // empleado -> Set(id_venta) para contar ventas únicas
 
-  const getAcc = (empleado) => {
-    if (!map.has(empleado)) {
-      map.set(empleado, {
-        empleado,
-        totalVentas: 0,
-        cantidadVentas: 0,          // se completa al final con el Set
-        ventasProductos: 0,
-        cantidadProductos: 0,
-        ventasServicios: 0,
-        cantidadServicios: 0,
-      });
-      ventasPorEmpleado.set(empleado, new Set());
-    }
-    return map.get(empleado);
-  };
+	const getAcc = (empleado) => {
+		if (!map.has(empleado)) {
+			map.set(empleado, {
+				empleado,
+				totalVentas: 0,
+				cantidadVentas: 0, // se completa al final con el Set
+				ventasProductos: 0,
+				cantidadProductos: 0,
+				ventasServicios: 0,
+				cantidadServicios: 0,
+			});
+			ventasPorEmpleado.set(empleado, new Set());
+		}
+		return map.get(empleado);
+	};
 
-  for (const v of ventas) {
-    const idVenta = v?.id ?? v?.id_venta ?? v?.numero_transac ?? Math.random();
+	for (const v of ventas) {
+		const idVenta = v?.id ?? v?.id_venta ?? v?.numero_transac ?? Math.random();
 
-    // --- Productos ---
-    if (Array.isArray(v?.detalle_ventaProductos)) {
-      for (const it of v.detalle_ventaProductos) {
-        const empleado = it?.empleado_producto?.nombres_apellidos_empl;
-        if (!empleado) continue;
+		// --- Productos ---
+		if (Array.isArray(v?.detalle_ventaProductos)) {
+			for (const it of v.detalle_ventaProductos) {
+				const empleado = it?.empleado_producto?.nombres_apellidos_empl;
+				if (!empleado) continue;
 
-        const cantidad = Number(it?.cantidad) || 0;
-        const base = Number(it?.tarifa_monto);
-        const fallback = Number(it?.tb_producto?.prec_venta);
-        const precio = Number.isFinite(base) ? base : (Number.isFinite(fallback) ? fallback : 0);
-        const importe = precio * cantidad;
+				const cantidad = Number(it?.cantidad) || 0;
+				const base = Number(it?.tarifa_monto);
+				const fallback = Number(it?.tb_producto?.prec_venta);
+				const precio = Number.isFinite(base)
+					? base
+					: Number.isFinite(fallback)
+						? fallback
+						: 0;
+				const importe = precio * cantidad;
 
-        const acc = getAcc(empleado);
-        acc.ventasProductos += importe;
-        acc.cantidadProductos += cantidad;
-        ventasPorEmpleado.get(empleado).add(idVenta);
-      }
-    }
+				const acc = getAcc(empleado);
+				acc.ventasProductos += importe;
+				acc.cantidadProductos += cantidad;
+				ventasPorEmpleado.get(empleado).add(idVenta);
+			}
+		}
 
-    // --- Servicios ---
-    if (Array.isArray(v?.detalle_ventaservicios)) {
-      for (const it of v.detalle_ventaservicios) {
-        const empleado = it?.empleado_servicio?.nombres_apellidos_empl;
-        if (!empleado) continue;
+		// --- Servicios ---
+		if (Array.isArray(v?.detalle_ventaservicios)) {
+			for (const it of v.detalle_ventaservicios) {
+				const empleado = it?.empleado_servicio?.nombres_apellidos_empl;
+				if (!empleado) continue;
 
-        const cantidad = Number(it?.cantidad) || 0;
-        const precio = Number(it?.tarifa_monto) || 0; // si faltara, podrías usar it?.circus_servicio?.precio
-        const importe = precio * cantidad;
+				const cantidad = Number(it?.cantidad) || 0;
+				const precio = Number(it?.tarifa_monto) || 0; // si faltara, podrías usar it?.circus_servicio?.precio
+				const importe = precio * cantidad;
 
-        const acc = getAcc(empleado);
-        acc.ventasServicios += importe;
-        acc.cantidadServicios += cantidad;
-        ventasPorEmpleado.get(empleado).add(idVenta);
-      }
-    }
-  }
+				const acc = getAcc(empleado);
+				acc.ventasServicios += importe;
+				acc.cantidadServicios += cantidad;
+				ventasPorEmpleado.get(empleado).add(idVenta);
+			}
+		}
+	}
 
-  // Cerrar totales y conteo de ventas únicas por empleado
-  const out = [];
-  for (const [empleado, acc] of map.entries()) {
-    acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
-    acc.cantidadVentas = ventasPorEmpleado.get(empleado)?.size ?? 0;
+	// Cerrar totales y conteo de ventas únicas por empleado
+	const out = [];
+	for (const [empleado, acc] of map.entries()) {
+		acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
+		acc.cantidadVentas = ventasPorEmpleado.get(empleado)?.size ?? 0;
 
-    // Redondeo opcional a 2 decimales:
-    const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
-    acc.ventasProductos = round2(acc.ventasProductos);
-    acc.ventasServicios = round2(acc.ventasServicios);
-    acc.totalVentas = round2(acc.totalVentas);
+		// Redondeo opcional a 2 decimales:
+		const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
+		acc.ventasProductos = round2(acc.ventasProductos);
+		acc.ventasServicios = round2(acc.ventasServicios);
+		acc.totalVentas = round2(acc.totalVentas);
 
-    out.push(acc);
-  }
+		out.push(acc);
+	}
 
-  // Ordenar por totalVentas DESC
-  out.sort((a, b) => b.totalVentas - a.totalVentas);
-  return out;
+	// Ordenar por totalVentas DESC
+	out.sort((a, b) => b.totalVentas - a.totalVentas);
+	return out;
 }
-
 
 const agruparPorMes = (arr) => {
 	return Object.values(
@@ -183,7 +186,7 @@ export const useVentasStore = () => {
 	const [dataComprobante, setdataComprobante] = useState({});
 	const [loadingMessage, setloadingMessage] = useState('');
 	const [dataContratos, setdataContratos] = useState([]);
-	
+
 	const { base64ToFile } = helperFunctions();
 
 	const obtenerLeads = async () => {
@@ -260,7 +263,6 @@ export const useVentasStore = () => {
 					};
 				});
 			setDataVentas(dataAlter);
-			
 		} catch (error) {
 			console.log(error);
 		}

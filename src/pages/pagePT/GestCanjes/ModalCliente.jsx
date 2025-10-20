@@ -390,6 +390,22 @@ export const ModalCliente = ({show, onHide}) => {
 									<Col xl={4}>
 										<div className="mb-2">
 											<label htmlFor="direccion_cli" className="form-label">
+												SEGUIDORES
+											</label>
+											<input
+												className="form-control"
+												type="text"
+												name="direccion_cli"
+												id="direccion_cli"
+												value={direccion_cli}
+												onChange={onInputChange}
+												placeholder="direccion"
+											/>
+										</div>
+									</Col>
+									<Col xl={4}>
+										<div className="mb-2">
+											<label htmlFor="direccion_cli" className="form-label">
 												Direccion
 											</label>
 											<input

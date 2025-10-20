@@ -475,6 +475,22 @@ export const ModalCliente = ({show, onHide}) => {
 									<Col xl={4}>
 										<div className="mb-2">
 											<label htmlFor="tel_cli" className="form-label">
+												SEGUIDORES
+											</label>
+											<input
+												className="form-control"
+												type="text"
+												name="tel_cli"
+												id="tel_cli"
+												value={tel_cli}
+												onChange={onInputChange}
+												placeholder="FACEBOOK"
+											/>
+										</div>
+									</Col>
+									<Col xl={4}>
+										<div className="mb-2">
+											<label htmlFor="tel_cli" className="form-label">
 												INSTAGRAM
 											</label>
 											<input

@@ -21,6 +21,9 @@ export const GestionVentas = () => {
         <TabPanel header={'VENTAS'}>
                               <TodoVentas DataClientes={DataClientes} id_empresa={599}/>
         </TabPanel>
+        <TabPanel header={'COMISIONES'}>
+                              <TodoVentas DataClientes={DataClientes} id_empresa={599}/>
+        </TabPanel>
       </TabView>
     </>
   )

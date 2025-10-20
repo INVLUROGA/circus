@@ -161,8 +161,10 @@ export const ModalViewObservacion = ({
         'No se encontró la venta.'
       ) : (
         <TabView>
+          
           {/* ===================== Info de venta ===================== */}
           <TabPanel header="Información de venta">
+            
             <ul className="list-none">
               {/* Recepción */}
               <li className="mb-4 d-flex justify-content-between">
@@ -294,6 +296,12 @@ export const ModalViewObservacion = ({
 
           {/* ===================== Compras ===================== */}
           <TabPanel header="Compras">
+            
+            <pre>
+              {
+                JSON.stringify(venta, null, 2)
+              }
+            </pre>
             {venta?.detalle_ventaProductos?.length > 0 && (
               <>
                 <div className="text-2xl font-bold text-800 mb-3">PRODUCTOS:</div>
@@ -305,6 +313,37 @@ export const ModalViewObservacion = ({
                           <h5 className="font-14 my-1">
                             <Link to="" className="text-body">
                               {e.tb_producto?.nombre_producto}
+                            </Link>
+                          </h5>
+                          <span className="text-muted font-13">
+                            TIPO: {arrayCategoriaProducto.find(i => i.value === e.tb_producto?.id_categoria)?.label ?? '—'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-muted font-13">CANTIDAD</span> <br />
+                          <span className="font-14 mt-1 fw-normal">{e.cantidad}</span>
+                        </td>
+                        <td>
+                          <span className="text-muted font-13">MONTO</span> <br />
+                          <span className="font-14 mt-1 fw-normal">{FUNMoneyFormatter(e.tarifa_monto)}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </Table>
+                ))}
+              </>
+            )}
+                        {venta?.detalle_ventaservicios?.length > 0 && (
+              <>
+                <div className="text-2xl font-bold text-800 mb-3">SERVICIO:</div>
+                {venta.detalle_ventaservicios.map((e, idx) => (
+                  <Table key={idx} responsive hover className="table-centered table-nowrap mb-3">
+                    <tbody>
+                      <tr>
+                        <td>
+                          <h5 className="font-14 my-1">
+                            <Link to="" className="text-body">
+                              {e.circus_servicio?.nombre_producto}
                             </Link>
                           </h5>
                           <span className="text-muted font-13">
