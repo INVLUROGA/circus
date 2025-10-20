@@ -23,20 +23,18 @@ function filtrarVentasPorMes(ventas = [], filtro, initialDayArg = 1, cutDayArg) 
   const yearNum = Number(filtro.anio);
   if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
 
-  // ✅ Normaliza a Lima
   const toLimaDate = (iso) => {
     if (!iso) return null;
     try {
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return null;
       const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
-      return new Date(utcMs - 5 * 60 * 60000); // UTC-5 (Lima)
+      return new Date(utcMs - 5 * 60 * 60000); 
     } catch {
       return null;
     }
   };
 
-  // último día del mes en Lima (no afecta al cálculo del último día)
   const lastDay = new Date(yearNum, monthIdx + 1, 0).getDate();
   const from = Math.max(1, Math.min(Number(filtro.fromDay ?? initialDayArg ?? 1), lastDay));
   const to   = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));

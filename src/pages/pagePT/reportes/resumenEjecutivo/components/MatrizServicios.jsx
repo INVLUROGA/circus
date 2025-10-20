@@ -310,7 +310,6 @@ return (
       marginTop: 100,
     }}
   >
-    {/* 🟢 Primera tabla - Servicios sin costo */}
     <div className="mb-4">
       {renderDataset(
         { title: `SERVICIOS ${rango}${corte}` },
@@ -318,7 +317,6 @@ return (
       )}
     </div>
 
-    {/* 🟢 Segunda tabla - Servicios con costo */}
     <div className="mb-4">
       {renderDataset(
         { title: `CANTIDAD POR TIPO DE TRATAMIENTO ${rango}${corte}` },
