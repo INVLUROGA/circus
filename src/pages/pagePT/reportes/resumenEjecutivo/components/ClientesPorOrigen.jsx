@@ -1,19 +1,5 @@
 import React from "react";
 
-/**
- * ClientsByOriginTable
- * --------------------------------------------------------------
- * Tabla: "CLIENTES POR ORIGEN DEL <initialDay> HASTA <cutDay>".
- * Cuenta clientes únicos por origen y por mes (o ventas si uniqueByClient = false).
- *
- * Props:
- *  - ventas: Array<{ fecha_venta: ISOString, id_cli: number|string, id_origen: number|string }>
- *  - fechas: Array<{ label: string; anio: string|number; mes: string }>
- *  - initialDay?: number  // default 1
- *  - cutDay?: number      // default 21
- *  - originMap?: Record<string|number, string>
- *  - uniqueByClient?: boolean // default true (si false, cuenta ventas)
- */
 export const ClientesPorOrigen = ({
   ventas = [],
   fechas = [],
@@ -27,7 +13,6 @@ export const ClientesPorOrigen = ({
   },
   uniqueByClient = true,
 }) => {
-  // --------------------------- Helpers ---------------------------
   const MESES = [
     "enero","febrero","marzo","abril","mayo","junio",
     "julio","agosto","setiembre","octubre","noviembre","diciembre",
@@ -57,7 +42,6 @@ export const ClientesPorOrigen = ({
   };
 
   // --------------------------- Aggregation ---------------------------
-  // Meses visibles (en el orden llegado por `fechas`)
   const monthKeys = (fechas || []).map((f) => ({
     key: `${f.anio}-${aliasMes(f.mes)}`,
     anio: Number(f.anio),
@@ -66,7 +50,6 @@ export const ClientesPorOrigen = ({
     idx: monthIdx(f.mes),
   }));
 
-  // Estructura: Map<keyMes, Map<origin, Set|number>>
   const base = new Map();
   monthKeys.forEach((m) => base.set(m.key, new Map()));
 
@@ -82,7 +65,7 @@ export const ClientesPorOrigen = ({
 
     const mesAliased = MESES[d.getMonth()];
     const keyMes = `${d.getFullYear()}-${mesAliased}`;
-    if (!base.has(keyMes)) continue; // sólo contamos lo que se muestra
+    if (!base.has(keyMes)) continue;
 
     const originId = v?.id_origen ?? 0;
     const origin = labelOfOrigin(originId);
@@ -99,14 +82,12 @@ export const ClientesPorOrigen = ({
     }
   }
 
-  // Orígenes presentes + los del originMap (aunque queden en 0)
   const allOrigins = new Set();
   for (const m of base.values()) for (const o of m.keys()) allOrigins.add(o);
   Object.values(originMap || {}).forEach((name) =>
     allOrigins.add(String(name).toUpperCase())
   );
 
-  // Orden base: primero en el orden del originMap, luego alfabético
   const prefer = Object.values(originMap || {}).map((n) => String(n).toUpperCase());
   const orderedOrigins = Array.from(allOrigins).sort((a, b) => {
     const ia = prefer.indexOf(a);
@@ -132,19 +113,21 @@ export const ClientesPorOrigen = ({
     return [...orderedOrigins].sort((a, b) => {
       const vb = getCount(lastMonthKey, b);
       const va = getCount(lastMonthKey, a);
-      if (vb !== va) return vb - va; // descendente por último mes
+      if (vb !== va) return vb - va;
       const sumA = monthKeys.reduce((acc, m) => acc + getCount(m.key, a), 0);
       const sumB = monthKeys.reduce((acc, m) => acc + getCount(m.key, b), 0);
-      return sumB - sumA; // desempate por total
+      return sumB - sumA;
     });
   }, [orderedOrigins, monthKeys, lastMonthKey]);
-const filteredOrigins = React.useMemo(() => {
-  return sortedOrigins.filter((origin) => {
-    if (!origin || origin === "0" || origin.trim() === "") return false;
-    const total = monthKeys.reduce((acc, m) => acc + getCount(m.key, origin), 0);
-    return total > 0;
-  });
-}, [sortedOrigins, monthKeys]);
+
+  const filteredOrigins = React.useMemo(() => {
+    return sortedOrigins.filter((origin) => {
+      if (!origin || origin === "0" || origin.trim() === "") return false;
+      const total = monthKeys.reduce((acc, m) => acc + getCount(m.key, origin), 0);
+      return total > 0;
+    });
+  }, [sortedOrigins, monthKeys]);
+
   // --------------------------- Styles ---------------------------
   const C = {
     black: "#000000",
@@ -189,72 +172,98 @@ const filteredOrigins = React.useMemo(() => {
   };
   const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700, fontSize: 15 };
 
+  const sTotalRow = {
+    background: "#EEBE00",
+    color: "white",
+    fontSize: 24,
+    fontWeight: 800,
+    textAlign: "center",
+  };
+
   // --------------------------- Render ---------------------------
   return (
-  <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
-    <div style={sTitle}>
-      CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}
-    </div>
+    <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
+      <div style={sTitle}>
+        CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}
+      </div>
 
-    <table style={sTable}>
-      <thead>
-        <tr>
-          <th style={sHeadLeft}>ORIGEN</th>
-          {monthKeys.map((m, idx) => {
-            const isLast = idx === monthKeys.length - 1;
-            return (
-              <th
-                key={m.key}
-                style={{
-                  ...sHead,
-                  background: isLast ? "#ffc000" : sHead.background,
-                  color: "#fff",
-                  fontSize: isLast ? 22 : sHead.fontSize,
-                }}
-              >
-                {m.label}
-              </th>
-            );
-          })}
-        </tr>
-      </thead>
-
-      <tbody>
-        {filteredOrigins.map((origin) => (
-          <tr key={origin}>
-<td
-  style={{
-    ...sCellLeft,
-    background: "#EEBE00",
-    color: "#fff",
-    fontWeight: 800,
-  }}
->
-  {origin}
-</td>
-
+      <table style={sTable}>
+        <thead>
+          <tr>
+            <th style={sHeadLeft}>ORIGEN</th>
             {monthKeys.map((m, idx) => {
-              const value = getCount(m.key, origin);
               const isLast = idx === monthKeys.length - 1;
               return (
-                <td
-                  key={`${m.key}-${origin}`}
+                <th
+                  key={m.key}
                   style={{
-                    ...sCell,
-                    background: isLast ? "#ffc000" : sCell.background,
-                    color: isLast ? "#fff" : sCell.color,
-                    fontWeight: isLast ? 700 : "normal",
-                    fontSize: isLast ? 22 : sCell.fontSize,
+                    ...sHead,
+                    background: isLast ? "#ffc000" : sHead.background,
+                    color: "#fff",
+                    fontSize: isLast ? 24 : sHead.fontSize,
                   }}
                 >
-                  {value}
+                  {m.label}
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+
+        <tbody>
+          {filteredOrigins.map((origin) => (
+            <tr key={origin}>
+              <td
+                style={{
+                  ...sCellLeft,
+                  background: "#EEBE00",
+                  color: "#fff",
+                  fontWeight: 800,
+                }}
+              >
+                {origin}
+              </td>
+
+              {monthKeys.map((m, idx) => {
+                const value = getCount(m.key, origin);
+                const isLast = idx === monthKeys.length - 1;
+                return (
+                  <td
+                    key={`${m.key}-${origin}`}
+                    style={{
+                      ...sCell,
+                      background: isLast ? "#ffc000" : sCell.background,
+                      color: isLast ? "#fff" : sCell.color,
+                      fontWeight: isLast ? 700 : "normal",
+                      fontSize: isLast ? 24 : sCell.fontSize,
+                    }}
+                  >
+                    {value}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+
+          {/* 🔴 FILA TOTAL */}
+          <tr>
+            <td style={{ ...sTotalRow, textAlign: "left", paddingLeft: 10 }}>
+              TOTAL
+            </td>
+            {monthKeys.map((m) => {
+              const total = filteredOrigins.reduce(
+                (acc, o) => acc + getCount(m.key, o),
+                0
+              );
+              return (
+                <td key={`total-${m.key}`} style={sTotalRow}>
+                  {total}
                 </td>
               );
             })}
           </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-}
+        </tbody>
+      </table>
+    </div>
+  );
+};

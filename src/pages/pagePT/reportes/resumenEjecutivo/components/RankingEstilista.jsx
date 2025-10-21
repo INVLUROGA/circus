@@ -13,6 +13,7 @@ const mesAIndice = (m = '') => {
 
 function filtrarVentasPorMes(ventas = [], filtro, initialDayArg = 1, cutDayArg) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
+
   const mapa = {
     enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
     julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9,
@@ -21,21 +22,34 @@ function filtrarVentasPorMes(ventas = [], filtro, initialDayArg = 1, cutDayArg) 
   const monthIdx = mapa[String(filtro.mes).toLowerCase().trim()] ?? -1;
   const yearNum = Number(filtro.anio);
   if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
-  const lastDay = new Date(Date.UTC(yearNum, monthIdx + 1, 0)).getUTCDate();
+
+  const toLimaDate = (iso) => {
+    if (!iso) return null;
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return null;
+      const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
+      return new Date(utcMs - 5 * 60 * 60000); 
+    } catch {
+      return null;
+    }
+  };
+
+  const lastDay = new Date(yearNum, monthIdx + 1, 0).getDate();
   const from = Math.max(1, Math.min(Number(filtro.fromDay ?? initialDayArg ?? 1), lastDay));
-  const to = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));
+  const to   = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));
 
   return ventas.filter((v) => {
-    const d = new Date(v?.fecha_venta ?? v?.createdAt ?? v?.fecha);
-    if (Number.isNaN(d.getTime())) return false;
+    const d = toLimaDate(v?.fecha_venta ?? v?.createdAt ?? v?.fecha);
+    if (!d) return false;
     return (
-      d.getUTCFullYear() === yearNum &&
-      d.getUTCMonth() === monthIdx &&
-      d.getUTCDate() >= from &&
-      d.getUTCDate() <= to
+      d.getFullYear() === yearNum &&
+      d.getMonth() === monthIdx &&
+      d.getDate() >= from && d.getDate() <= to
     );
   });
 }
+
 
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
@@ -108,8 +122,22 @@ function TablaRanking({ titulo, ventas, excluirNombres = [] }) {
     );
   });
 
+  // 🔹 RETURN COMPLETO CON TÍTULO NUEVO
   return (
     <div style={{ marginBottom: 24 }}>
+      {/* 🔴 TÍTULO AGREGADO */}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: 30,
+          fontWeight: 800,
+          marginBottom: 20,
+          textTransform: "uppercase",
+        }}
+      >
+        DETALLE DE VENTAS TOTAL POR MES
+      </div>
+
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
@@ -173,6 +201,7 @@ function TablaRanking({ titulo, ventas, excluirNombres = [] }) {
     </div>
   );
 }
+
 
 export const RankingEstilista = ({
   dataVenta = [],

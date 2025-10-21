@@ -216,7 +216,6 @@ const PctCell = ({ value, isLast }) => {
     </th>
   );
 
-  // --------------------------- Render ---------------------------
  return (
   <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
     <div style={sTitle}>COMPARATIVO MENSUAL VS MES ACTUAL</div>

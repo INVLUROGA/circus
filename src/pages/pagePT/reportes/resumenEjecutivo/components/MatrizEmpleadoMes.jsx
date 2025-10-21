@@ -736,12 +736,12 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
   margin: '24px auto',   
 };
 const DISPLAY_LABEL = {
-  "Total Ventas": "Total de ventas",
-  "Cant. Ventas": "Cantidad de ventas",
-  "Ventas Productos": "Ventas de productos",
-  "Cant. Productos": "Cantidad de productos",
+  "Total Ventas": "detalle de productos y servicios total por mes",
+  "Cant. Ventas": "cantidad de clientes atendidos",
+  "Ventas Productos": "Ventas de productos por mes",
+  "Cant. Productos": "Cantidad  de productos Vendidos por mes",
   "Ventas Servicios": "Ventas de servicios",
-  "Cant. Servicios": "Cantidad de servicios",
+  "Cant. Servicios": "cantidad por tipo de servicios",
 };
 const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
 

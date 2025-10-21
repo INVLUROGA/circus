@@ -302,24 +302,28 @@ export default function MatrizServicios({
 
   const rango = lastMonth ? ` – ${lastMonth.mName.toUpperCase()}/${lastMonth.y}` : "";
   const corte = cutDay ? ` (DEL ${initialDay} AL ${cutDay})` : "";
-
-  return (
-    <div
-      style={{
-        marginBottom: "100px",
-        fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif",
-        marginTop: 100,
-      }}
-    >
+return (
+  <div
+    style={{
+      marginBottom: "100px",
+      fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif",
+      marginTop: 100,
+    }}
+  >
+    <div className="mb-4">
       {renderDataset(
         { title: `SERVICIOS ${rango}${corte}` },
         sinCostoData
       )}
+    </div>
 
+    <div className="mb-4">
       {renderDataset(
-        { title: `SERVICIOS (CON TRATAMIENTO)${rango}${corte}` },
+        { title: `CANTIDAD POR TIPO DE TRATAMIENTO ${rango}${corte}` },
         conCostoData
       )}
     </div>
-  );
+  </div>
+);
+
 }
