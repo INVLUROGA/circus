@@ -95,6 +95,19 @@ export const App = ({ id_empresa }) => {
     cac:             { marzo: null, abril: null, mayo: null, junio: null, julio: null, agosto: null, septiembre: 0 },
   };
 
+const handleSetUltimoDiaMesesDinamicos = () => {
+  // Creamos un mapa mes-a-último día
+  const lastDaysMap = mesesDinamicos.reduce((acc, f) => {
+    const monthIdx = new Date(`${f.anio}-${f.mes}-01`).getMonth();
+    const lastDay = new Date(f.anio, monthIdx + 1, 0).getDate();
+    acc[f.mes] = lastDay;
+    return acc;
+  }, {});
+  
+  console.log("Últimos días de los meses:", lastDaysMap);
+  // usamos el último día del mes base seleccionado
+  setCutDay(lastDaysMap[meses[selectedMonth - 1]] || 30);
+};
   // (opcional)
   const tableData = useMemo(() => ventasToExecutiveData({
     ventas: dataVentas,
@@ -195,7 +208,6 @@ export const App = ({ id_empresa }) => {
     return [{ label: mesLabel, anio: year.toString(), mes: mesNombre }];
   }, [selectedMonth, year]);
 
-  // === Render principal ===
   return (
     <>
       <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
@@ -211,7 +223,21 @@ export const App = ({ id_empresa }) => {
           setCutDay={setCutDay}
           year={year}
         />
-      </div>
+        <div
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    marginTop: "15px",
+  }}
+>
+  <button
+    onClick={handleSetUltimoDiaMesesDinamicos}
+    className="btn btn-outline-primary"
+  >
+    Usar último día del mes
+  </button>
+</div>
+</div>
 
       {/* CONTENIDO PRINCIPAL */}
       <Row>
