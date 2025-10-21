@@ -7,11 +7,12 @@ import { useVentasStore } from '@/hooks/hookApi/useVentasStore';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Col, Row, Modal, Button, Form } from 'react-bootstrap';
+import { Col, Row, Modal, Button, Form, Badge } from 'react-bootstrap'; // <-- Badge agregado
 import { normalizarVentasExcel } from './desestructurarData';
 import { Dialog } from 'primereact/dialog';
 
 dayjs.extend(isoWeek);
+
 // Normaliza strings: minúsculas, sin acentos, espacios colapsados
 const canon = (s='') =>
   s.toString()
@@ -23,8 +24,7 @@ const canon = (s='') =>
 // Reglas: agrega aquí sinónimos/variantes que quieras mapear a una etiqueta final
 const RULES = [
   { to: 'TRANSFERENCIA', when: ['transf', 'transferencia', 'transferencias', 'transferencia bancaria', 'TRANSFERENCIA', 'bcp', 'interbank'] },
-  { to: 'tarjeta',        when: ['tarjeta', 
-"OPENPAY", 'tarjeta credito', 'tarjeta debito', 'visa', 'mastercard', 'amex', 'niubiz', 'culqi', 'mercado pago'] },
+  { to: 'tarjeta',        when: ['tarjeta', "OPENPAY", 'tarjeta credito', 'tarjeta debito', 'visa', 'mastercard', 'amex', 'niubiz', 'culqi', 'mercado pago'] },
   { to: 'efectivo',       when: ['efectivo', 'cash'] },
   { to: 'yape',           when: ['yape'] },
   { to: 'plin',           when: ['plin'] },
@@ -56,9 +56,9 @@ export const App = ({ id_empresa }) => {
   const [palabras, setPalabras] = useState([]);
   const [input, setInput] = useState('');
   const [modo, setModo] = useState('comprobante');
-  // filtro en modal de servicios
-const [filtroServ, setFiltroServ] = useState('');
 
+  // filtro en modal de servicios
+  const [filtroServ, setFiltroServ] = useState('');
 
   // ---- Modal: estado ----
   const [showResumen, setShowResumen] = useState(false);
@@ -78,6 +78,14 @@ const [filtroServ, setFiltroServ] = useState('');
   const [sortServDir, setSortServDir] = useState('desc');     // 'asc' | 'desc'
   const [sortProdBy, setSortProdBy] = useState('total');
   const [sortProdDir, setSortProdDir] = useState('desc');
+
+  // ==== NUEVO: Vista de comprobantes por rango ====
+  const [showVista, setShowVista] = useState(false);
+  const [vistaLabel, setVistaLabel] = useState('');
+  const [ventasVista, setVentasVista] = useState([]);
+  // debajo de: const [showResumen, setShowResumen] = useState(false);
+const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
+
 
   const toggleSort = (scope, by) => {
     if (scope === 'serv') {
@@ -118,13 +126,39 @@ const [filtroServ, setFiltroServ] = useState('');
 
   const ventasFiltradas = (dataVentas || []).filter(ventaCoincide);
 
+  // ==== NUEVO: calcula el rango [desde, hasta) según el grupo clicado
+  const getRangeFromGroup = (modoActual, clave) => {
+    if (modoActual === 'dia') {
+      const desde = dayjs.utc(`${clave}T00:00:00`); // Lima
+      return { desde, hasta: desde.add(1, 'day') };
+    }
+    if (modoActual === 'semana') {
+      const [wkStr, yearStr] = clave.split('-');
+      const year = Number(yearStr);
+      const week = Number(wkStr);
+      // lunes ISO de esa semana
+      const desde = dayjs.utc().year(year).isoWeek(week).startOf('week').hour(0).minute(0).second(0).millisecond(0);
+      return { desde, hasta: desde.add(1, 'week') };
+    }
+    if (modoActual === 'mes') {
+      const [mm, yyyy] = clave.split('-');
+      const desde = dayjs.utc(`${yyyy}-${mm}-01T00:00:00`);
+      return { desde, hasta: desde.add(1, 'month') };
+    }
+    if (modoActual === 'anio') {
+      const desde = dayjs.utc(`${clave}-01-01T00:00:00`);
+      return { desde, hasta: desde.add(1, 'year') };
+    }
+    return null;
+  };
+
   const agruparPorModo = () => {
     const grupos = {};
     const clientePrimeraVenta = {};
     const ordenadas = [...ventasFiltradas].sort((a, b) => new Date(b.fecha_venta) - new Date(a.fecha_venta));
 
     for (const venta of ordenadas) {
-      const fecha = dayjs(venta.fecha_venta).subtract(5, 'hour');
+      const fecha = dayjs.utc(venta.fecha_venta);
       let clave = '', label = '';
       switch (modo) {
         case 'dia':
@@ -140,6 +174,7 @@ const [filtroServ, setFiltroServ] = useState('');
       }
       if (!grupos[clave]) {
         grupos[clave] = {
+          clave,            // <-- NUEVO: guardamos la clave
           label,
           ventas: [],
           clientesVistos: new Set(),
@@ -251,15 +286,48 @@ const [filtroServ, setFiltroServ] = useState('');
     });
   };
 
+  // === NUEVO: Vista de comprobantes (filtra por rango real del grupo clicado)
+  const abrirVista = (grupo) => {
+    const rango = getRangeFromGroup(modo, grupo?.clave);
+    if (!rango) return;
+
+    const ventasRango = (dataVentas || []).filter((v) => {
+      const f = dayjs.utc(v.fecha_venta);
+      return f.valueOf() >= rango.desde.valueOf() && f.valueOf() < rango.hasta.valueOf();
+    });
+
+    setVentasVista(ventasRango.sort((a, b) =>  dayjs.utc(b.fecha_venta).valueOf() - dayjs.utc(a.fecha_venta).valueOf()));
+    setVistaLabel(grupo?.label || '');
+    setShowVista(true);
+  };
+
   const abrirResumenServicios = (grupo) => {
-    const servicios = grupo.ventas.flatMap((v) => v.detalle_ventaservicios || []);
-    setServiciosRaw(servicios);
-    setModalLabel(grupo.label);
-    setShowResumen(true);
+  // Usa el rango real para evitar “todas las ventas”
+  const rango = getRangeFromGroup(modo, grupo?.clave);
+  if (!rango) return;
+
+  const ventasRango = (dataVentas || []).filter((v) => {
+    const f = dayjs.utc(v.fecha_venta);
+    return f.valueOf() >= rango.desde.valueOf() && f.valueOf() < rango.hasta.valueOf();
+  });
+
+  const servicios = ventasRango.flatMap((v) => v.detalle_ventaservicios || []);
+
+  setVentasRangoServicios(ventasRango); // <-- NUEVO: guardamos las ventas del rango
+  setServiciosRaw(servicios);
+  setModalLabel(grupo.label);
+  setShowResumen(true);
   };
 
   const abrirResumenProductos = (grupo) => {
-    const productos = grupo.ventas.flatMap((v) => v.detalle_ventaProductos || []);
+    // Usa el rango real para evitar “todas las ventas”
+    const rango = getRangeFromGroup(modo, grupo?.clave);
+    const productos = (dataVentas || [])
+      .filter((v) => {
+        const f = dayjs.utc(v.fecha_venta);
+        return rango && f.valueOf() >= rango.desde.valueOf() && f.valueOf() < rango.hasta.valueOf();
+      })
+      .flatMap((v) => v.detalle_ventaProductos || []);
     setProductosRaw(productos);
     setModalLabel(grupo.label);
     setShowResumenProd(true);
@@ -293,59 +361,60 @@ const [filtroServ, setFiltroServ] = useState('');
   const rankingServ = useMemo(() => sortRows(rankingServBase, sortServBy, sortServDir), [rankingServBase, sortServBy, sortServDir]);
   const rankingProd = useMemo(() => sortRows(rankingProdBase, sortProdBy, sortProdDir), [rankingProdBase, sortProdBy, sortProdDir]);
   
-const agruparPagos = (ventas = []) => {
-  const map = new Map();
+  const agruparPagos = (ventas = []) => {
+    const map = new Map();
 
-  ventas.forEach((venta, ventaIndex) => {
-    (venta?.detalleVenta_pagoVenta ?? []).forEach((pago, pagoIndex) => {
-      const forma_pago = mapFormaPago(pago?.parametro_forma_pago?.label_param);
-      const monto = Number(pago?.parcial_monto || 0);
-      
-      if (!map.has(forma_pago)) {
-        map.set(forma_pago, {
-          forma_pago,
-          suma_total_parcial: 0,
-          items_ventas_tienen_esa_forma_de_pago: [],
+    ventas.forEach((venta, ventaIndex) => {
+      (venta?.detalleVenta_pagoVenta ?? []).forEach((pago, pagoIndex) => {
+        const forma_pago = mapFormaPago(pago?.parametro_forma_pago?.label_param);
+        const monto = Number(pago?.parcial_monto || 0);
+        
+        if (!map.has(forma_pago)) {
+          map.set(forma_pago, {
+            forma_pago,
+            suma_total_parcial: 0,
+            items_ventas_tienen_esa_forma_de_pago: [],
+          });
+        }
+
+        const entry = map.get(forma_pago);
+        entry.suma_total_parcial += monto;
+        entry.items_ventas_tienen_esa_forma_de_pago.push({
+          ventaIndex,
+          pagoIndex,
+          parcial_monto: monto,
+          parametro_forma_pago: pago?.parametro_forma_pago ?? null,
         });
-      }
-
-      const entry = map.get(forma_pago);
-      entry.suma_total_parcial += monto;
-      entry.items_ventas_tienen_esa_forma_de_pago.push({
-        ventaIndex,
-        pagoIndex,
-        parcial_monto: monto,
-        parametro_forma_pago: pago?.parametro_forma_pago ?? null,
       });
     });
-  });
 
-  const resumenConItems = Array.from(map.values());
-  const resumenSoloSuma = resumenConItems.map(({ items_ventas_tienen_esa_forma_de_pago, ...rest }) => rest);
+    const resumenConItems = Array.from(map.values());
+    const resumenSoloSuma = resumenConItems.map(({ items_ventas_tienen_esa_forma_de_pago, ...rest }) => rest);
 
-  return { resumenSoloSuma, resumenConItems };
-};
-const agruparServiciosPorEmpleado = (lista = []) => {
-  const map = new Map();
+    return { resumenSoloSuma, resumenConItems };
+  };
 
-  for (const s of lista) {
-    const id = s?.id_empl ?? s?.empleado_servicio?.id ?? "sin_asignar";
-    const empleado = s?.empleado_servicio?.nombres_apellidos_empl || "Sin asignar";
+  const agruparServiciosPorEmpleado = (lista = []) => {
+    const map = new Map();
 
-    if (!map.has(id)) {
-      map.set(id, { id_empl: id, empleado, items: [], total: 0 });
+    for (const s of lista) {
+      const id = s?.id_empl ?? s?.empleado_servicio?.id ?? "sin_asignar";
+      const empleado = s?.empleado_servicio?.nombres_apellidos_empl || "Sin asignar";
+
+      if (!map.has(id)) {
+        map.set(id, { id_empl: id, empleado, items: [], total: 0 });
+      }
+      const g = map.get(id);
+      g.items.push(s);
+      g.total += Number(s?.tarifa_monto ?? 0);
     }
-    const g = map.get(id);
-    g.items.push(s);
-    g.total += Number(s?.tarifa_monto ?? 0);
-  }
 
-  return Array.from(map.values());
-};
+    return Array.from(map.values());
+  };
 
   return (
     <>
-          <PageBreadcrumb title="DETALLE DE COMPROBANTES" subName="Ventas" />
+      <PageBreadcrumb title="DETALLE DE COMPROBANTES" subName="Ventas" />
       <Row className="d-flex justify-content-center">
         <Col lg={2} style={{ position: 'sticky', left: '0', top: 140, height: '300px', width: '400px' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
@@ -432,8 +501,6 @@ const agruparServiciosPorEmpleado = (lista = []) => {
                         </div>
                       </div>
 
-                      
-
                       <div>
                         {(venta?.detalleVenta_pagoVenta || []).map((e, i) => (
                           <div key={i} className="timeline-item-info border border-4 p-2 border-gray">
@@ -458,172 +525,140 @@ const agruparServiciosPorEmpleado = (lista = []) => {
                           </div>
                         ))}
                       </div>
-                        {
-                          (serviciosPeluqueria || []).length==0?(<></>):(
-                            <div>
-                              {/* <pre>
-                                {JSON.stringify(venta.detalle_ventaservicios, null, 2)}
-                              </pre> */}
-                              <h3 className="fw-bold text-primary" style={{fontSize: '34px'}}>
-                                Servicios peluqueria: 
-                                <span className="ml-2 text-black" >{serviciosPeluqueria.length}</span>
-                              </h3>
-                              <h3 className="fw-bold text-manicure " style={{fontSize: '34px'}}>
-                                Servicios MANICURE: 
-                                <span className="ml-2 text-black">{serviciosManicure.length}</span>
-                              </h3>
-                              {(serviciosPeluqueria || []).length === 0 ? null : (
-                                <div>
-                                  <ul className="list-group">
-                                    {gruposPorEmpleadoPeluqueria.map((g) => (
-                                      <li key={g.id_empl} className="list-group-item p-0">
-                                        <div className={`d-flex justify-content-between align-items-center ${(g.empleado || "-").split(" ")[0] ==='TIBISAY'?'bg-manicure':'bg-primary'}  text-white px-2 py-1`}>
-                                          <strong>{(g.empleado || "-").split(" ")[0]}</strong>
-                                          <div className="text-end">
-                                            <SymbolSoles
-                                              size={16}
-                                              bottomClasss={"4"}
-                                              numero={<NumberFormatMoney amount={g.total} />}
-                                            />
-                                          </div>
-                                        </div>
 
-                                        <ul className="list-group list-group-flush">
-                                          {g.items.map((s, i) => (
-                                            <li key={`${g.id_empl}-${i}`} className={`list-group-item m-0 p-0 ${s?.circus_servicio?.id_categoria===1478?'':''}`}>
-                                              <div className="d-flex flex-row justify-content-between">
-                                                <div className={`${s?.circus_servicio?.id_categoria===1478?'text-manicure':'text-primary'}  mx-1`} style={{ width: "100%", fontSize: "16px" }}>
-                                                  {(dataCategorias.find(c => c.value == s?.circus_servicio?.id_categoria)?.label ?? "-")}
-                                                  {" / "}
-                                                  {s?.circus_servicio?.nombre_servicio ?? "-"}
-                                                </div>
-                                                <div className="text-end mx-1" style={{ width: "150px" }}>
-                                                  <SymbolSoles
-                                                    size={20}
-                                                    bottomClasss={"8"}
-                                                    numero={<NumberFormatMoney amount={s?.tarifa_monto} />}
-                                                  />
-                                                </div>
-                                              </div>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              <ul className="list-group">
-                                <li className="list-group-item px-0 bg-primary text-white">
-                                  <div className="d-flex flex-row justify-content-between">
-                                    <div className="mx-1" style={{ width: '100%', fontSize: '34px' }}>PELUQUERIA TOTAL:</div>
-                                    <div className="text-end mx-2" style={{ width: '150px', fontSize: '34px' }}>
-                                      <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios} />} />
-                                    </div>
-                                  </div>
-                                </li>
-                              </ul>
-                            </div>
-                          )
-                        }
-                        {
-                          (serviciosManicure || []).length==0?(<></>):(
-                            <div>
-                              {/* <pre>
-                                {JSON.stringify(venta.detalle_ventaservicios, null, 2)}
-                              </pre> */}
-                              {/* <h3 className="fw-bold text-manicure">
-                                Servicios MANICURE: 
-                                <span className="ml-2" style={{ fontSize: '27px' }}>{serviciosManicure.length}</span>
-                              </h3> */}
-                              {(serviciosManicure || []).length === 0 ? null : (
-                                <div>
-                                  <ul className="list-group">
-                                    {gruposPorEmpleadoManicure.map((g) => (
-                                      <li key={g.id_empl} className="list-group-item p-0">
-                                        <div className={`d-flex justify-content-between align-items-center bg-manicure text-white px-2 py-1`}>
-                                          <strong>{(g.empleado || "-").split(" ")[0]}</strong>
-                                          <div className="text-end">
-                                            <SymbolSoles
-                                              size={16}
-                                              bottomClasss={"4"}
-                                              numero={<NumberFormatMoney amount={g.total} />}
-                                            />
-                                          </div>
-                                        </div>
-
-                                        <ul className="list-group list-group-flush">
-                                          {g.items.map((s, i) => (
-                                            <li key={`${g.id_empl}-${i}`} className={`list-group-item m-0 p-0 ${s?.circus_servicio?.id_categoria===1478?'':''}`}>
-                                              <div className="d-flex flex-row justify-content-between">
-                                                <div className={`${s?.circus_servicio?.id_categoria===1478?'text-manicure':'text-primary'}  mx-1`} style={{ width: "100%", fontSize: "16px" }}>
-                                                  {(dataCategorias.find(c => c.value == s?.circus_servicio?.id_categoria)?.label ?? "-")}
-                                                  {" / "}
-                                                  {s?.circus_servicio?.nombre_servicio ?? "-"}
-                                                </div>
-                                                <div className="text-end mx-1" style={{ width: "150px" }}>
-                                                  <SymbolSoles
-                                                    size={20}
-                                                    bottomClasss={"8"}
-                                                    numero={<NumberFormatMoney amount={s?.tarifa_monto} />}
-                                                  />
-                                                </div>
-                                              </div>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              
-                              <ul className="list-group">
-                                <li className="list-group-item px-0 bg-manicure text-white">
-                                  <div className="d-flex flex-row justify-content-between">
-                                    <div className="mx-1" style={{ width: '100%', fontSize: '34px' }}>MANICURE TOTAL:</div>
-                                    <div className="text-end mx-1" style={{ width: '150px', fontSize: '34px' }}>
-                                      <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServiciosManicure} />} />
-                                    </div>
-                                  </div>
-                                </li>
-                              </ul>
-                            </div>
-                          )
-                        }
-                      {
-                        (venta.detalle_ventaProductos || []).length===0?(<></>):(
-                          <div className="mt-5">
-                            <h3 className="fw-bold">PRODUCTOS cantidad: <span className="" style={{ fontSize: '27px' }}>{(venta.detalle_ventaProductos || []).length}</span></h3>
+                      { (serviciosPeluqueria || []).length===0 ? null : (
+                        <div>
+                          <h3 className="fw-bold text-primary" style={{fontSize: '34px'}}>
+                            Servicios peluqueria: 
+                            <span className="ml-2 text-black" >{serviciosPeluqueria.length}</span>
+                          </h3>
+                          <h3 className="fw-bold text-manicure " style={{fontSize: '34px'}}>
+                            Servicios MANICURE: 
+                            <span className="ml-2 text-black">{serviciosManicure.length}</span>
+                          </h3>
+                          <div>
                             <ul className="list-group">
-                              {(venta.detalle_ventaProductos || []).map((s, i) => (
-                                <li key={i} className="list-group-item">
-                                  <div className="d-flex flex-row">
-                                    <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
-                                      {(s.empleado_producto?.nombres_apellidos_empl || '-').split(' ')[0]}
-                                    </div>
-                                    <div className="text-end mx-1" style={{ width: '150px' }}>
-                                      <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} /> - 
-                                    </div>
-                                    <div className="text-end mx-1" style={{ width: 'auto' }}>
-                                      {s.tb_producto?.nombre_producto} - {s.cantidad} unidad
+                              {gruposPorEmpleadoPeluqueria.map((g) => (
+                                <li key={g.id_empl} className="list-group-item p-0">
+                                  <div className={`d-flex justify-content-between align-items-center ${(g.empleado || "-").split(" ")[0] ==='TIBISAY'?'bg-manicure':'bg-primary'}  text-white px-2 py-1`}>
+                                    <strong>{(g.empleado || "-").split(" ")[0]}</strong>
+                                    <div className="text-end">
+                                      <SymbolSoles size={16} bottomClasss={"4"} numero={<NumberFormatMoney amount={g.total} />} />
                                     </div>
                                   </div>
+
+                                  <ul className="list-group list-group-flush">
+                                    {g.items.map((s, i) => (
+                                      <li key={`${g.id_empl}-${i}`} className={`list-group-item m-0 p-0 ${s?.circus_servicio?.id_categoria===1478?'':''}`}>
+                                        <div className="d-flex flex-row justify-content-between">
+                                          <div className={`${s?.circus_servicio?.id_categoria===1478?'text-manicure':'text-primary'}  mx-1`} style={{ width: "100%", fontSize: "16px" }}>
+                                            {(dataCategorias.find(c => c.value == s?.circus_servicio?.id_categoria)?.label ?? "-")}
+                                            {" / "}
+                                            {s?.circus_servicio?.nombre_servicio ?? "-"}
+                                          </div>
+                                          <div className="text-end mx-1" style={{ width: "150px" }}>
+                                            <SymbolSoles size={20} bottomClasss={"8"} numero={<NumberFormatMoney amount={s?.tarifa_monto} />} />
+                                          </div>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
                                 </li>
                               ))}
-                              <li className="list-group-item" style={{ backgroundColor: '#F8F8FA' }}>
-                                <div className="d-flex flex-row">
-                                  <div className="mx-1" style={{ width: '200px', fontSize: '25px' }}>TOTAL VENTA:</div>
-                                  <div className="text-end mx-1 align-content-center" style={{ width: '150px', fontSize: '27px' }}>
-                                    <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoProductos} />} /> <span className="opacity-0">-</span>
+                            </ul>
+                          </div>
+                          
+                          <ul className="list-group">
+                            <li className="list-group-item px-0 bg-primary text-white">
+                              <div className="d-flex flex-row justify-content-between">
+                                <div className="mx-1" style={{ width: '100%', fontSize: '34px' }}>PELUQUERIA TOTAL:</div>
+                                <div className="text-end mx-2" style={{ width: '150px', fontSize: '34px' }}>
+                                  <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServicios} />} />
+                                </div>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+
+                      { (serviciosManicure || []).length===0 ? null : (
+                        <div>
+                          <div>
+                            <ul className="list-group">
+                              {gruposPorEmpleadoManicure.map((g) => (
+                                <li key={g.id_empl} className="list-group-item p-0">
+                                  <div className={`d-flex justify-content-between align-items-center bg-manicure text-white px-2 py-1`}>
+                                    <strong>{(g.empleado || "-").split(" ")[0]}</strong>
+                                    <div className="text-end">
+                                      <SymbolSoles size={16} bottomClasss={"4"} numero={<NumberFormatMoney amount={g.total} />} />
+                                    </div>
+                                  </div>
+
+                                  <ul className="list-group list-group-flush">
+                                    {g.items.map((s, i) => (
+                                      <li key={`${g.id_empl}-${i}`} className={`list-group-item m-0 p-0 ${s?.circus_servicio?.id_categoria===1478?'':''}`}>
+                                        <div className="d-flex flex-row justify-content-between">
+                                          <div className={`${s?.circus_servicio?.id_categoria===1478?'text-manicure':'text-primary'}  mx-1`} style={{ width: "100%", fontSize: "16px" }}>
+                                            {(dataCategorias.find(c => c.value == s?.circus_servicio?.id_categoria)?.label ?? "-")}
+                                            {" / "}
+                                            {s?.circus_servicio?.nombre_servicio ?? "-"}
+                                          </div>
+                                          <div className="text-end mx-1" style={{ width: "150px" }}>
+                                            <SymbolSoles size={20} bottomClasss={"8"} numero={<NumberFormatMoney amount={s?.tarifa_monto} />} />
+                                          </div>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          
+                          <ul className="list-group">
+                            <li className="list-group-item px-0 bg-manicure text-white">
+                              <div className="d-flex flex-row justify-content-between">
+                                <div className="mx-1" style={{ width: '100%', fontSize: '34px' }}>MANICURE TOTAL:</div>
+                                <div className="text-end mx-1" style={{ width: '150px', fontSize: '34px' }}>
+                                  <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoServiciosManicure} />} />
+                                </div>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+
+                      {(venta.detalle_ventaProductos || []).length===0 ? null : (
+                        <div className="mt-5">
+                          <h3 className="fw-bold">PRODUCTOS cantidad: <span className="" style={{ fontSize: '27px' }}>{(venta.detalle_ventaProductos || []).length}</span></h3>
+                          <ul className="list-group">
+                            {(venta.detalle_ventaProductos || []).map((s, i) => (
+                              <li key={i} className="list-group-item">
+                                <div className="d-flex flex-row align-items-center">
+                                  <Badge bg="info" className="me-2">PRODUCTO</Badge>
+                                  <div className="text-primary mx-1" style={{ width: '200px', fontSize: '25px' }}>
+                                    {(s.empleado_producto?.nombres_apellidos_empl || '-').split(' ')[0]}
+                                  </div>
+                                  <div className="text-end mx-1" style={{ width: '150px' }}>
+                                    <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} /> 
+                                  </div>
+                                  <div className="text-end mx-1" style={{ width: 'auto' }}>
+                                    {s.tb_producto?.nombre_producto} - {s.cantidad} unidad
                                   </div>
                                 </div>
                               </li>
-                            </ul>
-                          </div>
-                        )
-                      }
+                            ))}
+                            <li className="list-group-item" style={{ backgroundColor: '#F8F8FA' }}>
+                              <div className="d-flex flex-row">
+                                <div className="mx-1" style={{ width: '200px', fontSize: '25px' }}>TOTAL VENTA:</div>
+                                <div className="text-end mx-1 align-content-center" style={{ width: '150px', fontSize: '27px' }}>
+                                  <SymbolSoles size={20} bottomClasss={'8'} numero={<NumberFormatMoney amount={sumaMontoProductos} />} />
+                                </div>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -636,12 +671,10 @@ const agruparServiciosPorEmpleado = (lista = []) => {
             resumenes.map((grupo, idx) => {
               const servicios = grupo.ventas.flatMap((v) => v.detalle_ventaservicios || []);
               const productos = grupo.ventas.flatMap((v) => v.detalle_ventaProductos || []);
-
               const totalServiciosImporte = servicios.reduce((sum, s) => sum + Number(s?.tarifa_monto || 0), 0);
               const totalProductosImporte = productos.reduce((sum, p) => sum + Number(p?.tarifa_monto || 0), 0);
               const total = totalServiciosImporte + totalProductosImporte;
-              console.log({ GRP: grupo});
-              
+
               return (
                 <div key={idx} className="card mb-4 shadow">
                   <div className="card-body">
@@ -653,7 +686,21 @@ const agruparServiciosPorEmpleado = (lista = []) => {
                           <span className="text-end">{grupo.clientesVistos.size}</span>
                         </div>
                       </li>
-                      <li className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
+
+                      {/* <<< NUEVO: abre Vista general (comprobantes del rango) */}
+                      <li
+                        className="list-group-item h2"
+                        style={{ backgroundColor: '#F8F8FA', cursor: 'pointer' }}
+                        title="Ver comprobantes del rango"
+                        onClick={() => abrirVista(grupo)}
+                      >
+                        <div className="d-flex justify-content-between align-items-center">
+                          <span className="fw-bold">COMPROBANTES VÁLIDOS (click):</span>
+                          <span className="text-end fs-1">{grupo.ventas.length}</span>
+                        </div>
+                      </li>
+
+                      <li className="list-group-item h2">
                         <div className="d-flex justify-content-between">
                           <span>Total vendido: </span>
                           <span className="text-end fs-1">
@@ -737,22 +784,16 @@ const agruparServiciosPorEmpleado = (lista = []) => {
                         </div>
                       </li>
                       
-                      {
-                        agruparPagos(grupo?.ventas).resumenSoloSuma.map(formas=>{
-                          return (
-                            <li className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
-                              <div className="d-flex justify-content-between">
-                                <span>{formas.forma_pago} </span>
-                                <span className="text-end fs-1">
-                                  <SymbolSoles size={25} bottomClasss={'20'} numero={<NumberFormatMoney amount={formas.suma_total_parcial} />} />
-                                </span>
-                              </div>
-                            </li>
-
-                          )
-                        })
-                      }
-
+                      {agruparPagos(grupo?.ventas).resumenSoloSuma.map((formas, i) => (
+                        <li key={formas.forma_pago + i} className="list-group-item h2" style={{ backgroundColor: '#F8F8FA' }}>
+                          <div className="d-flex justify-content-between">
+                            <span>{formas.forma_pago} </span>
+                            <span className="text-end fs-1">
+                              <SymbolSoles size={25} bottomClasss={'20'} numero={<NumberFormatMoney amount={formas.suma_total_parcial} />} />
+                            </span>
+                          </div>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
@@ -761,9 +802,72 @@ const agruparServiciosPorEmpleado = (lista = []) => {
           )}
         </Col>
 
+        {/* -------- MODAL: VISTA (COMPROBANTES POR RANGO) -------- */}
+        <Modal show={showVista} onHide={() => setShowVista(false)} size="xl" centered scrollable>
+          <Modal.Header closeButton>
+            <Modal.Title>Comprobantes — {vistaLabel}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {ventasVista.length === 0 ? (
+              <div className="text-center py-4">No hay ventas en el rango.</div>
+            ) : (
+              ventasVista.map((venta) => {
+                const servicios = venta.detalle_ventaservicios || [];
+                const productos = venta.detalle_ventaProductos || [];
+                const total = [...servicios, ...productos].reduce((s, x) => s + Number(x?.tarifa_monto || 0), 0);
+
+                return (
+                  <div className="card mb-3" key={venta.id}>
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <div className="fw-bold">
+                          {(venta.tb_cliente?.nombres_apellidos_cli || '').trim()} &nbsp;
+                          <small className="text-muted">({DateMaskString(venta.fecha_venta, 'DD/MM/YYYY hh:mm A')})</small>
+                        </div>
+                        <div className="text-primary">
+                          <SymbolSoles size={18} bottomClasss={'6'} numero={<NumberFormatMoney amount={total} />} />
+                        </div>
+                      </div>
+
+                      <ul className="list-group list-group-flush">
+                        {servicios.map((s, i) => (
+                          <li key={'s'+i} className="list-group-item d-flex justify-content-between align-items-center">
+                            <div className="d-flex align-items-center gap-2">
+                              <Badge bg="success">SERVICIO</Badge>
+                              <span>{s.circus_servicio?.nombre_servicio}</span>
+                              <small className="text-muted">— {(s.empleado_servicio?.nombres_apellidos_empl || '-').split(' ')[0]}</small>
+                            </div>
+                            <div>
+                              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={s.tarifa_monto} />} />
+                            </div>
+                          </li>
+                        ))}
+                        {productos.map((p, i) => (
+                          <li key={'p'+i} className="list-group-item d-flex justify-content-between align-items-center">
+                            <div className="d-flex align-items-center gap-2">
+                              <Badge bg="info">PRODUCTO</Badge>
+                              <span>{p.tb_producto?.nombre_producto}</span>
+                              <small className="text-muted">x{p.cantidad} — {(p.empleado_producto?.nombres_apellidos_empl || '-').split(' ')[0]}</small>
+                            </div>
+                            <div>
+                              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={p.tarifa_monto} />} />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowVista(false)}>Cerrar</Button>
+          </Modal.Footer>
+        </Modal>
+
         {/* -------- MODAL: VISTA RESUMEN DETALLE DE SERVICIOS -------- */}
         <Dialog header={`Resumen de servicios — ${modalLabel}`} visible={showResumen} onHide={() => setShowResumen(false)} style={{width: '120rem'}} centered scrollable>
-
           <Modal.Body>
             <div className="d-flex justify-content-between align-items-center mb-3">
               <div className="h4 m-0">Total servicios: <strong>{cantidadServicios}</strong></div>
@@ -774,146 +878,148 @@ const agruparServiciosPorEmpleado = (lista = []) => {
                 </strong>
               </div>
             </div>
+
             {/* CHAT GPT, PONER LA TABLA AQUI, CON EL FILTRO NECESARIO */}
             <div className="table-responsive">
-  <table className="table table-bordered table-sm">
-    <thead className="table-light">
-      <tr>
-        <th>
-          <div className='' style={{width: '100px'}}>
-            FECHA
-          </div>
-        </th><th>COM</th><th>#COMP</th>
-        <th>T-CLIENTE</th>
-        <th>CLIENTE</th>
-        <th>TOTAL COMP</th><th>CLASE</th>
-        <th>PRODUCTO / SERVICIO</th><th>EMPLEADO</th>
-        <th>CANT</th><th>SUB TOTAL</th><th>DESC</th><th>TOTAL</th>
-        <th>Efc - S/</th><th>Tipo Op. Elect</th><th>#Oper</th><th>Op. Elect - S/</th>
-      </tr>
-    </thead>
-    <tbody>
-      {normalizarVentasExcel(dataVentas).map((row, i) => (
-        <tr key={i}>
-          <td>{dayjs(row.fecha).format("YYYY-MM-DD")}</td>
-          <td>{row.com}</td>
-          <td>{row.comp}</td>
-          <td>{row.t_cliente}</td>
-          {/* <td>{row.t_doc}</td>
-          <td>{row.doc}</td> */}
-          <td>{row.cliente}</td>
-          <td className="text-end">{row.total_comp}</td>
-          <td>{row.clase}</td>
-          <td>{row.producto_servicio}</td>
-          <td>{row.empleado}</td>
-          <td className="text-end">{row.cant}</td>
-          <td className="text-end">{row.sub_total}</td>
-          <td className="text-end">{row.desc}</td>
-          <td className="text-end">{row.total}</td>
-          <td className="text-end">{row.efec_s}</td>
-          <td>{row.tipo_op}</td>
-          <td>{row.n_oper}</td>
-          <td className="text-end">{row.op_elect_s}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+              <table className="table table-bordered table-sm">
+                <thead className="table-light">
+                  <tr>
+                    <th></th>
+                    <th><div className='' style={{width: '100px'}}>FECHA</div></th>
+                    <th>COM</th><th>#COMP</th>
+                    <th>T-CLIENTE</th>
+                    <th>CLIENTE</th>
+                    <th>TOTAL COMP</th><th>CLASE</th>
+                    <th>PRODUCTO / SERVICIO</th><th>EMPLEADO</th>
+                    <th>CANT</th><th>SUB TOTAL</th><th>DESC</th><th>TOTAL</th>
+                    <th>Efc - S/</th><th>Tipo Op. Elect</th><th>#Oper</th><th>Op. Elect - S/</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {normalizarVentasExcel(ventasRangoServicios).map((row, i) => (
+  <tr key={i}>
+    <td>
+      {i+1}
+    </td>
+    <td>
+      {dayjs.utc(row.fecha).format("dddd DD [DE] MMMM [DEL] YYYY")}
+    </td>
+    <td>{row.com}</td>
+    <td>{row.comp}</td>
+    <td>{row.t_cliente}</td>
+    <td>{row.cliente}</td>
+    <td className="text-end">{row.total_comp}</td>
+    <td>{row.clase}</td>
+    <td>{row.producto_servicio}</td>
+    <td>{row.empleado}</td>
+    <td className="text-end">{row.cant}</td>
+    <td className="text-end">{row.sub_total}</td>
+    <td className="text-end">{row.desc}</td>
+    <td className="text-end">{row.total}</td>
+    <td className="text-end">{row.efec_s}</td>
+    <td>{row.tipo_op}</td>
+    <td>{row.n_oper}</td>
+    <td className="text-end">{row.op_elect_s}</td>
+  </tr>
+))}
+                </tbody>
+              </table>
+            </div>
 
-{/* ====== Tabla 1: Servicios agregados ====== */}
-<div className="table-responsive mb-4">
-  <table className="table table-sm align-middle">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Servicio</th>
-        <th>Colaborador</th>
-        <th className="text-end">Cantidad</th>
-        <th className="text-end">Total</th>
-        <th className="text-end">Promedio</th>
-      </tr>
-    </thead>
-    <tbody>
-      {aggregateServicios(serviciosRaw, groupBy)
-        .filter((it) => {
-          const q = (filtroServ || '').trim().toLowerCase();
-          if (!q) return true;
-          return (
-            (it.servicio || '').toLowerCase().includes(q) ||
-            (it.empleado || '').toLowerCase().includes(q)
-          );
-        })
-        .map((it, i) => (
-          <tr key={i}>
-            <td>{i + 1}</td>
-            <td>{it.servicio}</td>
-            <td>{it.empleado}</td>
-            <td className="text-end">{it.cantidad}</td>
-            <td className="text-end">
-              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total} />} />
-            </td>
-            <td className="text-end">
-              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total / (it.cantidad || 1)} />} />
-            </td>
-          </tr>
-        ))}
-      {serviciosRaw.length === 0 && (
-        <tr><td colSpan={6} className="text-center py-4">Sin servicios en el rango.</td></tr>
-      )}
-    </tbody>
-  </table>
-</div>
+            {/* ====== Tabla 1: Servicios agregados ====== */}
+            <div className="table-responsive mb-4">
+              <table className="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Servicio</th>
+                    <th>Colaborador</th>
+                    <th className="text-end">Cantidad</th>
+                    <th className="text-end">Total</th>
+                    <th className="text-end">Promedio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aggregateServicios(serviciosRaw, groupBy)
+                    .filter((it) => {
+                      const q = (filtroServ || '').trim().toLowerCase();
+                      if (!q) return true;
+                      return (
+                        (it.servicio || '').toLowerCase().includes(q) ||
+                        (it.empleado || '').toLowerCase().includes(q)
+                      );
+                    })
+                    .map((it, i) => (
+                      <tr key={i}>
+                        <td>{i + 1}</td>
+                        <td>{it.servicio}</td>
+                        <td>{it.empleado}</td>
+                        <td className="text-end">{it.cantidad}</td>
+                        <td className="text-end">
+                          <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total} />} />
+                        </td>
+                        <td className="text-end">
+                          <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={it.total / (it.cantidad || 1)} />} />
+                        </td>
+                      </tr>
+                    ))}
+                  {serviciosRaw.length === 0 && (
+                    <tr><td colSpan={6} className="text-center py-4">Sin servicios en el rango.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-{/* ====== Ranking de colaboradores (SERVICIOS) ====== */}
-<h5 className="fw-bold d-flex align-items-center justify-content-between">
-  Ranking de colaboradores (Servicios)
-  <div className="btn-group btn-group-sm">
-    <Button variant={sortServBy==='total' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','total')}>Monto</Button>
-    <Button variant={sortServBy==='promedio' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','promedio')}>Promedio</Button>
-    <Button variant={sortServBy==='colaborador' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','colaborador')}>Colaborador</Button>
-    <Button variant="outline-secondary" onClick={() => setSortServDir(d => d==='asc' ? 'desc' : 'asc')}>
-      {sortServDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
-    </Button>
-  </div>
-</h5>
+            {/* ====== Ranking de colaboradores (SERVICIOS) ====== */}
+            <h5 className="fw-bold d-flex align-items-center justify-content-between">
+              Ranking de colaboradores (Servicios)
+              <div className="btn-group btn-group-sm">
+                <Button variant={sortServBy==='total' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','total')}>Monto</Button>
+                <Button variant={sortServBy==='promedio' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','promedio')}>Promedio</Button>
+                <Button variant={sortServBy==='colaborador' ? 'primary' : 'outline-primary'} onClick={() => toggleSort('serv','colaborador')}>Colaborador</Button>
+                <Button variant="outline-secondary" onClick={() => setSortServDir(d => d==='asc' ? 'desc' : 'asc')}>
+                  {sortServDir === 'asc' ? 'ASC ↑' : 'DESC ↓'}
+                </Button>
+              </div>
+            </h5>
 
-<div className="table-responsive">
-  <table className="table table-sm align-middle">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Colaborador</th>
-        <th className="text-end">Monto</th>
-        <th className="text-end">Cantidad</th>
-        <th className="text-end">Promedio</th>
-      </tr>
-    </thead>
-    <tbody>
-      {rankingServ
-        .filter(r => {
-          const q = (filtroServ || '').trim().toLowerCase();
-          if (!q) return true;
-          return (r.colaborador || '').toLowerCase().includes(q);
-        })
-        .map((r, i) => (
-          <tr key={r.colaborador + i}>
-            <td>{i + 1}</td>
-            <td>{r.colaborador}</td>
-            <td className="text-end">
-              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.total} />} />
-            </td>
-            <td className="text-end">{r.cantidad}</td>
-            <td className="text-end">
-              <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.promedio} />} />
-            </td>
-          </tr>
-      ))}
-      {rankingServ.length === 0 && (
-        <tr><td colSpan={5} className="text-center py-4">Sin datos.</td></tr>
-      )}
-    </tbody>
-  </table>
-</div>
+            <div className="table-responsive">
+              <table className="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Colaborador</th>
+                    <th className="text-end">Monto</th>
+                    <th className="text-end">Cantidad</th>
+                    <th className="text-end">Promedio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankingServ
+                    .filter(r => {
+                      const q = (filtroServ || '').trim().toLowerCase();
+                      if (!q) return true;
+                      return (r.colaborador || '').toLowerCase().includes(q);
+                    })
+                    .map((r, i) => (
+                      <tr key={r.colaborador + i}>
+                        <td>{i + 1}</td>
+                        <td>{r.colaborador}</td>
+                        <td className="text-end">
+                          <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.total} />} />
+                        </td>
+                        <td className="text-end">{r.cantidad}</td>
+                        <td className="text-end">
+                          <SymbolSoles size={16} bottomClasss={'6'} numero={<NumberFormatMoney amount={r.promedio} />} />
+                        </td>
+                      </tr>
+                  ))}
+                  {rankingServ.length === 0 && (
+                    <tr><td colSpan={5} className="text-center py-4">Sin datos.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </Modal.Body>
 
           <Modal.Footer>

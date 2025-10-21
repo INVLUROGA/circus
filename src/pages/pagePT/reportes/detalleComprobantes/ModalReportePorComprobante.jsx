@@ -10,7 +10,7 @@ export const ModalReportePorComprobante = () => {
   scrollable
 >
   <Modal.Header closeButton>
-    <Modal.Title>Resumen de servicios — {resumenServicios.label}</Modal.Title>
+    <Modal.Title>Resumen de serviciosSSS — {resumenServicios.label}</Modal.Title>
   </Modal.Header>
 
   <Modal.Body>
