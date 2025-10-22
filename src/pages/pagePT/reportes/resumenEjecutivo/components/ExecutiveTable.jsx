@@ -316,7 +316,6 @@ return (
             VENTA TOTAL <br /> ACUMULADA POR MES
           </th>
           {perMonth.map((m, idx) => {
-            const isLast = idx === perMonth.length - 1;
             return (
               <th
                 key={idx}
@@ -324,7 +323,7 @@ return (
                   ...sThMes,
                   background: gold,
                   color: "#fff",
-                  fontSize: isLast ? 25 : sThMes.fontSize,
+                  fontSize: 25,
                 }}
               >
                 {fmtMoney(m.metrics?.totalMesFull || 0)}

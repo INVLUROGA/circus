@@ -92,29 +92,16 @@ const daysInMonth = baseMonth.daysInMonth();
     stroke: { curve: "smooth", width: 3 },
     markers: { size: 4 },
     grid: { padding: { bottom: 120, left: 8, right: 8 } },
-    xaxis: {
-      categories,
-      labels: {
-        rotate: -90,
-        rotateAlways: true,
-        hideOverlappingLabels: false,
-        trim: false,
-        style: { fontSize: "10px", cssClass: "xlab-2lines" },
-        formatter: (val) => {
-          const l = leadsByLabel[val] || { meta: 0, tiktok: 0 };
-          const info =
-            filtro === "meta"
-              ? `META: ${l.meta}`
-              : filtro === "tiktok"
-              ? `TIKTOK: ${l.tiktok}`
-              : `META: ${l.meta}   TIKTOK: ${l.tiktok}`;
-          return `${val}\n${info}`;
-        },
-        offsetY: 8,
-        minHeight: 90,
-        maxHeight: 150,
-      },
-    },
+xaxis: {
+  type: "category",
+  labels: {
+    rotate: -90,
+    rotateAlways: true,
+    style: { fontSize: "10px" },
+    formatter: (val) => val,
+  },
+},
+
 yaxis: {
   title: { text: "CANTIDAD" },
   min: 0,

@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { Dialog } from "primereact/dialog";
 import { NumberFormatMoney } from "@/components/CurrencyMask";
@@ -7,12 +6,13 @@ import { PTApi } from "@/common/api/";
 
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontWeight: "bold" };
 const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "20px" };
-const tdfinal ={fontSize:25,color:"white"};
-const toKey = (s = "") => String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+const tdfinal = { fontSize: 25, color: "white" };
+
+const toKey = (s = "") =>
+  String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
 const methodKey = (s = "") => toKey(s).replace(/\s+/g, "_");
 const round2 = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
 
-// Corrige redondeos
 const fixDeltaToTotal = (obj, total) => {
   const suma = round2(Object.values(obj).reduce((a, b) => a + Number(b || 0), 0));
   const delta = round2(total - suma);
@@ -40,14 +40,13 @@ const repartirLineaPorMetodos = (totalLinea, pagosByMethod, headerLabel) => {
 };
 
 const getPagos = (venta) => {
-  const candidates = [
-    venta?.detalleVenta_pagoVenta,
-    venta?.detalle_pagoVenta,
-    venta?.tb_pago_ventas,
-    venta?.pago_venta,
-    venta?.detalle_pagos,
-  ];
-  const arr = candidates.find(Array.isArray) || [];
+  const arr =
+    venta?.detalleVenta_pagoVenta ||
+    venta?.detalle_pagoVenta ||
+    venta?.tb_pago_ventas ||
+    venta?.pago_venta ||
+    venta?.detalle_pagos ||
+    [];
   return arr.map((p) => ({
     label:
       p?.parametro_forma_pago?.label_param ??
@@ -60,12 +59,19 @@ const getPagos = (venta) => {
   }));
 };
 
-// Convierte fechas a Lima
+const getServiceName = (it) =>
+  it?.circus_servicio?.nombre_servicio ||
+  it?.tb_servicio?.nombre_servicio ||
+  it?.servicio?.nombre_servicio ||
+  it?.nombre_servicio ||
+  it?.nombre ||
+  "—";
+
+// 🔹 Aplica el filtro initDay → cutDay
 function toLimaDate(iso) {
   if (!iso) return null;
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return null;
     const utcMs = d.getTime() + d.getTimezoneOffset() * 60000;
     return new Date(utcMs - 5 * 60 * 60000);
   } catch {
@@ -73,33 +79,47 @@ function toLimaDate(iso) {
   }
 }
 
-// Filtro por mes y día
-function filtrarVentasPorMes(ventas = [], filtro, initialDayArg = 1, cutDayArg) {
+function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
   const mapa = {
     enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
-    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9, noviembre: 10, diciembre: 11,
+    julio: 6, agosto: 7, septiembre: 8, setiembre: 8,
+    octubre: 9, noviembre: 10, diciembre: 11,
   };
-  const monthIdx = mapa[String(filtro.mes).toLowerCase().trim()] ?? -1;
+  const monthIdx = mapa[filtro.mes.toLowerCase()] ?? -1;
+  if (monthIdx < 0) return ventas;
   const yearNum = Number(filtro.anio);
-  if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
   const lastDay = new Date(yearNum, monthIdx + 1, 0).getDate();
-  const from = Math.max(1, Math.min(Number(filtro.fromDay ?? initialDayArg ?? 1), lastDay));
-  const to = Math.max(from, Math.min(Number(filtro.toDay ?? cutDayArg ?? lastDay), lastDay));
+  const from = Math.max(1, Math.min(initDay, lastDay));
+  const to = Math.max(from, Math.min(cutDay || lastDay, lastDay));
 
   return ventas.filter((v) => {
     const d = toLimaDate(v?.fecha_venta ?? v?.createdAt ?? v?.fecha);
-    return d && d.getFullYear() === yearNum && d.getMonth() === monthIdx && d.getDate() >= from && d.getDate() <= to;
+    if (!d) return false;
+    return (
+      d.getFullYear() === yearNum &&
+      d.getMonth() === monthIdx &&
+      d.getDate() >= from &&
+      d.getDate() <= to
+    );
   });
 }
 
-// Ranking de empleados
+// 🔹 Agrupa por empleado
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
   const ventasPorEmpleado = new Map();
   const getAcc = (empleado) => {
     if (!map.has(empleado)) {
-      map.set(empleado, { empleado, totalVentas: 0, cantidadVentas: 0, ventasProductos: 0, cantidadProductos: 0, ventasServicios: 0, cantidadServicios: 0 });
+      map.set(empleado, {
+        empleado,
+        totalVentas: 0,
+        cantidadVentas: 0,
+        ventasProductos: 0,
+        cantidadProductos: 0,
+        ventasServicios: 0,
+        cantidadServicios: 0,
+      });
       ventasPorEmpleado.set(empleado, new Set());
     }
     return map.get(empleado);
@@ -143,142 +163,197 @@ function rankingPorEmpleado(ventas = []) {
   }
   return out.sort((a, b) => b.totalVentas - a.totalVentas);
 }
-const getServiceName = (it) =>
-  it?.circus_servicio?.nombre_servicio ||
-  it?.circus_servicio?.nombre_serv ||
-  it?.tb_servicio?.nombre_servicio ||
-  it?.tb_servicio?.nombre_serv ||
-  it?.servicio?.nombre_servicio ||
-  it?.servicio?.nombre_serv ||
-  it?.nombre_servicio ||
-  it?.nombre ||
-  "—";
 
 export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1, cutDay }) => {
   const { obtenerFormaDePagosActivos } = useTerminoMetodoPagoStore();
-  const [dataFormaPagoActivoVentas, setDataFormaPagoActivoVentas] = useState([]);
-  const [dataFormaPagoParams, setDataFormaPagoParams] = useState([]);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await obtenerFormaDePagosActivos();
-        setDataFormaPagoActivoVentas(resp?.data ?? resp ?? []);
-      } catch (err) {
-        console.error("Error cargando métodos activos", err);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await PTApi.get("/parametros/get_params/formapago/formapago");
-        setDataFormaPagoParams(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Error cargando parámetros", err);
-      }
-    })();
-  }, []);
-
-  const ventasMes = useMemo(
-    () =>
-      Array.isArray(filtrarFecha)
-        ? filtrarFecha.flatMap((f) => filtrarVentasPorMes(dataVenta, f, initialDay, cutDay))
-        : filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay),
-    [dataVenta, filtrarFecha, initialDay, cutDay]
-  );
-
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalData, setModalData] = useState(null);
 
-  function buildModalData(ventasEmpleado = []) {
-    const headerLabel = {};
-    for (const v of ventasEmpleado) {
-      for (const p of getPagos(v)) {
-        const k = methodKey(p.label);
-        if (k && !headerLabel[k]) headerLabel[k] = String(p.label || k);
-      }
+  useEffect(() => {
+    obtenerFormaDePagosActivos().catch((err) =>
+      console.error("Error cargando métodos activos", err)
+    );
+  }, []);
+
+  // 🔹 aplica filtro de fechas
+  const ventasMes = useMemo(() => {
+    if (Array.isArray(filtrarFecha)) {
+      return filtrarFecha.flatMap((f) =>
+        filtrarVentasPorMes(dataVenta, f, initialDay, cutDay)
+      );
     }
-    if (Object.keys(headerLabel).length === 0) {
-      ["Efectivo", "Tarjeta", "Yape", "Plin"].forEach((lbl) => (headerLabel[methodKey(lbl)] = lbl));
+    return filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay);
+  }, [dataVenta, filtrarFecha, initialDay, cutDay]);
+
+  // 🔹 resto igual a tu versión anterior
+  
+ function buildModalData(ventasEmpleado = []) {
+  const headerLabel = {};
+  for (const v of ventasEmpleado) {
+    for (const p of getPagos(v)) {
+      const k = methodKey(p.label);
+      if (k && !headerLabel[k]) headerLabel[k] = String(p.label || k);
+    }
+  }
+  if (Object.keys(headerLabel).length === 0) {
+    ["Efectivo", "Tarjeta", "Yape", "Plin"].forEach((lbl) => (headerLabel[methodKey(lbl)] = lbl));
+  }
+
+  const serviciosFlat = [];
+  const productosFlat = [];
+  const totalesMetodo = Object.fromEntries(Object.keys(headerLabel).map((k) => [k, 0]));
+
+  for (const v of ventasEmpleado) {
+    const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : [];
+    const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+
+    const pagosByMethod = getPagos(v).reduce((acc, p) => {
+      const k = methodKey(p.label);
+      if (k) acc[k] = (acc[k] || 0) + p.monto;
+      return acc;
+    }, {});
+
+    // === SERVICIOS ===
+    for (const s of servicios) {
+      const cantidad = Number(s?.cantidad ?? 1) || 0;
+      const pVenta = Number(s?.tarifa_monto) || 0;
+      const totalLinea = cantidad * pVenta;
+
+      const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
+      for (const [k, vmet] of Object.entries(lineaMetodos)) totalesMetodo[k] += Number(vmet) || 0;
+
+      serviciosFlat.push({
+        nombre:
+          s?.circus_servicio?.nombre_servicio ||
+          s?.tb_servicio?.nombre_servicio ||
+          s?.nombre_servicio ||
+          s?.nombre ||
+          "—",
+        cantidad,
+        pVenta,
+        ...lineaMetodos,
+      });
     }
 
-    const serviciosFlat = [];
-    const productosFlat = [];
-    const totalesMetodo = Object.fromEntries(Object.keys(headerLabel).map((k) => [k, 0]));
+    // === PRODUCTOS ===
+    for (const p of productos) {
+      const cantidad = Number(p?.cantidad ?? 1) || 0;
+      const precioVentaU = Number(p?.tarifa_monto) || Number(p?.tb_producto?.prec_venta) || 0;
+      const precioCompraU = Number(p?.tb_producto?.prec_compra) || 0;
+      const nombre = p?.tb_producto?.nombre_producto || p?.nombre_producto || p?.nombre || "-";
+      const totalLinea = precioVentaU * cantidad;
 
-    for (const v of ventasEmpleado) {
-      const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : [];
-      const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+      const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
+      for (const [k, vmet] of Object.entries(lineaMetodos)) totalesMetodo[k] += Number(vmet) || 0;
 
-      const pagosByMethod = getPagos(v).reduce((acc, p) => {
-        const k = methodKey(p.label);
-        if (k) acc[k] = (acc[k] || 0) + p.monto;
-        return acc;
-      }, {});
-
-      for (const it of servicios) {
-        const cantidad = Number(it?.cantidad ?? 1) || 0;
-        const pVenta = Number(it?.tarifa_monto) || 0;
-        const totalLinea = cantidad * pVenta;
-        const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
-        for (const [k, vmet] of Object.entries(lineaMetodos)) totalesMetodo[k] += Number(vmet) || 0;
-     serviciosFlat.push({
- nombre: getServiceName(it),
-  cantidad,
-  pVenta,
-  ...lineaMetodos,
-});
-
-      }
-
-      for (const it of productos) {
-        const cantidad = Number(it?.cantidad ?? 1) || 0;
-        const precioVentaU = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
-        const precioCompraU = Number(it?.tb_producto?.prec_compra) || 0;
+      for (const [metodo, monto] of Object.entries(lineaMetodos)) {
         productosFlat.push({
-          nombre: it?.tb_producto?.nombre_producto || it?.nombre_producto || it?.nombre || "-",
+          nombre,
+          metodo,
           cantidad,
           precioVentaU,
           precioCompraU,
+          monto,
         });
       }
     }
-
-    const totalPVentaServs = serviciosFlat.reduce((a, s) => a + (Number(s.pVenta) || 0) * (Number(s.cantidad) || 0), 0);
-    const totalServCantidad = serviciosFlat.reduce((a, s) => a + (Number(s.cantidad) || 0), 0);
-    const totalPVentaProd = productosFlat.reduce((a, p) => a + (Number(p.precioVentaU) || 0) * (Number(p.cantidad) || 0), 0);
-    const totalCantidad = productosFlat.reduce((a, p) => a + (Number(p.cantidad) || 0), 0);
-
-    const serviciosOrdenados = serviciosFlat.sort((a, b) => b.pVenta * b.cantidad - a.pVenta * a.cantidad);
-    const productosAgrupados = productosFlat;
-
-    const methodsToShow = Object.keys(headerLabel).sort((a, b) => (totalesMetodo[b] || 0) - (totalesMetodo[a] || 0));
-    const RATE_IGV = 0.18, RATE_RENTA = 0.03, RATE_TARJ = 0.045;
-
-    const modalResumen = {
-      bruto: totalPVentaServs,
-      igv: totalPVentaServs * RATE_IGV,
-      renta: totalPVentaServs * RATE_RENTA,
-      tarjeta: totalPVentaServs * RATE_TARJ,
-      neto: totalPVentaServs * (1 - RATE_IGV - RATE_RENTA - RATE_TARJ),
-    };
-
-    return {
-      totalServCantidad,
-      totalPVentaServs,
-      totalCantidad,
-      totalPVentaProd,
-      methodsToShow,
-      headerLabel,
-      totalPorMetodo: totalesMetodo,
-      serviciosOrdenados,
-      productosAgrupados,
-      modalResumen,
-    };
   }
+
+  // === AGRUPAR PRODUCTOS (por nombre + método + precio) ===
+  const productosAgrupados = Object.values(
+    productosFlat.reduce((acc, p) => {
+      const key = `${p.nombre}-${p.metodo}-${p.precioVentaU}`;
+      if (!acc[key])
+        acc[key] = {
+          nombre: p.nombre,
+          metodo: p.metodo,
+          cantidad: 0,
+          precioVentaU: p.precioVentaU,
+          precioCompraU: p.precioCompraU,
+        };
+      acc[key].cantidad += p.cantidad;
+      return acc;
+    }, {})
+  );
+
+  // === AGRUPAR SERVICIOS (por nombre + precio) ===
+  const serviciosAgrupados = Object.values(
+    serviciosFlat.reduce((acc, s) => {
+      const key = `${s.nombre}-${s.pVenta}`;
+      if (!acc[key])
+        acc[key] = {
+          nombre: s.nombre,
+          cantidad: 0,
+          pVenta: s.pVenta,
+          ...Object.fromEntries(Object.keys(headerLabel).map((k) => [k, 0])),
+        };
+      acc[key].cantidad += s.cantidad;
+      for (const k of Object.keys(headerLabel))
+        acc[key][k] += Number(s[k]) || 0;
+      return acc;
+    }, {})
+  );
+
+  // === ORDENAMIENTO (mayor a menor por cantidad y total) ===
+  const serviciosOrdenados = [...serviciosAgrupados].sort((a, b) => {
+    const totalA = (a.pVenta || 0) * (a.cantidad || 0);
+    const totalB = (b.pVenta || 0) * (b.cantidad || 0);
+    return totalB - totalA;
+  });
+
+  const productosOrdenados = [...productosAgrupados].sort((a, b) => {
+    const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
+    const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
+    return totalB - totalA;
+  });
+
+  const totalPVentaServs = serviciosOrdenados.reduce(
+    (a, s) => a + s.pVenta * s.cantidad,
+    0
+  );
+  const totalServCantidad = serviciosOrdenados.reduce(
+    (a, s) => a + s.cantidad,
+    0
+  );
+  const totalPVentaProd = productosOrdenados.reduce(
+    (a, p) => a + p.precioVentaU * p.cantidad,
+    0
+  );
+  const totalCantidad = productosOrdenados.reduce(
+    (a, p) => a + p.cantidad,
+    0
+  );
+
+  const RATE_IGV = 0.18,
+    RATE_RENTA = 0.03,
+    RATE_TARJ = 0.045;
+
+  const methodsToShow = Object.keys(headerLabel).sort(
+    (a, b) => (totalesMetodo[b] || 0) - (totalesMetodo[a] || 0)
+  );
+
+  const modalResumen = {
+    bruto: totalPVentaServs,
+    igv: totalPVentaServs * RATE_IGV,
+    renta: totalPVentaServs * RATE_RENTA,
+    tarjeta: totalPVentaServs * RATE_TARJ,
+    neto: totalPVentaServs * (1 - RATE_IGV - RATE_RENTA - RATE_TARJ),
+  };
+
+  return {
+    totalServCantidad,
+    totalPVentaServs,
+    totalCantidad,
+    totalPVentaProd,
+    methodsToShow,
+    headerLabel,
+    totalPorMetodo: totalesMetodo,
+    serviciosOrdenados,
+    productosAgrupados: productosOrdenados,
+    modalResumen,
+  };
+}
 
   const handleRowClick = useCallback(
     (empleadoNombre) => {
@@ -293,7 +368,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
       });
 
       const data = buildModalData(ventasEmpleado);
-setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA  ${cutDay}`);
+      setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA ${cutDay}`);
       setModalData(data);
       setModalOpen(true);
     },
@@ -302,21 +377,9 @@ setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA  ${cutDay}
 
   return (
     <>
-      <TablaRanking titulo="" ventas={ventasMes} onRowClick={handleRowClick} />
+      <TablaRanking ventas={ventasMes} onRowClick={handleRowClick} />
       <Dialog
-header={
-  <div
-    style={{
-      textAlign: "center",
-      fontSize: 30,
-      fontWeight: 800,
-      letterSpacing: 0.5,
-      textTransform: "uppercase",
-    }}
-  >
-    {modalTitle || "VENTAS"}
-  </div>
-}
+        header={<div style={{ textAlign: "center", fontSize: 30, fontWeight: 800 }}>{modalTitle}</div>}
         visible={modalOpen}
         style={{ width: "100vw", maxWidth: "1400px", margin: "0 auto" }}
         modal
@@ -329,12 +392,13 @@ header={
           </div>
         }
       >
-        {!modalData ? <div>Sin ventas para esta selección.</div> : <RankingDialogContent modalData={modalData} modalTitle={`VENTAS — AL DÍA DE CORTE — ${modalTitle.split("—")[1] || ""}`} />
-}
+        {!modalData ? <div>Sin ventas para esta selección.</div> : <RankingDialogContent modalData={modalData} />}
       </Dialog>
     </>
   );
 };
+
+
 
 
 function RankingDialogContent({ modalData }) {
@@ -540,9 +604,26 @@ function RankingDialogContent({ modalData }) {
             const RATE_IGV = 0.18;
             const RATE_TARJETA = 0.045;
             const RATE_RENTA = 0.03;
-            const RATE_COMISION = 0.10; // ajusta si manejas otro porcentaje
+            const RATE_COMISION = 0.10;
 
-            return modalData.productosAgrupados.map((p, i) => {
+            // 🔹 Agrupar productos iguales por nombre y precio unitario
+            const productosUnificados = Object.values(
+              modalData.productosAgrupados.reduce((acc, p) => {
+                const key = `${p.nombre}-${p.precioVentaU}-${p.precioCompraU}`;
+                if (!acc[key]) acc[key] = { ...p, cantidad: 0 };
+                acc[key].cantidad += Number(p.cantidad) || 0;
+                return acc;
+              }, {})
+            );
+
+            // 🔹 Ordenar de mayor a menor por monto total vendido
+            const productosOrdenados = [...productosUnificados].sort((a, b) => {
+              const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
+              const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
+              return totalB - totalA;
+            });
+
+            return productosOrdenados.map((p, i) => {
               const venta = (p.precioVentaU || 0) * (p.cantidad || 0);
               const compra = (p.precioCompraU || 0) * (p.cantidad || 0);
               const igv = venta * RATE_IGV;
@@ -554,18 +635,16 @@ function RankingDialogContent({ modalData }) {
 
               return (
                 <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
+                  
                   <td
                     style={{
                       textAlign: "center",
                       fontWeight: 600,
-                      background: "var(--bs-primary)",
-                      color: "white",
                     }}
                   >
                     {i + 1}
                   </td>
 
-                  {/* PRODUCTO */}
                   <td
                     style={{
                       textAlign: "left",
@@ -685,6 +764,7 @@ function RankingDialogContent({ modalData }) {
 </div>
 
 
+
     </>
   );
 }
@@ -719,10 +799,10 @@ function TablaRanking({ ventas, onRowClick }) {
             <tr className="bg-primary fs-3 text-white">
               <th style={thStyle}>Colaborador</th>
               <th style={thStyle}>Clientes</th>
-              <th style={thStyle}>Cant. Serv.</th>
-              <th style={thStyle}>Ventas Serv.</th>
-              <th style={thStyle}>Cant. Prod.</th>
-              <th style={thStyle}>Ventas Prod.</th>
+              <th style={thStyle}>Cantidad <br/>Servicios</th>
+              <th style={thStyle}>Ventas<br/> Servicios</th>
+              <th style={thStyle}>Cantidad<br/>Productos</th>
+              <th style={thStyle}>Ventas <br/> Productos</th>
               <th style={thStyle}>Total</th>
             </tr>
           </thead>

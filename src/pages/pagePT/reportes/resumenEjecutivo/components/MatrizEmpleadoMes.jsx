@@ -1235,7 +1235,6 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
 
         return (
           <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-            {/* ITEM */}
             <td className='bg-primary' style={{ ...tdStyle,    width: "60px", 
     minWidth: "60px",
     maxWidth: "60px", textAlign: "center" }}>
