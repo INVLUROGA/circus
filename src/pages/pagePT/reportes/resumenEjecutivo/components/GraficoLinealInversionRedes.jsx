@@ -15,10 +15,19 @@ export const GraficoLinealInversionRedes = ({ data }) => {
   const firstFour = (Array.isArray(data) ? data : []).slice(0, 4).reverse();
 
   // Mes base para categorías
-  const baseMonth = firstFour[0]?.items?.[0]
-    ? dayjs(firstFour[0].items[0].fecha)
-    : dayjs();
-  const daysInMonth = baseMonth.daysInMonth();
+ // Determinar mes con datos más recientes
+const latestItems = firstFour
+  .flatMap((m) => m.items || [])
+  .filter((i) => i.fecha)
+  .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+const baseMonth = latestItems[0]
+  ? dayjs(latestItems[0].fecha)
+  : dayjs();
+
+const daysInMonth = baseMonth.daysInMonth();
+
+
 
   // === Eje X: "LUNES 1", "MARTES 2", ...
   const categories = Array.from({ length: daysInMonth }, (_, i) => {
@@ -51,39 +60,32 @@ export const GraficoLinealInversionRedes = ({ data }) => {
     }
   }
 
-  // === Series por mes (filtradas por fuente si aplica)
   const series = useMemo(() => {
+    const filtroId =
+        filtro === "meta" ? ID_META : filtro === "tiktok" ? ID_TIKTOK : null;
     return firstFour.map((m, idx) => {
       const items = Array.isArray(m.items) ? m.items : [];
-
-      const filtroId =
-        filtro === "meta" ? ID_META : filtro === "tiktok" ? ID_TIKTOK : null;
-
-      const buckets = Array(daysInMonth).fill(0);
+      const puntos =[];
 
       for (const it of items) {
         const d = dayjs(it.fecha);
         if (!d.isValid()) continue;
-        if (d.month() !== baseMonth.month() || d.year() !== baseMonth.year())
-          continue;
 
-        if (filtroId && Number(it?.id_red) !== filtroId) continue;
+        const id= Number(it?.id_red);
+        if(filtroId && id !==filtroId) continue;
 
-        const day = d.date(); // 1..N
-        const val = Number(
-          typeof it?.cantidad === "string" ? it.cantidad.trim() : it?.cantidad
-        );
-        if (!Number.isFinite(val)) continue;
+        const val = Number(it?.cantidad ?? 0);
+        if(!Number.isFinite(val)) continue;
 
-        buckets[day - 1] += val;
-      }
-
-      return {
-        name: m?.fecha ?? `Serie ${idx + 1}`,
-        data: buckets,
-      };
-    });
-  }, [firstFour, filtro, daysInMonth, baseMonth]);
+        const label = `${d.format("MMMM").toUpperCase()} ${d.date()}`;
+      puntos.push({ x: label, y: val });
+    }
+    return{
+      name: m?.fecha ?? `Serie ${idx + 1}`,
+      data: puntos,
+    };
+  });
+}, [firstFour, filtro]);
 
   const options = {
     chart: { type: "line", toolbar: { show: false }, parentHeightOffset: 0 },
@@ -113,7 +115,13 @@ export const GraficoLinealInversionRedes = ({ data }) => {
         maxHeight: 150,
       },
     },
-    yaxis: { title: { text: "CANTIDAD" } },
+yaxis: {
+  title: { text: "CANTIDAD" },
+  min: 0,
+  forceNiceScale: true,
+  decimalsInFloat: 0,
+  labels: { formatter: (val) => Math.round(val) },
+},
     legend: { position: "top", floating: true, offsetY: 8 },
     tooltip: {
       shared: true,
