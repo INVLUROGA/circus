@@ -81,13 +81,10 @@ export const App = ({ id_empresa }) => {
     [selectedMonth, year]
   );
 
-  // === Columnas para tabla legacy (si la usas en algún lugar) ===
   const columns = useMemo(
     () => mesesDinamicos.map(m => ({ key: m.mes, label: m.label, currency: "S/." })),
     [mesesDinamicos]
   );
-
- 
 
 const handleSetUltimoDiaMesesDinamicos = () => {
   const lastDaysMap = mesesDinamicos.reduce((acc, f) => {
@@ -100,8 +97,6 @@ const handleSetUltimoDiaMesesDinamicos = () => {
  
   setCutDay(lastDaysMap[meses[selectedMonth - 1]] || 30);
 };
-
-
   const dataMkt = useMemo(
     () => buildDataMktByMonth(dataLead, initDay, cutDay,canalParams),
     [dataLead, initDay, cutDay,canalParams]

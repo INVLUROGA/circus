@@ -47,7 +47,7 @@ export function TopControls({
       display: "flex",
       flexWrap: "wrap",
       alignItems: "center",
-      justifyContent: "center", // todo centrado
+      justifyContent: "center", 
       gap: 28,
       margin: "8px 0 24px",
       width: "100%",

@@ -168,7 +168,7 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
   { key: "mkLeadsTikTok",label:"CANTIDAD LEADS  TIKTOK",              type: "int"   },
     { key: "mkCplTikTok", label: "COSTO POR LEAD — TIKTOK",                type: "float2"},
   { key: "mkLeads",     label: "LEADS",                       type: "int"   },
- { key: "mkCpl",       label: "COSTO POR LEADS (PROM.)",     type: "float2"},
+ { key: "mkCpl",       label: "COSTO POR LEADS ",     type: "float2"},
   { key: "totalServ",   label: "VENTA SERVICIOS",             type: "money" },
   { key: "ticketServ",  label: "TICKET PROMEDIO SERVICIOS",   type: "money" },
   { key: "totalProd",   label: "VENTA PRODUCTOS",             type: "money" },
