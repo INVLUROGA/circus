@@ -87,16 +87,9 @@ export const App = ({ id_empresa }) => {
     [mesesDinamicos]
   );
 
-  // (opcional, lo dejas si lo usas en otra parte)
-  const marketing = {
-    inversion_redes: { marzo: 1098, abril: 3537, mayo: 4895, junio: 4622, julio: 4697, agosto: 5119, septiembre: 0 },
-    leads:           { marzo: 84,   abril: 214,  mayo: 408,  junio: 462,  julio: 320,  agosto: 417,  septiembre: 0 },
-    cpl:             { marzo: 13.07,abril: 16.53,mayo: 12,   junio: 10,   julio: 14.68,agosto: 12.28,septiembre: 0 },
-    cac:             { marzo: null, abril: null, mayo: null, junio: null, julio: null, agosto: null, septiembre: 0 },
-  };
+ 
 
 const handleSetUltimoDiaMesesDinamicos = () => {
-  // Creamos un mapa mes-a-último día
   const lastDaysMap = mesesDinamicos.reduce((acc, f) => {
     const monthIdx = new Date(`${f.anio}-${f.mes}-01`).getMonth();
     const lastDay = new Date(f.anio, monthIdx + 1, 0).getDate();
@@ -104,21 +97,10 @@ const handleSetUltimoDiaMesesDinamicos = () => {
     return acc;
   }, {});
   
-  console.log("Últimos días de los meses:", lastDaysMap);
-  // usamos el último día del mes base seleccionado
+ 
   setCutDay(lastDaysMap[meses[selectedMonth - 1]] || 30);
 };
-  // (opcional)
-  const tableData = useMemo(() => ventasToExecutiveData({
-    ventas: dataVentas,
-    columns,
-    titleLeft: "CIRCUS",
-    titleRight: `RESUMEN EJECUTIVO HASTA EL ${cutDay} DE CADA MES`,
-    marketing,
-    cutDay,
-    initDay,
-    footerFullMonth: true,
-  }), [dataVentas, columns, marketing, cutDay, initDay]);
+
 
   const dataMkt = useMemo(
     () => buildDataMktByMonth(dataLead, initDay, cutDay,canalParams),
