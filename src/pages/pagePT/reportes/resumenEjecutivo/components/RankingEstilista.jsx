@@ -293,7 +293,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
       });
 
       const data = buildModalData(ventasEmpleado);
-setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA DE CORTE ${cutDay}`);
+setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA  ${cutDay}`);
       setModalData(data);
       setModalOpen(true);
     },
