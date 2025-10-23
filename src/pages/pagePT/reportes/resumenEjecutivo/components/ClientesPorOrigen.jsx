@@ -131,7 +131,7 @@ export const ClientesPorOrigen = ({
   // --------------------------- Styles ---------------------------
   const C = {
     black: "#000000",
-    gold: "#EEBE00",
+    gold: "#ffc000",
     white: "#ffffff",
     border: "1px solid #333",
   };
@@ -173,14 +173,14 @@ export const ClientesPorOrigen = ({
   const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700, fontSize: 15 };
 
   const sTotalRow = {
-    background: "#EEBE00",
+    background: "#ffc000",
     color: "white",
     fontSize: 24,
     fontWeight: 800,
     textAlign: "center",
+    border:C.border
   };
 
-  // --------------------------- Render ---------------------------
   return (
     <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
       <div style={sTitle}>
@@ -200,7 +200,7 @@ export const ClientesPorOrigen = ({
                     ...sHead,
                     background: isLast ? "#ffc000" : sHead.background,
                     color: "#fff",
-                    fontSize: isLast ? 24 : sHead.fontSize,
+                    fontSize: 24,
                   }}
                 >
                   {m.label}
@@ -216,7 +216,7 @@ export const ClientesPorOrigen = ({
               <td
                 style={{
                   ...sCellLeft,
-                  background: "#EEBE00",
+                  background: "#ffc000",
                   color: "#fff",
                   fontWeight: 800,
                 }}

@@ -81,32 +81,22 @@ export const App = ({ id_empresa }) => {
     [selectedMonth, year]
   );
 
-  // === Columnas para tabla legacy (si la usas en algún lugar) ===
   const columns = useMemo(
     () => mesesDinamicos.map(m => ({ key: m.mes, label: m.label, currency: "S/." })),
     [mesesDinamicos]
   );
 
-  // (opcional, lo dejas si lo usas en otra parte)
-  const marketing = {
-    inversion_redes: { marzo: 1098, abril: 3537, mayo: 4895, junio: 4622, julio: 4697, agosto: 5119, septiembre: 0 },
-    leads:           { marzo: 84,   abril: 214,  mayo: 408,  junio: 462,  julio: 320,  agosto: 417,  septiembre: 0 },
-    cpl:             { marzo: 13.07,abril: 16.53,mayo: 12,   junio: 10,   julio: 14.68,agosto: 12.28,septiembre: 0 },
-    cac:             { marzo: null, abril: null, mayo: null, junio: null, julio: null, agosto: null, septiembre: 0 },
-  };
-
-  // (opcional)
-  const tableData = useMemo(() => ventasToExecutiveData({
-    ventas: dataVentas,
-    columns,
-    titleLeft: "CIRCUS",
-    titleRight: `RESUMEN EJECUTIVO HASTA EL ${cutDay} DE CADA MES`,
-    marketing,
-    cutDay,
-    initDay,
-    footerFullMonth: true,
-  }), [dataVentas, columns, marketing, cutDay, initDay]);
-
+const handleSetUltimoDiaMesesDinamicos = () => {
+  const lastDaysMap = mesesDinamicos.reduce((acc, f) => {
+    const monthIdx = new Date(`${f.anio}-${f.mes}-01`).getMonth();
+    const lastDay = new Date(f.anio, monthIdx + 1, 0).getDate();
+    acc[f.mes] = lastDay;
+    return acc;
+  }, {});
+  
+ 
+  setCutDay(lastDaysMap[meses[selectedMonth - 1]] || 30);
+};
   const dataMkt = useMemo(
     () => buildDataMktByMonth(dataLead, initDay, cutDay,canalParams),
     [dataLead, initDay, cutDay,canalParams]
@@ -195,7 +185,6 @@ export const App = ({ id_empresa }) => {
     return [{ label: mesLabel, anio: year.toString(), mes: mesNombre }];
   }, [selectedMonth, year]);
 
-  // === Render principal ===
   return (
     <>
       <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
@@ -211,7 +200,21 @@ export const App = ({ id_empresa }) => {
           setCutDay={setCutDay}
           year={year}
         />
-      </div>
+        <div
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    marginTop: "15px",
+  }}
+>
+  <button
+    onClick={handleSetUltimoDiaMesesDinamicos}
+    className="btn btn-outline-primary"
+  >
+    Usar último día del mes
+  </button>
+</div>
+</div>
 
       {/* CONTENIDO PRINCIPAL */}
       <Row>

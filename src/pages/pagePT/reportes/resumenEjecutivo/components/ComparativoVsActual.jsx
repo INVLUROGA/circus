@@ -125,7 +125,7 @@ export const ComparativoVsActual=({
     const vals = dataByMonth.get(key) || { serv: 0, prod: 0, total: 0 };
     const dServ = vals.serv - refVals.serv;
     const dProd = vals.prod - refVals.prod;
-    const dTot = vals.total - refVals.total;
+    const dTot = vals.total - refVals.total;  
     const pct = (val, ref) => {
       if (!ref) return 0;
       return ((val - ref) / ref) * 100;
@@ -143,12 +143,13 @@ export const ComparativoVsActual=({
       },
     };
   });
+const lastIdx = columns.length - 1;
 
   // --------------------------- Styles ---------------------------
   const C = {
     black: "#000000",
     white: "#ffffff",
-    red: "#EEBE00",
+    red: "#ffc000",
     red_1: "#2e7d32",
     green: "#C00000",
     greyRow: "#e9eef6",
@@ -179,12 +180,14 @@ const MoneyCell = ({ value, isLast }) => {
     <td
       style={{
         ...sCellBold,
-        background: isLast ? "#EEBE00" : sCellBold.background,
+        background: isLast ? "#ffc000" : sCellBold.background,
         color: isLast ? "#fff" : neg ? C.green : C.red_1,
         fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
         fontWeight: isLast ? 800 : sCellBold.fontWeight,
       }}
     >
+              {neg ? "-" : "+"}
+
       {fmtDeltaMoney(v)}
     </td>
   );
@@ -197,10 +200,11 @@ const PctCell = ({ value, isLast }) => {
     <td
       style={{
         ...sCellBold,
-        background: isLast ? "#EEBE00" : sCellBold.background,
+        background: isLast ? "#ffc000" : sCellBold.background,
         color: isLast ? "#fff" : neg ? C.green : C.red_1,
         fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
         fontWeight: isLast ? 800 : sCellBold.fontWeight,
+        textAlign:"center"
       }}
     >
       {fmtPct(v)}
@@ -236,7 +240,7 @@ const PctCell = ({ value, isLast }) => {
             style={{
               ...sCellBold,
               textAlign: "left",
-              background: "#EEBE00",
+              background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
             }}
@@ -246,17 +250,17 @@ const PctCell = ({ value, isLast }) => {
           {columns.map((c, idx) => (
             <MoneyCell
               key={c.key}
-              value={c.delta.serv}
-              isLast={idx === columns.length - 1}
+              value={idx  ===lastIdx ? refVals.serv : c.delta.serv}
+              isLast={idx === lastIdx}
             />
           ))}
         </tr>
-        <tr style={sRowShade}>
+        <tr style={{...sRowShade,textAlign:"center"}}>
           <td
             style={{
               ...sCellBold,
               textAlign: "left",
-              background: "#EEBE00",
+              background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
             }}
@@ -290,7 +294,7 @@ const PctCell = ({ value, isLast }) => {
             style={{
               ...sCellBold,
               textAlign: "left",
-              background: "#EEBE00",
+              background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
             }}
@@ -300,17 +304,17 @@ const PctCell = ({ value, isLast }) => {
           {columns.map((c, idx) => (
             <MoneyCell
               key={c.key}
-              value={c.delta.prod}
-              isLast={idx === columns.length - 1}
+              value={idx === lastIdx ? refVals.prod : c.delta.prod}
+              isLast={idx === lastIdx}
             />
           ))}
         </tr>
-        <tr style={sRowShade}>
+        <tr style={{...sRowShade,textAlign:"center"}}>
           <td
             style={{
               ...sCellBold,
               textAlign: "left",
-              background: "#EEBE00",
+              background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
             }}
@@ -332,7 +336,7 @@ const PctCell = ({ value, isLast }) => {
     <table style={{ ...sTable, marginTop: 12 }}>
       <thead>
         <tr>
-          <th style={sHeadLeft}>TOTAL</th>
+          <th style={{...sHeadLeft}}>TOTAL</th>
           {columns.map((c) => (
             <MonthHead key={c.key} col={c} />
           ))}
@@ -344,7 +348,7 @@ const PctCell = ({ value, isLast }) => {
             style={{
               ...sCellBold,
               textAlign: "left",
-              background: "#EEBE00",
+              background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
             }}
@@ -354,17 +358,17 @@ const PctCell = ({ value, isLast }) => {
           {columns.map((c, idx) => (
             <MoneyCell
               key={c.key}
-              value={c.delta.total}
-              isLast={idx === columns.length - 1}
+              value={idx===lastIdx ? refVals.total : c.delta.total}
+              isLast={idx === lastIdx}
             />
           ))}
         </tr>
-        <tr style={sRowShade}>
+        <tr style={{...sRowShade,textAlign:"center"}}>
           <td
             style={{
               ...sCellBold,
               textAlign: "left",
-              background: "#EEBE00",
+              background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
             }}
