@@ -2,11 +2,11 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { Dialog } from "primereact/dialog";
 import { NumberFormatMoney } from "@/components/CurrencyMask";
 import { useTerminoMetodoPagoStore } from "@/hooks/hookApi/FormaPagoStore/useTerminoMetodoPagoStore";
-import { PTApi } from "@/common/api/";
 
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontWeight: "bold" };
 const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "20px" };
 const tdfinal = { fontSize: 25, color: "white" };
+const tdinicio={fontSize:20}
 
 const toKey = (s = "") =>
   String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
@@ -176,8 +176,13 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     );
   }, []);
 
-  // 🔹 aplica filtro de fechas
-  const ventasMes = useMemo(() => {
+
+const canon = (s) =>
+  String(s ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();  const ventasMes = useMemo(() => {
     if (Array.isArray(filtrarFecha)) {
       return filtrarFecha.flatMap((f) =>
         filtrarVentasPorMes(dataVenta, f, initialDay, cutDay)
@@ -186,9 +191,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     return filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay);
   }, [dataVenta, filtrarFecha, initialDay, cutDay]);
 
-  // 🔹 resto igual a tu versión anterior
-  
- function buildModalData(ventasEmpleado = []) {
+  function buildModalData(ventasEmpleado = [], empleadoKey /* <- canon(nombre) */) {
   const headerLabel = {};
   for (const v of ventasEmpleado) {
     for (const p of getPagos(v)) {
@@ -205,17 +208,19 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
   const totalesMetodo = Object.fromEntries(Object.keys(headerLabel).map((k) => [k, 0]));
 
   for (const v of ventasEmpleado) {
-    const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : [];
     const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : [];
 
     const pagosByMethod = getPagos(v).reduce((acc, p) => {
       const k = methodKey(p.label);
-      if (k) acc[k] = (acc[k] || 0) + p.monto;
+      if (k) acc[k] = (acc[k] || 0) + Number(p.monto || 0);
       return acc;
     }, {});
 
-    // === SERVICIOS ===
     for (const s of servicios) {
+      const emp = canon(s?.empleado_servicio?.nombres_apellidos_empl);
+      if (emp !== empleadoKey) continue; 
+
       const cantidad = Number(s?.cantidad ?? 1) || 0;
       const pVenta = Number(s?.tarifa_monto) || 0;
       const totalLinea = cantidad * pVenta;
@@ -236,43 +241,36 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
       });
     }
 
-    // === PRODUCTOS ===
-    for (const p of productos) {
-      const cantidad = Number(p?.cantidad ?? 1) || 0;
-      const precioVentaU = Number(p?.tarifa_monto) || Number(p?.tb_producto?.prec_venta) || 0;
-      const precioCompraU = Number(p?.tb_producto?.prec_compra) || 0;
-      const nombre = p?.tb_producto?.nombre_producto || p?.nombre_producto || p?.nombre || "-";
-      const totalLinea = precioVentaU * cantidad;
+    // ===== PRODUCTOS (solo del asesor) =====
+for (const p of productos) {
+  const cantidad       = Number(p?.cantidad ?? 1) || 1;
+  const precioVentaU   = Number(p?.tarifa_monto) || Number(p?.tb_producto?.prec_venta) || 0;
+  const precioCompraU  = Number(p?.tb_producto?.prec_compra) || 0;
+  const nombre         = p?.tb_producto?.nombre_producto || p?.nombre_producto || p?.nombre || "-";
+  const totalLinea     = precioVentaU * cantidad;
 
-      const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
-      for (const [k, vmet] of Object.entries(lineaMetodos)) totalesMetodo[k] += Number(vmet) || 0;
-
-      for (const [metodo, monto] of Object.entries(lineaMetodos)) {
-        productosFlat.push({
-          nombre,
-          metodo,
-          cantidad,
-          precioVentaU,
-          precioCompraU,
-          monto,
-        });
-      }
-    }
+  // 1) SOLO usamos el reparto por método para acumular totales por método
+  const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
+  for (const [k, vmet] of Object.entries(lineaMetodos)) {
+    totalesMetodo[k] += Number(vmet) || 0;
   }
 
-  // === AGRUPAR PRODUCTOS (por nombre + método + precio) ===
+  // 2) Para el ranking de productos NO creamos filas por método (evitamos duplicar cantidades)
+  productosFlat.push({
+    nombre,
+    cantidad,
+    precioVentaU,
+    precioCompraU,
+  });
+}
+    
+  }
   const productosAgrupados = Object.values(
     productosFlat.reduce((acc, p) => {
       const key = `${p.nombre}-${p.metodo}-${p.precioVentaU}`;
       if (!acc[key])
-        acc[key] = {
-          nombre: p.nombre,
-          metodo: p.metodo,
-          cantidad: 0,
-          precioVentaU: p.precioVentaU,
-          precioCompraU: p.precioCompraU,
-        };
-      acc[key].cantidad += p.cantidad;
+        acc[key] = { ...p, cantidad: 0 };
+    acc[key].cantidad += Number(p.cantidad) || 0;
       return acc;
     }, {})
   );
@@ -295,18 +293,17 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     }, {})
   );
 
-  // === ORDENAMIENTO (mayor a menor por cantidad y total) ===
   const serviciosOrdenados = [...serviciosAgrupados].sort((a, b) => {
     const totalA = (a.pVenta || 0) * (a.cantidad || 0);
     const totalB = (b.pVenta || 0) * (b.cantidad || 0);
     return totalB - totalA;
   });
 
-  const productosOrdenados = [...productosAgrupados].sort((a, b) => {
-    const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
-    const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
-    return totalB - totalA;
-  });
+const productosOrdenados = [...productosAgrupados].sort((a, b) => {
+  const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
+  const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
+  return totalB - totalA;
+});
 
   const totalPVentaServs = serviciosOrdenados.reduce(
     (a, s) => a + s.pVenta * s.cantidad,
@@ -356,24 +353,27 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
 }
 
   const handleRowClick = useCallback(
-    (empleadoNombre) => {
-      const ventasEmpleado = ventasMes.filter((v) => {
-        const matchServ = (v?.detalle_ventaservicios || []).some(
-          (it) => it?.empleado_servicio?.nombres_apellidos_empl === empleadoNombre
-        );
-        const matchProd = (v?.detalle_ventaProductos || []).some(
-          (it) => it?.empleado_producto?.nombres_apellidos_empl === empleadoNombre
-        );
-        return matchServ || matchProd;
-      });
+  (empleadoNombre) => {
+    const key = canon(empleadoNombre);
 
-      const data = buildModalData(ventasEmpleado);
-      setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA ${cutDay}`);
-      setModalData(data);
-      setModalOpen(true);
-    },
-    [ventasMes]
-  );
+    const ventasEmpleado = ventasMes.filter((v) => {
+      const matchServ = (v?.detalle_ventaservicios || []).some(
+        (it) => canon(it?.empleado_servicio?.nombres_apellidos_empl) === key
+      );
+      const matchProd = (v?.detalle_ventaProductos || []).some(
+        (it) => canon(it?.empleado_producto?.nombres_apellidos_empl) === key
+      );
+      return matchServ || matchProd;
+    });
+
+    const data = buildModalData(ventasEmpleado, key); // << pasamos la clave
+    setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA ${cutDay}`);
+    setModalData(data);
+    setModalOpen(true);
+  },
+  [ventasMes, cutDay]
+);
+
 
   return (
     <>
@@ -381,7 +381,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
       <Dialog
         header={<div style={{ textAlign: "center", fontSize: 30, fontWeight: 800 }}>{modalTitle}</div>}
         visible={modalOpen}
-        style={{ width: "100vw", maxWidth: "1400px", margin: "0 auto" }}
+        style={{ width: "150vw", maxWidth: "1400px", margin: "0 auto" }}
         modal
         onHide={() => setModalOpen(false)}
         footer={
@@ -421,20 +421,19 @@ function RankingDialogContent({ modalData }) {
               { label: "Venta Productos", value: <NumberFormatMoney amount={modalData.totalPVentaProd} /> },
             ].map((item, i) => (
               <div key={i} style={{ border: "2px solid #d4af37", borderRadius: 8, padding: 12, background: "#fff" }}>
-                <div style={{ fontSize: 15, opacity: 0.7 }}>{item.label}</div>
-                <div style={{ fontWeight: 800, fontSize: 25 }}>{item.value}</div>
+                <div style={{ fontSize: 15, opacity: 0.7,textAlign:"center" }}>{item.label}</div>
+                <div style={{ fontWeight: 800, fontSize: 25 ,textAlign:"center"}}>{item.value}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* === Totales por método === */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8, margin: "20px 0" }}>
         {modalData.methodsToShow.map((m) => (
           <div key={m} style={{ border: "2px solid #d4af37", borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 15, opacity: 0.7 }}>{modalData.headerLabel[m] || m}</div>
-            <div style={{ fontWeight: 800, fontSize: 25 }}>
+            <div style={{ fontSize: 15, opacity: 0.7,textAlign:"center" }}>{modalData.headerLabel[m] || m}</div>
+            <div style={{ fontWeight: 800, fontSize: 25,textAlign:"center" }}>
               <NumberFormatMoney amount={modalData.totalPorMetodo?.[m] || 0} />
             </div>
           </div>
@@ -444,7 +443,7 @@ function RankingDialogContent({ modalData }) {
       {/* === Resumen servicios === */}
       {modalData.modalResumen && (
         <div style={{ marginTop: 24 }}>
-          <div style={{ fontWeight: 900, textAlign: "center", fontSize: 25 }}>
+          <div style={{ fontWeight: 1000, textAlign: "center", fontSize: 25 }}>
             VENTAS POR SERVICIOS
           </div>
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 20, textAlign: "center" }}>
@@ -459,11 +458,11 @@ function RankingDialogContent({ modalData }) {
             </thead>
             <tbody>
               <tr>
-                <td><NumberFormatMoney amount={modalData.modalResumen.bruto} /></td>
-                <td style={{ color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.igv} /></td>
-                <td style={{ color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.renta} /></td>
-                <td style={{ color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.tarjeta} /></td>
-                <td style={{ color: "#007b00", fontWeight: 700 }}>
+                <td style={{fontSize:"25px"}}><NumberFormatMoney amount={modalData.modalResumen.bruto} /></td>
+                <td style={{ ...tdfinal,color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.igv} /></td>
+                <td style={{ ...tdfinal,color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.renta} /></td>
+                <td style={{...tdfinal, color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.tarjeta} /></td>
+                <td style={{...tdfinal, color: "#007b00", fontWeight: 700 }}>
                   <NumberFormatMoney amount={modalData.modalResumen.neto} />
                 </td>
               </tr>
@@ -655,37 +654,37 @@ function RankingDialogContent({ modalData }) {
                     {p.nombre}
                   </td>
 
-                  <td style={{ textAlign: "center" }}>{p.cantidad}</td>
+                  <td style={{ ...tdinicio,textAlign: "center" }}>{p.cantidad}</td>
 
-                  <td style={{ textAlign: "center" }}>
+                  <td style={{ ...tdinicio,textAlign: "center" }}>
                     <NumberFormatMoney amount={p.precioVentaU || 0} />
                   </td>
 
-                  <td style={{ textAlign: "center", fontWeight: 600, color: "#007b00" }}>
+                  <td style={{ ...tdinicio,textAlign: "center", fontWeight: 600, color: "#007b00" }}>
                     <NumberFormatMoney amount={venta} />
                   </td>
 
-                  <td style={{ textAlign: "center", color: "red" }}>
+                  <td style={{...tdinicio, textAlign: "center", color: "red" }}>
                     <NumberFormatMoney amount={igv} />
                   </td>
 
-                  <td style={{ textAlign: "center", color: "red" }}>
+                  <td style={{ ...tdinicio,textAlign: "center", color: "red" }}>
                     <NumberFormatMoney amount={tarjeta} />
                   </td>
 
-                  <td style={{ textAlign: "center", color: "red" }}>
+                  <td style={{ ...tdinicio,textAlign: "center", color: "red" }}>
                     <NumberFormatMoney amount={renta} />
                   </td>
 
-                  <td style={{ textAlign: "center", color: "red" }}>
+                  <td style={{...tdinicio, textAlign: "center", color: "red" }}>
                     <NumberFormatMoney amount={compra} />
                   </td>
 
-                  <td style={{ textAlign: "center", fontWeight: 600, color: "green" }}>
+                  <td style={{...tdinicio, textAlign: "center", fontWeight: 600, color: "green" }}>
                     <NumberFormatMoney amount={utilBruta} />
                   </td>
 
-                  <td style={{ textAlign: "center", color: "red" }}>
+                  <td style={{ ...tdinicio,textAlign: "center", color: "red" }}>
                     <NumberFormatMoney amount={comision} />
                   </td>
 
@@ -725,30 +724,30 @@ function RankingDialogContent({ modalData }) {
               <tr className="bg-primary text-white" style={{ fontWeight: 900 }}>
                 <td></td>
                 <td style={{ textAlign: "left" }}>TOTALES</td>
-                <td style={{ textAlign: "center" }}>{totalCantidad}</td>
+                <td style={{ ...tdfinal,textAlign: "center" }}>{totalCantidad}</td>
                 <td></td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{ ...tdfinal,textAlign: "center" }}>
                   <NumberFormatMoney amount={totalVenta} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{...tdfinal, textAlign: "center" }}>
                   <NumberFormatMoney amount={totalIGV} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{...tdfinal, textAlign: "center" }}>
                   <NumberFormatMoney amount={totalTarjeta} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{...tdfinal, textAlign: "center" }}>
                   <NumberFormatMoney amount={totalRenta} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{...tdfinal, textAlign: "center" }}>
                   <NumberFormatMoney amount={totalCompra} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{...tdfinal, textAlign: "center" }}>
                   <NumberFormatMoney amount={totalUtilBruta} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{...tdfinal, textAlign: "center" }}>
                   <NumberFormatMoney amount={totalComision} />
                 </td>
-                <td style={{ textAlign: "center" }}>
+                <td style={{ ...tdfinal,textAlign: "center" }}>
                   <NumberFormatMoney amount={totalUtilNeta} />
                 </td>
               </tr>
