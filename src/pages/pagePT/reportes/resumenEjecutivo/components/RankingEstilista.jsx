@@ -644,7 +644,6 @@ function RankingDialogContent({ modalData }) {
                   >
                     {i + 1}
                   </td>
-
                   <td
                     style={{
                       textAlign: "left",

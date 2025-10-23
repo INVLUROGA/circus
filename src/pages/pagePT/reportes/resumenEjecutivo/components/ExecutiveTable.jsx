@@ -1,3 +1,4 @@
+import { m } from "framer-motion";
 import React from "react";
 
 /**
@@ -113,18 +114,14 @@ const mkLeadsMeta   = valLead("1515") + valLead("meta") + valLead("facebook") + 
 const cpl_por_red = mk?.cpl_por_red || {};
 const sumFrom = (obj, keys) => keys.reduce((a,k)=> a + Number(obj?.[k] ?? 0), 0);
 
-// CPL por red (inv/leads) → aplicamos 3.7 igual que al CPL total que muestras
 const mkCplTikTok = sumFrom(cpl_por_red, ["1514","tiktok","tik tok"]) * 3.7;
 const mkCplMeta   = sumFrom(cpl_por_red, ["1515","meta","facebook","instagram"]) * 3.7;
-// 🔹 Inversión por red
 const por_red = mk?.por_red || {};
 const valInv = (k) => Number(por_red?.[k] ?? 0);
 
-// raw por canal
 const mkInvTikTokRaw = valInv("1514") + valInv("tiktok") + valInv("tik tok");
 const mkInvMetaRaw   = valInv("1515") + valInv("meta") + valInv("facebook") + valInv("instagram");
 
-// aplica el factor 3.7 igual que al total
 const mkInvTikTok = mkInvTikTokRaw * 3.7;
 const mkInvMeta   = mkInvMetaRaw * 3.7;
 
@@ -210,7 +207,6 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
   const sCellBold = {  border, padding: "8px 10px",background: cWhite, fontWeight: 700, fontSize: 17 };
   const sRowBlack = { background: cBlack, color: cWhite, fontWeight: 700 };
   const gold = "#ffc000";
-  const red = "#c00000";
 
   const cellStyle = (isLast) => ({
     ...sCell,
@@ -232,7 +228,7 @@ return (
     <table style={sTable}>
       <thead>
         <tr>
-          <th style={{ ...sThLeft, background: gold, color: "#000" }}>MES</th>
+          <th style={{ ...sThLeft, background: gold, color: "#000" }}></th>
           {perMonth.map((m, idx) => {
             const isLast = idx === perMonth.length - 1;
             return (
@@ -328,6 +324,30 @@ return (
               >
                 {fmtMoney(m.metrics?.totalMesFull || 0)}
               </th>
+            );
+          })}
+        </tr>
+        <tr>
+          <td style={{...sCellBold,background:gold,color:"#fff"
+            ,textAlign:"center",fontWeight:800,fontSize:25
+          }}
+          > </td>
+        
+          {perMonth.map((m, idx) => {
+            const isLast = idx === perMonth.length - 1;
+            return (
+              <td
+                key={`footer-month-${idx}`}
+                style={{
+                  ...sCellBold,
+                  background: gold,
+                  color: "#000",
+                  fontSize: isLast ? 23 : 23,
+                  textAlign: "center",
+                }}
+              >
+                {m.label}
+              </td>
             );
           })}
         </tr>

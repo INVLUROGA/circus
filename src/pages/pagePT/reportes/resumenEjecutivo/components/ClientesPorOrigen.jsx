@@ -178,6 +178,7 @@ export const ClientesPorOrigen = ({
     fontSize: 24,
     fontWeight: 800,
     textAlign: "center",
+    border:C.border
   };
 
   // --------------------------- Render ---------------------------
