@@ -126,30 +126,46 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
       y: { formatter: (val) => `${val}` },
     },
   };
-  const pillColor={
-    ambos:"#dc3545",
-    meta:"#0d6efd",
-    tiktok:"#00000",
-  }
-  const pill = (key, label) => {
-    const active = red === key;
-    const color = pillColor[key] || "#0d6efd";
+ const ICONS = {
+    ambos: { src: "/src/assets/images/change-logo-dark-transparente.png", label: "Ambos" },
+    meta: { src: "/meta.jpg", color: "#0d6efd", label: "Meta" },
+    tiktok: { src: "/tiktok.png", color: "#000000", label: "TikTok" },
+  };
+
+  const IconFilter = ({ keyName }) => {
+    const active = red === keyName;
+    const { src, color, label } = ICONS[keyName];
     return (
       <button
-        key={key}
-        onClick={() => setRed(key)}
-        style={{
-          border: `1px solid ${color}`,
-          background: active ? color:"transparent",
-          color: active ? "#fff" : color,
-          borderRadius: 999,
-          padding: "6px 12px",
-          fontSize: 13,
-          fontWeight: 700,
+      onClick={()=>setRed(keyName)}
+      aria-label={label}
+       title={label}
+      style={{
+         display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 44,
+          height: 44,
+          borderRadius: "999px",
+          border: `2px solid ${active ? color : "transparent"}`,
+          background: "transparent",
+          padding: 4,
           cursor: "pointer",
-        }}
+          transition: "all .15s ease",
+          boxShadow: active ? `0 0 0 2px ${color}22` : "none",
+      }}
+
       >
-        {label}
+    <img
+          src={src}
+          alt={label}
+          style={{
+            width: 32,
+            height: 32,
+            objectFit: "contain",
+            transform: active ? "scale(1.05)" : "scale(1)",
+          }}
+        />
       </button>
     );
   };
@@ -160,16 +176,18 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
       <div
         style={{
           display: "flex",
-          gap: 10,
+          gap: 14,
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 8,
+                    flexWrap: "wrap",
+
         }}
       >
         <span style={{ fontSize: 12, opacity: 0.8 }}>Fuente:</span>
-        {pill("ambos", "Ambos")}
-        {pill("meta", "Meta")}
-        {pill("tiktok", "TikTok")}
+      <IconFilter keyName="ambos"/>
+      <IconFilter keyName="meta"/>
+      <IconFilter keyName="tiktok"/>
       </div>
 
       <Chart options={options} series={series} type="line" height={450} />
