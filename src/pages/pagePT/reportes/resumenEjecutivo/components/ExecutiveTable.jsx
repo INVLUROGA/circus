@@ -157,21 +157,21 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
   };
 
  const rows = [
-  { key: "mkInv",       label: "INVERSIÓN TOTAL REDES",      type: "money" },
-  { key: "mkInvMeta",   label: "INVERSIÓN  META",            type: "money" },
-    { key: "mkLeadsMeta", label: "CANTIDAD LEADS META",                type: "int"   },
-      { key: "mkCplMeta",   label: "COSTO POR LEAD — META",                  type: "float2"},
-  { key: "mkInvTikTok", label: "INVERSIÓN  TIKTOK",          type: "money" },
-  { key: "mkLeadsTikTok",label:"CANTIDAD LEADS  TIKTOK",              type: "int"   },
-    { key: "mkCplTikTok", label: "COSTO POR LEAD — TIKTOK",                type: "float2"},
-  { key: "mkLeads",     label: "LEADS",                       type: "int"   },
- { key: "mkCpl",       label: "COSTO POR LEADS ",     type: "float2"},
-  { key: "totalServ",   label: "VENTA SERVICIOS",             type: "money" },
-  { key: "ticketServ",  label: "TICKET PROMEDIO SERVICIOS",   type: "money" },
-  { key: "totalProd",   label: "VENTA PRODUCTOS",             type: "money" },
-  { key: "cantProd",    label: "CANTIDAD PRODUCTOS",          type: "int"   },
-  { key: "cantServ",    label: "CANTIDAD SERVICIOS",          type: "int"   },
-  { key: "ticketProd",  label: "TICKET PROMEDIO PRODUCTOS",   type: "money" },
+  { key: "mkInv",       label: "INVERSIÓN TOTAL REDES",type: "money" },
+  { key: "mkInvMeta",   label: "INVERSIÓN  META",type: "money" },
+    { key: "mkLeadsMeta", label: "CANTIDAD LEADS META",type: "int"   },
+      { key: "mkCplMeta",   label: "COSTO POR LEAD  META",type: "float2"},
+  { key: "mkInvTikTok", label: "INVERSIÓN  TIKTOK",type: "money" },
+  { key: "mkLeadsTikTok",label:"CANTIDAD LEADS  TIKTOK",type: "int"   },
+    { key: "mkCplTikTok", label: "COSTO POR LEAD TIKTOK",type: "float2"},
+  { key: "mkLeads",     label: "TOTAL LEADS DE META Y TIKTOK",type: "int"   },
+ { key: "mkCpl",       label: "COSTO TOTAL POR LEADS DE META Y TIKTOK ",     type: "float2"},
+  { key: "totalServ",   label: "VENTA SERVICIOS",type: "money" },
+    { key: "cantServ",    label: "CANTIDAD SERVICIOS",type: "int"   },
+  { key: "ticketServ",  label: "TICKET MEDIO SERVICIOS",   type: "money" },
+  { key: "totalProd",   label: "VENTA PRODUCTOS",type: "money" },
+  { key: "cantProd",    label: "CANTIDAD PRODUCTOS",type: "int"   },
+  { key: "ticketProd",  label: "TICKET MEDIO PRODUCTOS",   type: "money" },
 ];
 
 
@@ -182,7 +182,6 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
     metrics: computeMetricsForMonth(f?.anio, f?.mes),
   }));
 
-  // --------------------------- Styles ---------------------------
   const cBlack = "#000000";
   const cWhite = "#ffffff";
   const border = "1px solid #333";
@@ -230,7 +229,7 @@ return (
         <tr>
           <th style={{ ...sThLeft, background: gold, color: "#000" }}></th>
           {perMonth.map((m, idx) => {
-            const isLast = idx === perMonth.length - 1;
+            const isLast = idx === perMonth.length ;
             return (
               <th key={idx} style={thStyle(isLast)}>
                 <div>{m.label}</div>
@@ -290,7 +289,7 @@ return (
         {/* CAC */}
         <tr>
           <td style={{ ...sCellBold, background: gold, color: "#000", fontWeight: 800 }}>
-            CALCULO ADQUISICION DE CLIENTES
+            COSTO ADQUISICION DE CLIENTES
           </td>
           {perMonth.map((m, idx) => {
             const isLast = idx === perMonth.length - 1;

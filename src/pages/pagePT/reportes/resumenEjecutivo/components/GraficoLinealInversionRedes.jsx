@@ -1,166 +1,178 @@
 import React, { useMemo, useState } from "react";
 import Chart from "react-apexcharts";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import "dayjs/locale/es";
+dayjs.extend(utc);
 dayjs.locale("es");
 
-const ID_META = 1515;
-const ID_TIKTOK = 1514;
+export const GraficoLinealInversionRedes = ({ data = [] }) => {
+  // 'ambos' | 'meta' | 'tiktok'
+  const [red, setRed] = useState("ambos");
 
-export const GraficoLinealInversionRedes = ({ data }) => {
-  // "todos" | "meta" | "tiktok"
-  const [filtro, setFiltro] = useState("todos");
+  // --- helpers para detectar red ---
+  const norm = (s) =>
+    String(s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
 
-  // Asegura arreglo y usa los 4 más recientes en orden cronológico
-  const firstFour = (Array.isArray(data) ? data : []).slice(0, 4).reverse();
+  const getId = (it) =>
+    Number(
+      it?.id_param ??
+        it?.idRed ??
+        it?.id_red ??
+        it?.id_canal ??
+        it?.canal_id ??
+        it?.origen_id ??
+        it?.id
+    );
 
-  // Mes base para categorías
- // Determinar mes con datos más recientes
-const latestItems = firstFour
-  .flatMap((m) => m.items || [])
-  .filter((i) => i.fecha)
-  .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+  const labelFrom = (it) =>
+    it?.parametro?.label_param ??
+    it?.label_param ??
+    it?.nombre_param ??
+    it?.canal ??
+    it?.red ??
+    it?.origen ??
+    it?.origen_label ??
+    it?.label ??
+    "";
 
-const baseMonth = latestItems[0]
-  ? dayjs(latestItems[0].fecha)
-  : dayjs();
+  const detectNetwork = (it) => {
+    const id = getId(it);
+    if (id === 1515) return "meta";
+    if (id === 1514) return "tiktok";
 
-const daysInMonth = baseMonth.daysInMonth();
+    const L = norm(labelFrom(it));
+    if (/(meta|facebook|instagram)/.test(L)) return "meta";
+    if (/tiktok/.test(L)) return "tiktok";
+    return "desconocido";
+  };
 
+  const keepByFilter = (it) => {
+    if (red === "ambos") return true;
+    return detectNetwork(it) === red;
+  };
 
-
-  // === Eje X: "LUNES 1", "MARTES 2", ...
-  const categories = Array.from({ length: daysInMonth }, (_, i) => {
-    const d = baseMonth.date(i + 1);
-    return `${d.format("dddd").toUpperCase()} ${i + 1}`;
-  });
-
-  // === Conteo por día para Meta y TikTok (para mostrar en eje X y tooltip)
-  const leadsByLabel = Object.fromEntries(
-    categories.map((c) => [c, { meta: 0, tiktok: 0 }])
-  );
-
-  for (const m of firstFour) {
-    const items = Array.isArray(m.items) ? m.items : [];
-    for (const it of items) {
-      const d = dayjs(it.fecha);
-      if (!d.isValid()) continue;
-      if (d.month() !== baseMonth.month() || d.year() !== baseMonth.year())
-        continue;
-
-      const label = `${d.format("dddd").toUpperCase()} ${d.date()}`;
-      const id = Number(it?.id_red);
-      const cant = Number(
-        typeof it?.cantidad === "string" ? it.cantidad.trim() : it?.cantidad
-      );
-
-      if (!Number.isFinite(cant)) continue;
-      if (id === ID_META) leadsByLabel[label].meta += cant;
-      if (id === ID_TIKTOK) leadsByLabel[label].tiktok += cant;
-    }
-  }
+  const lastFour = (Array.isArray(data) ? data : []).slice(0, 4).reverse();
 
   const series = useMemo(() => {
-    const filtroId =
-        filtro === "meta" ? ID_META : filtro === "tiktok" ? ID_TIKTOK : null;
-    return firstFour.map((m, idx) => {
-      const items = Array.isArray(m.items) ? m.items : [];
-      const puntos =[];
+    return lastFour.map((m, idx) => {
+      const items = Array.isArray(m?.items) ? m.items.filter(keepByFilter) : [];
+      const base = items[0] ? dayjs.utc(items[0].fecha) : dayjs();
+      const daysInMonth = base.daysInMonth();
+      const buckets = Array(daysInMonth).fill(0);
 
       for (const it of items) {
-        const d = dayjs(it.fecha);
+        const d = dayjs.utc(it?.fecha);
         if (!d.isValid()) continue;
+        if (d.month() !== base.month() || d.year() !== base.year()) continue;
 
-        const id= Number(it?.id_red);
-        if(filtroId && id !==filtroId) continue;
+        const day = d.date(); 
+        const raw =
+          typeof it?.cantidad === "string" ? it.cantidad.trim() : it?.cantidad;
+        const val = Number(raw);
+        buckets[day - 1] += Number.isFinite(val) ? val : 0;
+      }
 
-        const val = Number(it?.cantidad ?? 0);
-        if(!Number.isFinite(val)) continue;
+      return {
+        name: m?.fecha ?? `Serie ${idx + 1}`,
+        data: buckets,
+      };
+    });
+  }, [lastFour, red]);
 
-        const label = `${d.format("MMMM").toUpperCase()} ${d.date()}`;
-      puntos.push({ x: label, y: val });
-    }
-    return{
-      name: m?.fecha ?? `Serie ${idx + 1}`,
-      data: puntos,
-    };
-  });
-}, [firstFour, filtro]);
+  const baseMonthForAxis = useMemo(() => {
+    const withItems = lastFour.find((m) => Array.isArray(m?.items) && m.items.length > 0);
+    const ref = withItems?.items?.[0]?.fecha;
+    return ref ? dayjs(ref) : dayjs();
+  }, [lastFour, red]);
+
+  const daysInMonth = baseMonthForAxis.daysInMonth();
+  const categories = useMemo(
+    () =>
+      Array.from({ length: daysInMonth }, (_, i) => {
+        const d = baseMonthForAxis.date(i + 1);
+        return `${d.format("dddd")} ${i + 1}`.toUpperCase();
+      }),
+    [baseMonthForAxis, daysInMonth]
+  );
 
   const options = {
     chart: { type: "line", toolbar: { show: false }, parentHeightOffset: 0 },
     stroke: { curve: "smooth", width: 3 },
     markers: { size: 4 },
-    grid: { padding: { bottom: 120, left: 8, right: 8 } },
-xaxis: {
-  type: "category",
-  labels: {
-    rotate: -90,
-    rotateAlways: true,
-    style: { fontSize: "10px" },
-    formatter: (val) => val,
-  },
-},
-
-yaxis: {
-  title: { text: "CANTIDAD" },
-  min: 0,
-  forceNiceScale: true,
-  decimalsInFloat: 0,
-  labels: { formatter: (val) => Math.round(val) },
-},
-    legend: { position: "top", floating: true, offsetY: 8 },
-    tooltip: {
-      shared: true,
-      intersect: false,
-      custom: ({ dataPointIndex }) => {
-        const label = categories[dataPointIndex];
-        const { meta, tiktok } = leadsByLabel[label] || { meta: 0, tiktok: 0 };
-        return `<div class="apex-tooltip">
-          <div style="font-weight:700;margin-bottom:4px">${label}</div>
-          <div>META: <b>${meta}</b> &nbsp;•&nbsp; TIKTOK: <b>${tiktok}</b></div>
-        </div>`;
+    grid: {
+      padding: { bottom: 90, left: 8, right: 8 },
+    },
+    xaxis: {
+      categories,
+      labels: {
+        rotate: -90,
+        rotateAlways: true,
+        hideOverlappingLabels: false,
+        trim: false,
+        style: { fontSize: "10px" },
+        offsetY: 8,
+        minHeight: 80,
+        maxHeight: 120,
       },
     },
+    yaxis: { title: { text: "Cantidad" } },
+    legend: { position: "top", floating: true, offsetY: 8 },
+    tooltip: {
+      x: { show: true },
+      y: { formatter: (val) => `${val}` },
+    },
+  };
+  const pillColor={
+    ambos:"#dc3545",
+    meta:"#0d6efd",
+    tiktok:"#00000",
+  }
+  const pill = (key, label) => {
+    const active = red === key;
+    const color = pillColor[key] || "#0d6efd";
+    return (
+      <button
+        key={key}
+        onClick={() => setRed(key)}
+        style={{
+          border: `1px solid ${color}`,
+          background: active ? color:"transparent",
+          color: active ? "#fff" : color,
+          borderRadius: 999,
+          padding: "6px 12px",
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        {label}
+      </button>
+    );
   };
 
   return (
-    <>
-      {/* Filtros locales */}
+    <div>
+      {/* Filtro de redes */}
       <div
         style={{
           display: "flex",
           gap: 10,
+          alignItems: "center",
           justifyContent: "center",
-          marginBottom: 12,
+          marginBottom: 8,
         }}
       >
-        <button
-          className={`btn ${filtro === "todos" ? "btn-warning" : "btn-outline-warning"}`}
-          onClick={() => setFiltro("todos")}
-        >
-          TODOS
-        </button>
-        <button
-          className={`btn ${filtro === "meta" ? "btn-primary" : "btn-outline-primary"}`}
-          onClick={() => setFiltro("meta")}
-        >
-          META
-        </button>
-        <button
-          className={`btn ${filtro === "tiktok" ? "btn-danger" : "btn-outline-danger"}`}
-          onClick={() => setFiltro("tiktok")}
-        >
-          TIKTOK
-        </button>
+        <span style={{ fontSize: 12, opacity: 0.8 }}>Fuente:</span>
+        {pill("ambos", "Ambos")}
+        {pill("meta", "Meta")}
+        {pill("tiktok", "TikTok")}
       </div>
 
-      {/* Permite salto de línea en etiquetas del eje X */}
-      <style>{`
-        .apexcharts-xaxis text, .xlab-2lines { white-space: pre-line; }
-      `}</style>
-
       <Chart options={options} series={series} type="line" height={450} />
-    </>
+    </div>
   );
 };

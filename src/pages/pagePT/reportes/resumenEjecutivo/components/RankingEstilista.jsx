@@ -454,7 +454,7 @@ function RankingDialogContent({ modalData }) {
                 <th>IGV (-18%)</th>
                 <th>Renta (-3%)</th>
                 <th>Tarjeta (-4.5%)</th>
-                <th>Ingreso Neto</th>
+                <th>Venta Neta</th>
               </tr>
             </thead>
             <tbody>
@@ -606,7 +606,6 @@ function RankingDialogContent({ modalData }) {
             const RATE_RENTA = 0.03;
             const RATE_COMISION = 0.10;
 
-            // 🔹 Agrupar productos iguales por nombre y precio unitario
             const productosUnificados = Object.values(
               modalData.productosAgrupados.reduce((acc, p) => {
                 const key = `${p.nombre}-${p.precioVentaU}-${p.precioCompraU}`;
@@ -616,7 +615,6 @@ function RankingDialogContent({ modalData }) {
               }, {})
             );
 
-            // 🔹 Ordenar de mayor a menor por monto total vendido
             const productosOrdenados = [...productosUnificados].sort((a, b) => {
               const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
               const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
@@ -772,7 +770,6 @@ function RankingDialogContent({ modalData }) {
 function TablaRanking({ ventas, onRowClick }) {
   const ranking = useMemo(() => rankingPorEmpleado(ventas), [ventas]);
 
-  // Calcular totales generales
   const totalClientes = ranking.reduce((acc, r) => acc + (r.cantidadVentas || 0), 0);
   const totalCantServ = ranking.reduce((acc, r) => acc + (r.cantidadServicios || 0), 0);
   const totalVentasServ = ranking.reduce((acc, r) => acc + (r.ventasServicios || 0), 0);
