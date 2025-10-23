@@ -129,7 +129,7 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
   // ==== NUEVO: calcula el rango [desde, hasta) según el grupo clicado
   const getRangeFromGroup = (modoActual, clave) => {
     if (modoActual === 'dia') {
-      const desde = dayjs.utc(`${clave}T00:00:00`); // Lima
+      const desde = dayjs(`${clave}T00:00:00`); // Lima
       return { desde, hasta: desde.add(1, 'day') };
     }
     if (modoActual === 'semana') {
@@ -137,16 +137,16 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
       const year = Number(yearStr);
       const week = Number(wkStr);
       // lunes ISO de esa semana
-      const desde = dayjs.utc().year(year).isoWeek(week).startOf('week').hour(0).minute(0).second(0).millisecond(0);
+      const desde = dayjs().year(year).isoWeek(week).startOf('week').hour(0).minute(0).second(0).millisecond(0);
       return { desde, hasta: desde.add(1, 'week') };
     }
     if (modoActual === 'mes') {
       const [mm, yyyy] = clave.split('-');
-      const desde = dayjs.utc(`${yyyy}-${mm}-01T00:00:00`);
+      const desde = dayjs(`${yyyy}-${mm}-01T00:00:00`);
       return { desde, hasta: desde.add(1, 'month') };
     }
     if (modoActual === 'anio') {
-      const desde = dayjs.utc(`${clave}-01-01T00:00:00`);
+      const desde = dayjs(`${clave}-01-01T00:00:00`);
       return { desde, hasta: desde.add(1, 'year') };
     }
     return null;
@@ -158,7 +158,7 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
     const ordenadas = [...ventasFiltradas].sort((a, b) => new Date(b.fecha_venta) - new Date(a.fecha_venta));
 
     for (const venta of ordenadas) {
-      const fecha = dayjs.utc(venta.fecha_venta);
+      const fecha = dayjs(venta.fecha_venta);
       let clave = '', label = '';
       switch (modo) {
         case 'dia':
@@ -292,11 +292,11 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
     if (!rango) return;
 
     const ventasRango = (dataVentas || []).filter((v) => {
-      const f = dayjs.utc(v.fecha_venta);
+      const f = dayjs(v.fecha_venta);
       return f.valueOf() >= rango.desde.valueOf() && f.valueOf() < rango.hasta.valueOf();
     });
 
-    setVentasVista(ventasRango.sort((a, b) =>  dayjs.utc(b.fecha_venta).valueOf() - dayjs.utc(a.fecha_venta).valueOf()));
+    setVentasVista(ventasRango.sort((a, b) =>  dayjs(b.fecha_venta).valueOf() - dayjs(a.fecha_venta).valueOf()));
     setVistaLabel(grupo?.label || '');
     setShowVista(true);
   };
@@ -307,7 +307,7 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
   if (!rango) return;
 
   const ventasRango = (dataVentas || []).filter((v) => {
-    const f = dayjs.utc(v.fecha_venta);
+    const f = dayjs(v.fecha_venta);
     return f.valueOf() >= rango.desde.valueOf() && f.valueOf() < rango.hasta.valueOf();
   });
 
@@ -324,7 +324,7 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
     const rango = getRangeFromGroup(modo, grupo?.clave);
     const productos = (dataVentas || [])
       .filter((v) => {
-        const f = dayjs.utc(v.fecha_venta);
+        const f = dayjs(v.fecha_venta);
         return rango && f.valueOf() >= rango.desde.valueOf() && f.valueOf() < rango.hasta.valueOf();
       })
       .flatMap((v) => v.detalle_ventaProductos || []);
@@ -674,7 +674,6 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
               const totalServiciosImporte = servicios.reduce((sum, s) => sum + Number(s?.tarifa_monto || 0), 0);
               const totalProductosImporte = productos.reduce((sum, p) => sum + Number(p?.tarifa_monto || 0), 0);
               const total = totalServiciosImporte + totalProductosImporte;
-
               return (
                 <div key={idx} className="card mb-4 shadow">
                   <div className="card-body">
@@ -902,7 +901,7 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
       {i+1}
     </td>
     <td>
-      {dayjs.utc(row.fecha).format("dddd DD [DE] MMMM [DEL] YYYY")}
+      {dayjs(row.fecha).format("dddd DD [DE] MMMM [DEL] YYYY")}
     </td>
     <td>{row.com}</td>
     <td>{row.comp}</td>
