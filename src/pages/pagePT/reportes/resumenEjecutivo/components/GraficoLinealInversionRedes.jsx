@@ -127,7 +127,7 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
     },
   };
  const ICONS = {
-    ambos: { src: "/src/assets/images/change-logo-dark-transparente.png", label: "Ambos" },
+    ambos: { src: "/assets/change-logo-dark-transparente-6852406f.png", label: "Ambos" },
     meta: { src: "/meta.jpg", color: "#0d6efd", label: "Meta" },
     tiktok: { src: "/tiktok.png", color: "#000000", label: "TikTok" },
   };
