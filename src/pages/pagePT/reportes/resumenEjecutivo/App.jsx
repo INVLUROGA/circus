@@ -101,8 +101,8 @@ const handleSetUltimoDiaMesesDinamicos = () => {
     () => buildDataMktByMonth(dataLead, initDay, cutDay,canalParams),
     [dataLead, initDay, cutDay,canalParams]
   );
-
-  const DIGITAL_ORIGIN_IDS = useMemo(() => new Set([1452, 1453, 1454]), []);
+//añadir los id de las futuras parametros
+  const DIGITAL_ORIGIN_IDS = useMemo(() => new Set([1452, 1453]), []);
   const toDateSafe = (iso) => {
     if (!iso) return null;
     const d = new Date(iso);

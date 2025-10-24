@@ -144,8 +144,8 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
          display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 44,
-          height: 44,
+          width: 54,
+          height: 54,
           borderRadius: "999px",
           border: `2px solid ${active ? color : "transparent"}`,
           background: "transparent",
@@ -160,8 +160,8 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
           src={src}
           alt={label}
           style={{
-            width: 32,
-            height: 32,
+            width: 52,
+            height: 52,
             objectFit: "contain",
             transform: active ? "scale(1.05)" : "scale(1)",
           }}
@@ -184,13 +184,13 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
 
         }}
       >
-        <span style={{ fontSize: 12, opacity: 0.8 }}>Fuente:</span>
+        <span style={{ fontSize: 12, opacity: 0.8 }}></span>
       <IconFilter keyName="ambos"/>
       <IconFilter keyName="meta"/>
       <IconFilter keyName="tiktok"/>
       </div>
 
-      <Chart options={options} series={series} type="line" height={450} />
+      <Chart options={options} series={series} type="line" height={500} />
     </div>
   );
 };

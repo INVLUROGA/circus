@@ -5,8 +5,7 @@ import { useTerminoMetodoPagoStore } from "@/hooks/hookApi/FormaPagoStore/useTer
 
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontWeight: "bold" };
 const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "20px" };
-const tdfinal = { fontSize: 25, color: "white" };
-const tdinicio={fontSize:20}
+
 
 const toKey = (s = "") =>
   String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
@@ -369,7 +368,7 @@ const productosOrdenados = [...productosAgrupados].sort((a, b) => {
       <Dialog
         header={<div style={{ textAlign: "center", fontSize: 30, fontWeight: 800 }}>{modalTitle}</div>}
         visible={modalOpen}
-        style={{ width: "150vw", maxWidth: "1400px", margin: "0 auto" }}
+        style={{ width: "100vw",  margin: "0 auto" }}
         modal
         onHide={() => setModalOpen(false)}
         footer={
@@ -390,7 +389,38 @@ const productosOrdenados = [...productosAgrupados].sort((a, b) => {
 
 
 function RankingDialogContent({ modalData }) {
-  const th = { fontSize: 20, textAlign: "center" };
+  const th = { fontSize: 22, textAlign: "center" };
+
+  // === estilos para panel oscuro con bordes ===
+  const DARK = "#D6B400"; // bg-dark
+  const sPanel = {
+    border: `2px solid ${DARK}`,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginTop: 32,
+    background: "#ffffff",
+  };
+  const sPanelHeader = {
+    background: DARK,
+    color: "#fff",
+    fontWeight: 900,
+    textAlign: "center",
+    fontSize: 24,
+    padding: "10px 14px",
+    letterSpacing: 0.2,
+  };
+  const sPanelBody = { padding: 14 };
+
+  const thCell = { ...th, border: `1px solid ${DARK}`, padding: "8px 10px" };
+  const tdCell = { border: `1px solid ${DARK}`, padding: "8px 10px", fontSize: 22 };
+  const tableBase = {
+    borderCollapse: "collapse",
+    width: "100%",
+    tableLayout: "fixed",
+    border: `1px solid ${DARK}`,
+  };
+const tdfinal = { fontSize: 25, color: "white" };
+const tdinicio={fontSize:22}
 
   return (
     <>
@@ -409,8 +439,8 @@ function RankingDialogContent({ modalData }) {
               { label: "Venta Productos", value: <NumberFormatMoney amount={modalData.totalPVentaProd} /> },
             ].map((item, i) => (
               <div key={i} style={{ border: "2px solid #d4af37", borderRadius: 8, padding: 12, background: "#fff" }}>
-                <div style={{ fontSize: 15, opacity: 0.7,textAlign:"center" }}>{item.label}</div>
-                <div style={{ fontWeight: 800, fontSize: 25 ,textAlign:"center"}}>{item.value}</div>
+                <div style={{ fontSize: 15, opacity: 0.7, textAlign: "center" }}>{item.label}</div>
+                <div style={{ fontWeight: 800, fontSize: 25, textAlign: "center" }}>{item.value}</div>
               </div>
             ))}
           </div>
@@ -420,8 +450,8 @@ function RankingDialogContent({ modalData }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 8, margin: "20px 0" }}>
         {modalData.methodsToShow.map((m) => (
           <div key={m} style={{ border: "2px solid #d4af37", borderRadius: 8, padding: 12 }}>
-            <div style={{ fontSize: 15, opacity: 0.7,textAlign:"center" }}>{modalData.headerLabel[m] || m}</div>
-            <div style={{ fontWeight: 800, fontSize: 25,textAlign:"center" }}>
+            <div style={{ fontSize: 15, opacity: 0.7, textAlign: "center" }}>{modalData.headerLabel[m] || m}</div>
+            <div style={{ fontWeight: 800, fontSize: 25, textAlign: "center" }}>
               <NumberFormatMoney amount={modalData.totalPorMetodo?.[m] || 0} />
             </div>
           </div>
@@ -431,26 +461,32 @@ function RankingDialogContent({ modalData }) {
       {/* === Resumen servicios === */}
       {modalData.modalResumen && (
         <div style={{ marginTop: 24 }}>
-          <div style={{ fontWeight: 1000, textAlign: "center", fontSize: 25 }}>
-            VENTAS POR SERVICIOS
-          </div>
-          <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 20, textAlign: "center" }}>
+          <div style={{ fontWeight: 1000, textAlign: "center", fontSize: 25 }}>VENTAS POR SERVICIOS</div>
+          <table style={{ ...tableBase, fontSize: 20, textAlign: "center" }}>
             <thead className="bg-primary text-white">
               <tr>
-                <th>Venta Bruta</th>
-                <th>IGV (-18%)</th>
-                <th>Renta (-3%)</th>
-                <th>Tarjeta (-4.5%)</th>
-                <th>Venta Neta</th>
+                <th style={thCell}>Venta Bruta</th>
+                <th style={thCell}>IGV (-18%)</th>
+                <th style={thCell}>Renta (-3%)</th>
+                <th style={thCell}>Tarjeta (-4.5%)</th>
+                <th style={thCell}>Venta Neta</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td style={{fontSize:"25px"}}><NumberFormatMoney amount={modalData.modalResumen.bruto} /></td>
-                <td style={{ ...tdfinal,color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.igv} /></td>
-                <td style={{ ...tdfinal,color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.renta} /></td>
-                <td style={{...tdfinal, color: "red" }}>- <NumberFormatMoney amount={modalData.modalResumen.tarjeta} /></td>
-                <td style={{...tdfinal, color: "#007b00", fontWeight: 700 }}>
+                <td style={{ ...tdCell, fontSize: "25px" }}>
+                  <NumberFormatMoney amount={modalData.modalResumen.bruto} />
+                </td>
+                <td style={{ ...tdCell, color: "red" }}>
+                  - <NumberFormatMoney amount={modalData.modalResumen.igv} />
+                </td>
+                <td style={{ ...tdCell, color: "red" }}>
+                  - <NumberFormatMoney amount={modalData.modalResumen.renta} />
+                </td>
+                <td style={{ ...tdCell, color: "red" }}>
+                  - <NumberFormatMoney amount={modalData.modalResumen.tarjeta} />
+                </td>
+                <td style={{ ...tdfinal, color: "#007b00", fontWeight: 700 }}>
                   <NumberFormatMoney amount={modalData.modalResumen.neto} />
                 </td>
               </tr>
@@ -459,299 +495,273 @@ function RankingDialogContent({ modalData }) {
         </div>
       )}
 
-      {/* === Detalle servicios === */}
-  <div style={{ marginTop: 32 }}>
-  <div style={{ fontWeight: 700, textAlign: "center", fontSize: 24, marginBottom: 10 }}>
-    DETALLE DE SERVICIOS
-  </div>
+      {/* === DETALLE DE SERVICIOS (panel con borde oscuro) === */}
+      <div style={sPanel}>
+        <div style={{fontSize:25}} className="text-white bg-primary text-center" >DETALLE DE SERVICIOS</div>
+        <div style={sPanelBody}>
+          <table style={tableBase}>
+            <thead className="text-white bg-primary" >
+              <tr>
+                <th style={{ ...thCell, width: "60px", minWidth: "60px", maxWidth: "60px" }}>Item</th>
+                <th style={{ ...thCell, textAlign: "left" }}>Servicio</th>
+                <th style={thCell}>Precio Unitario</th>
+                <th style={thCell}>Venta Total</th>
+                {modalData.methodsToShow.map((m) => (
+                  <th key={m} style={thCell}>
+                    {modalData.headerLabel[m] || m}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-  <table style={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed" }}>
-    <thead className="bg-primary text-white">
-      <tr>
-        <th style={{ ...th, width: "60px", minWidth: "60px", maxWidth: "60px" }}>Item</th>
-        <th style={{ ...th, textAlign: "left" }}>Servicio</th>
-        <th style={th}>Precio Unitario</th>
-        <th style={th}>Venta Total</th>
-        {modalData.methodsToShow.map((m) => (
-          <th key={m} style={th}>{modalData.headerLabel[m] || m}</th>
-        ))}
-      </tr>
-    </thead>
+            <tbody>
+              {modalData.serviciosOrdenados.map((s, i) => {
+                const totalLinea = (s.pVenta || 0) * (s.cantidad || 0);
+                return (
+                  <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
+                    <td style={tdCell}>{i + 1}</td>
+                    <td style={{ ...tdCell, textAlign: "left", fontWeight: 700, whiteSpace: "normal", wordWrap: "break-word" }}>
+                      {s.nombre || s.circus_servicio?.nombre_servicio || "—"}
+                    </td>
+                    <td style={{...tdCell,textAlign:"center"}}>
+                      <NumberFormatMoney amount={s.pVenta || 0} />
+                    </td>
+                    <td style={{...tdCell,textAlign:"center"}}>
+                      <NumberFormatMoney amount={totalLinea} />
+                    </td>
+                    {modalData.methodsToShow.map((m) => (
+                      <td key={m} style={{...tdCell,textAlign:"center"}}>
+                        <NumberFormatMoney amount={Number(s[m]) || 0} />
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
 
-    <tbody>
-      {modalData.serviciosOrdenados.map((s, i) => {
-        const totalLinea = (s.pVenta || 0) * (s.cantidad || 0);
-        return (
-          <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-            <td style={{ ...th }}>{i + 1}</td>
-           <td style={{ ...th, textAlign: "left", fontWeight: 700, whiteSpace: "normal", wordWrap: "break-word" }}>
-  {s.nombre || s.circus_servicio?.nombre_servicio || "—"}
-</td>
+              {(() => {
+                const servicios = modalData.serviciosOrdenados || [];
+                const totales = {};
+                const promedios = {};
+                modalData.methodsToShow.forEach((m) => {
+                  const valores = servicios.map((s) => Number(s[m]) || 0);
+                  const suma = valores.reduce((a, b) => a + b, 0);
+                  const prom = suma / (valores.length || 1);
+                  totales[m] = suma;
+                  promedios[m] = prom;
+                });
+                const totalVenta = servicios.reduce((acc, s) => acc + (s.pVenta || 0) * (s.cantidad || 0), 0);
 
-            <td style={{ ...th }}>
-              <NumberFormatMoney amount={s.pVenta || 0} />
-            </td>
-            <td style={{ ...th }}>
-              <NumberFormatMoney amount={totalLinea} />
-            </td>
-            {modalData.methodsToShow.map((m) => (
-              <td key={m} style={{ ...th }}>
-                <NumberFormatMoney amount={Number(s[m]) || 0} />
-              </td>
-            ))}
-          </tr>
-        );
-      })}
-
-
-      {(() => {
-        const servicios = modalData.serviciosOrdenados || [];
-        const totales = {};
-        const promedios = {};
-
-        modalData.methodsToShow.forEach((m) => {
-          const valores = servicios.map((s) => Number(s[m]) || 0);
-          const suma = valores.reduce((a, b) => a + b, 0);
-          const prom = suma / (valores.length || 1);
-          totales[m] = suma;
-          promedios[m] = prom;
-        });
-
-        const totalVenta = servicios.reduce(
-          (acc, s) => acc + (s.pVenta || 0) * (s.cantidad || 0),
-          0
-        );
-
-        return (
-          <tr className="bg-primary text-white" style={{ fontWeight: 700 }}>
-            <td style={{ textAlign: "center",fontSize:19 }}>TOTAL</td>
-                        <td style={{...tdfinal, textAlign: "center" }}>—</td>
-
-            <td style={{...tdfinal, textAlign: "center" }}></td>
-            <td style={{ ...tdfinal,textAlign: "center" }}>
-              <NumberFormatMoney amount={totalVenta} />
-            </td>
-            {modalData.methodsToShow.map((m) => (
-              <td key={m} style={{...tdfinal, textAlign: "center" }}>
-                {totales[m] > promedios[m] ? (
-                  <NumberFormatMoney amount={totales[m]} />
-                ) : (
-                  "—"
-                )}
-              </td>
-            ))}
-          </tr>
-        );
-      })()}
-    </tbody>
-  </table>
-</div>
+                return (
+                  <tr className="text-white" style={{ background: DARK, fontWeight: 700 }}>
+                    <td style={{ ...tdfinal, textAlign: "center", fontSize: 19 }}>TOTAL</td>
+                    <td style={{ ...tdfinal, textAlign: "center" }}>—</td>
+                    <td style={{ ...tdfinal, textAlign: "center" }} />
+                    <td style={{ ...tdfinal, textAlign: "center" }}>
+                      <NumberFormatMoney amount={totalVenta} />
+                    </td>
+                    {modalData.methodsToShow.map((m) => (
+                      <td key={m} style={{ ...tdfinal, textAlign: "center" }}>
+                        {totales[m] > promedios[m] ? <NumberFormatMoney amount={totales[m]} /> : "—"}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
 {/* === PRODUCTOS VENDIDOS === */}
-<div style={{ marginTop: 40 }}>
-  <div style={{ fontWeight: 700, textAlign: "center", fontSize: 24 }}>
-    PRODUCTOS VENDIDOS
-  </div>
+<div style={{ ...sPanel, marginTop: 40 }}>
+  <div style={sPanelHeader}>PRODUCTOS VENDIDOS</div>
+  <div style={sPanelBody}>
+    {(() => {
+      const tableGrid = {
+        width: "100%",
+        tableLayout: "fixed",
+        borderCollapse: "separate",
+        borderSpacing: 0,
+        border: `2px solid ${DARK}`, // marco externo
+        fontSize: 18,
+      };
+      const headCellGrid = {
+        background: DARK,
+        color: "#fff",
+        fontWeight: 800,
+        textAlign: "center",
+        padding: "8px 10px",
+        borderRight: `1px solid ${DARK}`,
+        borderBottom: `1px solid ${DARK}`,
+      };
+      const bodyCellGrid = {
+        padding: "8px 10px",
+        borderRight: `1px solid ${DARK}`,
+        borderBottom: `1px solid ${DARK}`,
+        fontSize:"22px"
+      };
+      const bodyCellMoney = { ...bodyCellGrid, textAlign: "center" };
 
-  <table
-    style={{
-      borderCollapse: "collapse",
-      width: "100%",
-      tableLayout: "fixed",
-      fontSize: 18,
-    }}
-  >
-    <thead>
-      <tr className="bg-primary text-white">
-        <th style={{ ...th, width: "60px", minWidth: "60px", textAlign: "center" }}>Item</th>
-        <th style={{ ...th, textAlign: "left" }}>Producto</th>
-        <th style={th}>Cantidad</th>
-        <th style={th}>Precio Unitario</th>
-        <th style={th}>Precio Venta</th>
-        <th style={th}>IGV (-18%)</th>
-        <th style={th}>Tarjeta (-4.5%)</th>
-        <th style={th}>Renta (-3%)</th>
-        <th style={th}>Costo Compra</th>
-        <th style={th}>Utilidad Bruta</th>
-        <th style={th}>Comisión</th>
-        <th style={th}>Utilidad Neta</th>
-      </tr>
-    </thead>
+      return (
+        <table style={tableGrid}>
+          <thead>
+            <tr>
+              <th style={{ ...headCellGrid, width: 60, minWidth: 60 }}>ITEM</th>
+              <th style={{ ...headCellGrid, textAlign: "left" }}>PRODUCTO</th>
+              <th style={headCellGrid}>CANTIDAD</th>
+              <th style={headCellGrid}>PRECIO UNITARIO</th>
+              <th style={headCellGrid}>PRECIO VENTA</th>
+              <th style={headCellGrid}>IGV (-18%)</th>
+              <th style={headCellGrid}>TARJETA (-4.5%)</th>
+              <th style={headCellGrid}>RENTA (-3%)</th>
+              <th style={headCellGrid}>COSTO COMPRA</th>
+              <th style={headCellGrid}>UTILIDAD BRUTA</th>
+              <th style={headCellGrid}>COMISIÓN</th>
+              <th style={headCellGrid}>UTILIDAD NETA</th>
+            </tr>
+          </thead>
 
-    <tbody>
-      {modalData.productosAgrupados.length === 0 ? (
-        <tr>
-          <td colSpan={12} style={{ textAlign: "center", padding: 10 }}>
-            No se vendieron productos.
-          </td>
-        </tr>
-      ) : (
-        <>
-          {(() => {
-            const RATE_IGV = 0.18;
-            const RATE_TARJETA = 0.045;
-            const RATE_RENTA = 0.03;
-            const RATE_COMISION = 0.10;
-
-            const productosUnificados = Object.values(
-              modalData.productosAgrupados.reduce((acc, p) => {
-                const key = `${p.nombre}-${p.precioVentaU}-${p.precioCompraU}`;
-                if (!acc[key]) acc[key] = { ...p, cantidad: 0 };
-                acc[key].cantidad += Number(p.cantidad) || 0;
-                return acc;
-              }, {})
-            );
-
-            const productosOrdenados = [...productosUnificados].sort((a, b) => {
-              const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
-              const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
-              return totalB - totalA;
-            });
-
-            return productosOrdenados.map((p, i) => {
-              const venta = (p.precioVentaU || 0) * (p.cantidad || 0);
-              const compra = (p.precioCompraU || 0) * (p.cantidad || 0);
-              const igv = venta * RATE_IGV;
-              const tarjeta = venta * RATE_TARJETA;
-              const renta = venta * RATE_RENTA;
-              const utilBruta = venta - igv - tarjeta - renta - compra;
-              const comision = utilBruta * RATE_COMISION;
-              const utilNeta = utilBruta - comision;
-
-              return (
-                <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-                  
-                  <td
-                    style={{
-                      textAlign: "center",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {i + 1}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: "left",
-                      fontWeight: 700,
-                      padding: "8px 12px",
-                      whiteSpace: "normal",
-                      wordWrap: "break-word",
-                      maxWidth: 350,
-                    }}
-                  >
-                    {p.nombre}
-                  </td>
-
-                  <td style={{ ...tdinicio,textAlign: "center" }}>{p.cantidad}</td>
-
-                  <td style={{ ...tdinicio,textAlign: "center" }}>
-                    <NumberFormatMoney amount={p.precioVentaU || 0} />
-                  </td>
-
-                  <td style={{ ...tdinicio,textAlign: "center", fontWeight: 600, color: "#007b00" }}>
-                    <NumberFormatMoney amount={venta} />
-                  </td>
-
-                  <td style={{...tdinicio, textAlign: "center", color: "red" }}>
-                    <NumberFormatMoney amount={igv} />
-                  </td>
-
-                  <td style={{ ...tdinicio,textAlign: "center", color: "red" }}>
-                    <NumberFormatMoney amount={tarjeta} />
-                  </td>
-
-                  <td style={{ ...tdinicio,textAlign: "center", color: "red" }}>
-                    <NumberFormatMoney amount={renta} />
-                  </td>
-
-                  <td style={{...tdinicio, textAlign: "center", color: "red" }}>
-                    <NumberFormatMoney amount={compra} />
-                  </td>
-
-                  <td style={{...tdinicio, textAlign: "center", fontWeight: 600, color: "green" }}>
-                    <NumberFormatMoney amount={utilBruta} />
-                  </td>
-
-                  <td style={{ ...tdinicio,textAlign: "center", color: "red" }}>
-                    <NumberFormatMoney amount={comision} />
-                  </td>
-
-                  <td
-                    style={{
-                      textAlign: "center",
-                      fontWeight: 700,
-                      color: utilNeta >= 0 ? "#007b00" : "red",
-                    }}
-                  >
-                    <NumberFormatMoney amount={utilNeta} />
-                  </td>
-                </tr>
-              );
-            });
-          })()}
-
-          {/* === FILA DE TOTALES === */}
-          {(() => {
-            const RATE_IGV = 0.18;
-            const RATE_TARJETA = 0.045;
-            const RATE_RENTA = 0.03;
-            const RATE_COMISION = 0.10;
-
-            const productos = modalData.productosAgrupados;
-            const totalVenta = productos.reduce((a, p) => a + (p.precioVentaU || 0) * (p.cantidad || 0), 0);
-            const totalCompra = productos.reduce((a, p) => a + (p.precioCompraU || 0) * (p.cantidad || 0), 0);
-            const totalIGV = totalVenta * RATE_IGV;
-            const totalTarjeta = totalVenta * RATE_TARJETA;
-            const totalRenta = totalVenta * RATE_RENTA;
-            const totalUtilBruta = totalVenta - totalIGV - totalTarjeta - totalRenta - totalCompra;
-            const totalComision = totalUtilBruta * RATE_COMISION;
-            const totalUtilNeta = totalUtilBruta - totalComision;
-            const totalCantidad = productos.reduce((a, p) => a + (p.cantidad || 0), 0);
-
-            return (
-              <tr className="bg-primary text-white" style={{ fontWeight: 900 }}>
-                <td></td>
-                <td style={{ textAlign: "left" }}>TOTALES</td>
-                <td style={{ ...tdfinal,textAlign: "center" }}>{totalCantidad}</td>
-                <td></td>
-                <td style={{ ...tdfinal,textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalVenta} />
-                </td>
-                <td style={{...tdfinal, textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalIGV} />
-                </td>
-                <td style={{...tdfinal, textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalTarjeta} />
-                </td>
-                <td style={{...tdfinal, textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalRenta} />
-                </td>
-                <td style={{...tdfinal, textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalCompra} />
-                </td>
-                <td style={{...tdfinal, textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalUtilBruta} />
-                </td>
-                <td style={{...tdfinal, textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalComision} />
-                </td>
-                <td style={{ ...tdfinal,textAlign: "center" }}>
-                  <NumberFormatMoney amount={totalUtilNeta} />
+          <tbody>
+            {modalData.productosAgrupados.length === 0 ? (
+              <tr>
+                <td colSpan={12} style={{ ...bodyCellGrid, textAlign: "center" }}>
+                  No se vendieron productos.
                 </td>
               </tr>
-            );
-          })()}
-        </>
-      )}
-    </tbody>
-  </table>
+            ) : (
+              <>
+                {(() => {
+                  const RATE_IGV = 0.18;
+                  const RATE_TARJETA = 0.045;
+                  const RATE_RENTA = 0.03;
+                  const RATE_COMISION = 0.1;
+
+                  const productosUnificados = Object.values(
+                    modalData.productosAgrupados.reduce((acc, p) => {
+                      const key = `${p.nombre}-${p.precioVentaU}-${p.precioCompraU}`;
+                      if (!acc[key]) acc[key] = { ...p, cantidad: 0 };
+                      acc[key].cantidad += Number(p.cantidad) || 0;
+                      return acc;
+                    }, {})
+                  );
+
+                  const productosOrdenados = [...productosUnificados].sort((a, b) => {
+                    const totalA = (a.precioVentaU || 0) * (a.cantidad || 0);
+                    const totalB = (b.precioVentaU || 0) * (b.cantidad || 0);
+                    return totalB - totalA;
+                  });
+
+                  return productosOrdenados.map((p, i) => {
+                    const venta = (p.precioVentaU || 0) * (p.cantidad || 0);
+                    const compra = (p.precioCompraU || 0) * (p.cantidad || 0);
+                    const igv = venta * RATE_IGV;
+                    const tarjeta = venta * RATE_TARJETA;
+                    const renta = venta * RATE_RENTA;
+                    const utilBruta = venta - igv - tarjeta - renta - compra;
+                    const comision = utilBruta * RATE_COMISION;
+                    const utilNeta = utilBruta - comision;
+
+                    return (
+                      <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
+                        <td style={{ ...bodyCellGrid, textAlign: "center", fontWeight: 600 }}>{i + 1}</td>
+                        <td style={{ ...bodyCellGrid, textAlign: "left", fontWeight: 700, whiteSpace: "normal", wordWrap: "break-word", maxWidth: 350 }}>
+                          {p.nombre}
+                        </td>
+                        <td style={{ ...bodyCellGrid, textAlign: "center" }}>{p.cantidad}</td>
+                        <td style={bodyCellMoney}><NumberFormatMoney amount={p.precioVentaU || 0} /></td>
+                        <td style={{ ...bodyCellMoney, fontWeight: 600, color: "#007b00" }}>
+                          <NumberFormatMoney amount={venta} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, color: "red" }}>
+                          <NumberFormatMoney amount={igv} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, color: "red" }}>
+                          <NumberFormatMoney amount={tarjeta} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, color: "red" }}>
+                          <NumberFormatMoney amount={renta} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, color: "red" }}>
+                          <NumberFormatMoney amount={compra} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, fontWeight: 600, color: "green" }}>
+                          <NumberFormatMoney amount={utilBruta} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, color: "red" }}>
+                          <NumberFormatMoney amount={comision} />
+                        </td>
+                        <td style={{ ...bodyCellMoney, fontWeight: 700, color: utilNeta >= 0 ? "#007b00" : "red" }}>
+                          <NumberFormatMoney amount={utilNeta} />
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
+
+                {/* TOTALES */}
+                {(() => {
+                  const RATE_IGV = 0.18;
+                  const RATE_TARJETA = 0.045;
+                  const RATE_RENTA = 0.03;
+                  const RATE_COMISION = 0.1;
+
+                  const productos = modalData.productosAgrupados;
+                  const totalVenta = productos.reduce((a, p) => a + (p.precioVentaU || 0) * (p.cantidad || 0), 0);
+                  const totalCompra = productos.reduce((a, p) => a + (p.precioCompraU || 0) * (p.cantidad || 0), 0);
+                  const totalIGV = totalVenta * RATE_IGV;
+                  const totalTarjeta = totalVenta * RATE_TARJETA;
+                  const totalRenta = totalVenta * RATE_RENTA;
+                  const totalUtilBruta = totalVenta - totalIGV - totalTarjeta - totalRenta - totalCompra;
+                  const totalComision = totalUtilBruta * RATE_COMISION;
+                  const totalUtilNeta = totalUtilBruta - totalComision;
+                  const totalCantidad = productos.reduce((a, p) => a + (p.cantidad || 0), 0);
+
+                  return (
+                    <tr style={{ background: DARK, color: "#fff", fontWeight: 900 }}>
+                      <td style={bodyCellGrid}></td>
+                      <td style={{ ...bodyCellGrid, textAlign: "left" }}>TOTALES</td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center" }}>{totalCantidad}</td>
+                      <td style={bodyCellGrid}></td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center",fontSize:25 }}>
+                        <NumberFormatMoney amount={totalVenta} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center",fontSize:25 }}>
+                        <NumberFormatMoney amount={totalIGV} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center",fontSize:25 }}>
+                        <NumberFormatMoney amount={totalTarjeta} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center" ,fontSize:25}}>
+                        <NumberFormatMoney amount={totalRenta} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center", fontSize:25 }}>
+                        <NumberFormatMoney amount={totalCompra} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center",fontSize:25 }}>
+                        <NumberFormatMoney amount={totalUtilBruta} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center",fontSize:25 }}>
+                        <NumberFormatMoney amount={totalComision} />
+                      </td>
+                      <td style={{ ...bodyCellGrid, textAlign: "center" ,fontSize:25}}>
+                        <NumberFormatMoney amount={totalUtilNeta} />
+                      </td>
+                    </tr>
+                  );
+                })()}
+              </>
+            )}
+          </tbody>
+        </table>
+      );
+    })()}
+  </div>
 </div>
-
-
 
     </>
   );
 }
+
 
 
 function TablaRanking({ ventas, onRowClick }) {

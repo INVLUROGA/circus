@@ -83,40 +83,65 @@ export default function ExecutiveTable({
 
     const ticketServ = cantServ ? totalServ / cantServ : 0;
     const ticketProd = cantProd ? totalProd / cantProd : 0;
-
+const FX = 3.7;
 const key = `${anio}-${mesAlias}`;
 const mk = dataMktByMonth?.[key] || {};
 
-const mkInv = Number(mk?.inversiones_redes * 3.7 || 0);
-const mkLeads = Number(mk?.leads || 0);
-const mkCpl = Number(mk?.cpl * 3.7 || 0);
-const mkCac = Number(mk?.cac || 0);
+const safeDiv0 = (n, d) => {
+  const nn = Number(n || 0), dd = Number(d || 0);
+  return dd > 0 ? nn / dd : 0;        // ← devuelve 0 si no hay clientes (tu requerimiento)
+};
 
+// ---------- Inversión por red (a S/) ----------
+const por_red = mk?.por_red || {};
+const invVal = (k) => Number(por_red?.[k] ?? 0);
+const invTikTokRaw = invVal("1514") + invVal("tiktok") + invVal("tik tok");
+const invMetaRaw   = invVal("1515") + invVal("meta")   + invVal("facebook") + invVal("instagram");
+
+const mkInvTikTok = invTikTokRaw * FX;
+const mkInvMeta   = invMetaRaw   * FX;
+const mkInv       = mkInvTikTok + mkInvMeta; // INVERSIÓN TOTAL REDES
+
+// ---------- Clientes (preferir lo que guardas en el padre) ----------
 const leads_por_red = mk?.leads_por_red || {};
-const valLead = (k) => Number(leads_por_red?.[k] ?? 0);
-const mkLeadsTikTok = valLead("1514") + valLead("tiktok") + valLead("tik tok");
-const mkLeadsMeta   = valLead("1515") + valLead("meta") + valLead("facebook") + valLead("instagram");
+const leadVal = (k) => Number(leads_por_red?.[k] ?? 0);
+
+// Fallback por si aún no guardas clientes por red:
+const fallbackLeadsTikTok = leadVal("1514") + leadVal("tiktok") + leadVal("tik tok");
+const fallbackLeadsMeta   = leadVal("1515") + leadVal("meta")   + leadVal("facebook") + leadVal("instagram");
+
+// Si en BD ya guardas clientes por red, úsalos; si no, usa fallback de leads
+const clientesTikTok = Number(mk?.clientes_tiktok ?? fallbackLeadsTikTok);
+const clientesMeta   = Number(mk?.clientes_meta   ?? fallbackLeadsMeta);
+
+// Total clientes digitales del mes (preferir el que calculas en el padre)
+const clientesDigitales =
+  Number(mk?.clientes_digitales ?? (clientesTikTok + clientesMeta));
+
+// ---------- CAC (tu fórmula) ----------
+const mkCacTikTok = safeDiv0(mkInvTikTok, clientesTikTok);
+const mkCacMeta   = safeDiv0(mkInvMeta,   clientesMeta);
+const mkCac       = safeDiv0(mkInv,       clientesDigitales);
+
+// ---------- CPL ----------
 const cpl_por_red = mk?.cpl_por_red || {};
 const sumFrom = (obj, keys) => keys.reduce((a,k)=> a + Number(obj?.[k] ?? 0), 0);
-const mkCplTikTok = sumFrom(cpl_por_red, ["1514","tiktok","tik tok"]) * 3.7;
-const mkCplMeta   = sumFrom(cpl_por_red, ["1515","meta","facebook","instagram"]) * 3.7;
 
-const por_red = mk?.por_red || {};
-const valInv = (k) => Number(por_red?.[k] ?? 0);
+const mkCplTikTok = Object.keys(cpl_por_red).length
+  ? sumFrom(cpl_por_red, ["1514","tiktok","tik tok"]) * FX
+  : safeDiv0(mkInvTikTok, clientesTikTok);
 
-const mkInvTikTokRaw = valInv("1514") + valInv("tiktok") + valInv("tik tok");
-const mkInvMetaRaw   = valInv("1515") + valInv("meta") + valInv("facebook") + valInv("instagram");
+const mkCplMeta = Object.keys(cpl_por_red).length
+  ? sumFrom(cpl_por_red, ["1515","meta","facebook","instagram"]) * FX
+  : safeDiv0(mkInvMeta, clientesMeta);
 
-const mkInvTikTok = mkInvTikTokRaw * 3.7;
-const mkInvMeta   = mkInvMetaRaw   * 3.7;
+const mkCpl = safeDiv0(mkInv, clientesDigitales);
 
-let mkCacTikTok = 0, mkCacMeta = 0;
-const invDen = mkInvTikTok + mkInvMeta;
+// Exponer también contadores (por si los quieres mostrar)
+const mkLeadsTikTok = clientesTikTok;
+const mkLeadsMeta   = clientesMeta;
+const mkLeads       = clientesDigitales;
 
-if (mkCac > 0 && invDen > 0) {
-  mkCacMeta   = (mkInvMeta / invDen) * mkCac;  
-  mkCacTikTok = mkCac - mkCacMeta;            
-}
 
     return {
       mkInv,
@@ -152,12 +177,12 @@ const rows = [
   { key: "mkInvMeta",     label: "INVERSIÓN  META",                       type: "money" },
   { key: "mkLeadsMeta",   label: "CANTIDAD LEADS META",                   type: "int"   },
   { key: "mkCplMeta",     label: "COSTO POR LEAD  META",                  type: "float2"},
-  { key: "mkCacMeta",     label: "COSTO ADQ. CLIENTE  META",              type: "float2"}, 
+  { key: "mkCacMeta",     label: "COSTO ADQ. CLIENTE  META",              type: "float2"}, // NUEVA
 
   { key: "mkInvTikTok",   label: "INVERSIÓN  TIKTOK",                     type: "money" },
   { key: "mkLeadsTikTok", label: "CANTIDAD LEADS  TIKTOK",                type: "int"   },
   { key: "mkCplTikTok",   label: "COSTO POR LEAD TIKTOK",                 type: "float2"},
-  { key: "mkCacTikTok",   label: "COSTO ADQ. CLIENTE  TIKTOK",            type: "float2"}, 
+  { key: "mkCacTikTok",   label: "COSTO ADQ. CLIENTE  TIKTOK",            type: "float2"}, // NUEVA
   { key: "mkLeads",       label: "TOTAL LEADS DE META + TIKTOK",          type: "int"   },
   { key: "mkCpl",         label: "COSTO TOTAL POR LEADS DE META + TIKTOK",type: "float2"},
   { key: "totalServ",     label: "VENTA SERVICIOS",                       type: "money" },

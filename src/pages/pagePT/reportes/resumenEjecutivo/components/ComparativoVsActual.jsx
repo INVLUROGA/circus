@@ -118,7 +118,7 @@ export const ComparativoVsActual=({
   const columns = fechas.map((f) => {
     const key = keyOf(f.anio, f.mes);
     const vals = dataByMonth.get(key) || { serv: 0, prod: 0, total: 0 };
-    const dServ = vals.serv - refVals.serv;
+    const dServ = refVals.serv-  vals.serv ;
     const dProd = vals.prod - refVals.prod;
     const dTot = vals.total - refVals.total;  
     const pct = (val, ref) => {
