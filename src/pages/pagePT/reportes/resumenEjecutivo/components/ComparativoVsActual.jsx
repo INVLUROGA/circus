@@ -60,19 +60,15 @@ export const ComparativoVsActual=({
 
   const fmtDeltaMoney = (n) => {
     const v = Number(n || 0);
-    if (v < 0) return `(${fmtMoney(Math.abs(v))})`;
-    return `${fmtMoney(v)}`;
+    return fmtMoney(v);
   };
 
-  // Aceptar nombres alternos de detalle
   const getDetalleServicios = (v) => v?.detalle_ventaservicios || v?.detalle_ventaservicios || [];
   const getDetalleProductos = (v) =>
     v?.detalle_ventaProductos || v?.detalle_ventaproductos || v?.detalle_venta_productos || [];
 
-  // Aggregate por mes dentro del rango [initialDay..cutDay]
   const sumByMonth = () => {
-    const map = new Map(); // key -> {serv, prod, total}
-
+    const map = new Map(); 
     for (const v of ventas) {
       const d = toLimaDate(v?.fecha_venta);
       if (!d) continue;
@@ -119,7 +115,6 @@ export const ComparativoVsActual=({
   const refKey = refMonthKey || computeRefKeyFromVentas();
   const refVals = (refKey && dataByMonth.get(refKey)) || { serv: 0, prod: 0, total: 0 };
 
-  // Calcular deltas vs REF
   const columns = fechas.map((f) => {
     const key = keyOf(f.anio, f.mes);
     const vals = dataByMonth.get(key) || { serv: 0, prod: 0, total: 0 };
@@ -186,7 +181,7 @@ const MoneyCell = ({ value, isLast }) => {
         fontWeight: isLast ? 800 : sCellBold.fontWeight,
       }}
     >
-              {neg ? "-" : "+"}
+              {neg ? "" : "+"}
 
       {fmtDeltaMoney(v)}
     </td>

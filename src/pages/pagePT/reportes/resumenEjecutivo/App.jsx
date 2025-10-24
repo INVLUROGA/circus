@@ -242,7 +242,7 @@ const handleSetUltimoDiaMesesDinamicos = () => {
                   1457: "VIP",
                   1456: "TELEVISION",
                   1455: "REGULAR",
-                  1454: "whatsapp",
+                  1454: "WSP organico",
                   1453: "INSTAGRAM",
                   1452: "FACEBOOK",
                   1451: "YOHANDRY",

@@ -8,7 +8,7 @@ export default function MatrizServicios({
   serviciosConCostoIds = null,  
   esTratamiento = null,         
   serviciosConCostoLista = null, 
-  maxColsPorTabla = 12,
+  maxColsPorTabla = 17,
 }) {
   // ====== Utils ======
   const MESES = [
