@@ -59,15 +59,7 @@ const getPagos = (venta) => {
   }));
 };
 
-const getServiceName = (it) =>
-  it?.circus_servicio?.nombre_servicio ||
-  it?.tb_servicio?.nombre_servicio ||
-  it?.servicio?.nombre_servicio ||
-  it?.nombre_servicio ||
-  it?.nombre ||
-  "—";
 
-// 🔹 Aplica el filtro initDay → cutDay
 function toLimaDate(iso) {
   if (!iso) return null;
   try {
@@ -241,7 +233,6 @@ const canon = (s) =>
       });
     }
 
-    // ===== PRODUCTOS (solo del asesor) =====
 for (const p of productos) {
   const cantidad       = Number(p?.cantidad ?? 1) || 1;
   const precioVentaU   = Number(p?.tarifa_monto) || Number(p?.tb_producto?.prec_venta) || 0;
@@ -249,13 +240,11 @@ for (const p of productos) {
   const nombre         = p?.tb_producto?.nombre_producto || p?.nombre_producto || p?.nombre || "-";
   const totalLinea     = precioVentaU * cantidad;
 
-  // 1) SOLO usamos el reparto por método para acumular totales por método
   const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
   for (const [k, vmet] of Object.entries(lineaMetodos)) {
     totalesMetodo[k] += Number(vmet) || 0;
   }
 
-  // 2) Para el ranking de productos NO creamos filas por método (evitamos duplicar cantidades)
   productosFlat.push({
     nombre,
     cantidad,
@@ -275,7 +264,6 @@ for (const p of productos) {
     }, {})
   );
 
-  // === AGRUPAR SERVICIOS (por nombre + precio) ===
   const serviciosAgrupados = Object.values(
     serviciosFlat.reduce((acc, s) => {
       const key = `${s.nombre}-${s.pVenta}`;

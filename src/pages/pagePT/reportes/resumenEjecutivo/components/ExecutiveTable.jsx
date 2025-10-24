@@ -1,11 +1,6 @@
-import { m } from "framer-motion";
 import React from "react";
 
-/**
- * ExecutiveSummaryTable
- * --------------------------------------------------------------
- * Tabla de "RESUMEN EJECUTIVO HASTA EL <cutDay> DE CADA MES".
- */
+
 export default function ExecutiveTable({
   ventas = [],
   fechas = [],
@@ -13,7 +8,6 @@ export default function ExecutiveTable({
   initialDay = 1,
   cutDay = 21,
 }) {
-  // --------------------------- Helpers ---------------------------
   const MESES = [
     "enero","febrero","marzo","abril","mayo","junio",
     "julio","agosto","setiembre","octubre","noviembre","diciembre",
@@ -35,20 +29,16 @@ export default function ExecutiveTable({
   const fmtNum = (n, d = 0) =>
     new Intl.NumberFormat("es-PE", { minimumFractionDigits: d, maximumFractionDigits: d }).format(Number(n || 0));
 
-  // Aceptar varias llaves de detalle para robustez
   const getDetalleServicios = (v) => v?.detalle_ventaservicios || v?.detalle_ventaservicios || [];
   const getDetalleProductos = (v) =>
     v?.detalle_ventaProductos || v?.detalle_ventaproductos || v?.detalle_venta_productos || [];
 
-  // --------------------------- Métricas por mes ---------------------------
   const computeMetricsForMonth = (anio, mesNombre) => {
     const mesAlias = aliasMes(String(mesNombre).toLowerCase());
     const monthIdx = MESES.indexOf(mesAlias);
     if (monthIdx < 0) return null;
 
-    // HASTA cutDay
     let totalServ = 0, cantServ = 0, totalProd = 0, cantProd = 0;
-    // MES COMPLETO
     let totalServFull = 0, cantServFull = 0, totalProdFull = 0, cantProdFull = 0;
 
     const from = clamp(Number(initialDay || 1), 1, 31);
@@ -59,7 +49,6 @@ export default function ExecutiveTable({
       if (d.getFullYear() !== Number(anio)) continue;
       if (d.getMonth() !== monthIdx) continue;
 
-      // Mes completo
       for (const s of getDetalleServicios(v)) {
         const cantidad = Number(s?.cantidad || 1);
         const linea = Number(s?.tarifa_monto || 0);
@@ -73,7 +62,6 @@ export default function ExecutiveTable({
         cantProdFull += cantidad;
       }
 
-      // Hasta cutDay
       const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       const to = clamp(Number(cutDay || lastDay), from, lastDay);
       const dia = d.getDate();
@@ -96,26 +84,23 @@ export default function ExecutiveTable({
     const ticketServ = cantServ ? totalServ / cantServ : 0;
     const ticketProd = cantProd ? totalProd / cantProd : 0;
 
-  // --- Marketing del mes ---
 const key = `${anio}-${mesAlias}`;
 const mk = dataMktByMonth?.[key] || {};
 
-// Ajustes (si usas factor 3.7 solo en inv/CPL)
 const mkInv = Number(mk?.inversiones_redes * 3.7 || 0);
 const mkLeads = Number(mk?.leads || 0);
 const mkCpl = Number(mk?.cpl * 3.7 || 0);
 const mkCac = Number(mk?.cac || 0);
 
-// Leads por red (ya lo tenías)
 const leads_por_red = mk?.leads_por_red || {};
 const valLead = (k) => Number(leads_por_red?.[k] ?? 0);
 const mkLeadsTikTok = valLead("1514") + valLead("tiktok") + valLead("tik tok");
 const mkLeadsMeta   = valLead("1515") + valLead("meta") + valLead("facebook") + valLead("instagram");
 const cpl_por_red = mk?.cpl_por_red || {};
 const sumFrom = (obj, keys) => keys.reduce((a,k)=> a + Number(obj?.[k] ?? 0), 0);
-
 const mkCplTikTok = sumFrom(cpl_por_red, ["1514","tiktok","tik tok"]) * 3.7;
 const mkCplMeta   = sumFrom(cpl_por_red, ["1515","meta","facebook","instagram"]) * 3.7;
+
 const por_red = mk?.por_red || {};
 const valInv = (k) => Number(por_red?.[k] ?? 0);
 
@@ -123,9 +108,15 @@ const mkInvTikTokRaw = valInv("1514") + valInv("tiktok") + valInv("tik tok");
 const mkInvMetaRaw   = valInv("1515") + valInv("meta") + valInv("facebook") + valInv("instagram");
 
 const mkInvTikTok = mkInvTikTokRaw * 3.7;
-const mkInvMeta   = mkInvMetaRaw * 3.7;
+const mkInvMeta   = mkInvMetaRaw   * 3.7;
 
-     
+let mkCacTikTok = 0, mkCacMeta = 0;
+const invDen = mkInvTikTok + mkInvMeta;
+
+if (mkCac > 0 && invDen > 0) {
+  mkCacMeta   = (mkInvMeta / invDen) * mkCac;  
+  mkCacTikTok = mkCac - mkCacMeta;            
+}
 
     return {
       mkInv,
@@ -134,9 +125,10 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
       mkLeadsMeta,
       mkCpl,
       mkCac,
+      mkCacTikTok,
+mkCacMeta,
  mkInvTikTok, mkInvMeta,
  mkCplTikTok, mkCplMeta,
-      // HASTA cutDay
       totalServ,
       cantServ,
       ticketServ,
@@ -145,7 +137,6 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
       ticketProd,
       totalMes: totalServ + totalProd,
 
-      // MES COMPLETO
       totalServFull,
       cantServFull,
       ticketServFull: cantServFull ? totalServFull / cantServFull : 0,
@@ -155,25 +146,27 @@ const mkInvMeta   = mkInvMetaRaw * 3.7;
       totalMesFull: totalServFull + totalProdFull,
     };
   };
+const rows = [
+  { key: "mkInv",         label: "INVERSIÓN TOTAL REDES",                 type: "money" },
+    { key: "mkCac",         label: "COSTO ADQUISICION DE CLIENTES",         type: "float2"}, 
+  { key: "mkInvMeta",     label: "INVERSIÓN  META",                       type: "money" },
+  { key: "mkLeadsMeta",   label: "CANTIDAD LEADS META",                   type: "int"   },
+  { key: "mkCplMeta",     label: "COSTO POR LEAD  META",                  type: "float2"},
+  { key: "mkCacMeta",     label: "COSTO ADQ. CLIENTE  META",              type: "float2"}, 
 
- const rows = [
-  { key: "mkInv",       label: "INVERSIÓN TOTAL REDES",type: "money" },
-  { key: "mkInvMeta",   label: "INVERSIÓN  META",type: "money" },
-    { key: "mkLeadsMeta", label: "CANTIDAD LEADS META",type: "int"   },
-      { key: "mkCplMeta",   label: "COSTO POR LEAD  META",type: "float2"},
-  { key: "mkInvTikTok", label: "INVERSIÓN  TIKTOK",type: "money" },
-  { key: "mkLeadsTikTok",label:"CANTIDAD LEADS  TIKTOK",type: "int"   },
-    { key: "mkCplTikTok", label: "COSTO POR LEAD TIKTOK",type: "float2"},
-  { key: "mkLeads",     label: "TOTAL LEADS DE META Y TIKTOK",type: "int"   },
- { key: "mkCpl",       label: "COSTO TOTAL POR LEADS DE META Y TIKTOK ",     type: "float2"},
-  { key: "totalServ",   label: "VENTA SERVICIOS",type: "money" },
-    { key: "cantServ",    label: "CANTIDAD SERVICIOS",type: "int"   },
-  { key: "ticketServ",  label: "TICKET MEDIO SERVICIOS",   type: "money" },
-  { key: "totalProd",   label: "VENTA PRODUCTOS",type: "money" },
-  { key: "cantProd",    label: "CANTIDAD PRODUCTOS",type: "int"   },
-  { key: "ticketProd",  label: "TICKET MEDIO PRODUCTOS",   type: "money" },
+  { key: "mkInvTikTok",   label: "INVERSIÓN  TIKTOK",                     type: "money" },
+  { key: "mkLeadsTikTok", label: "CANTIDAD LEADS  TIKTOK",                type: "int"   },
+  { key: "mkCplTikTok",   label: "COSTO POR LEAD TIKTOK",                 type: "float2"},
+  { key: "mkCacTikTok",   label: "COSTO ADQ. CLIENTE  TIKTOK",            type: "float2"}, 
+  { key: "mkLeads",       label: "TOTAL LEADS DE META + TIKTOK",          type: "int"   },
+  { key: "mkCpl",         label: "COSTO TOTAL POR LEADS DE META + TIKTOK",type: "float2"},
+  { key: "totalServ",     label: "VENTA SERVICIOS",                       type: "money" },
+  { key: "cantServ",      label: "CANTIDAD SERVICIOS",                    type: "int"   },
+  { key: "ticketServ",    label: "TICKET MEDIO SERVICIOS",                type: "money" },
+  { key: "totalProd",     label: "VENTA PRODUCTOS",                       type: "money" },
+  { key: "cantProd",      label: "CANTIDAD PRODUCTOS",                    type: "int"   },
+  { key: "ticketProd",    label: "TICKET MEDIO PRODUCTOS",                type: "money" },
 ];
-
 
   const perMonth = fechas.map((f) => ({
     label: String(f?.label || "").toUpperCase(),
@@ -286,20 +279,7 @@ return (
           })}
         </tr>
 
-        {/* CAC */}
-        <tr>
-          <td style={{ ...sCellBold, background: gold, color: "#000", fontWeight: 800 }}>
-            COSTO ADQUISICION DE CLIENTES
-          </td>
-          {perMonth.map((m, idx) => {
-            const isLast = idx === perMonth.length - 1;
-            return (
-              <td key={idx} style={cellStyle(isLast)}>
-                {fmtNum(m.metrics?.mkCac || 0, 2)}
-              </td>
-            );
-          })}
-        </tr>
+       
       </tbody>
     </table>
 
@@ -308,7 +288,7 @@ return (
       <thead>
         <tr style={{ color: "#fff", fontWeight: 800, background: gold }}>
           <th style={{ ...sThLeft }}>
-            VENTA TOTAL <br /> ACUMULADA POR MES
+            VENTA TOTAL <br />  MES
           </th>
           {perMonth.map((m, idx) => {
             return (
@@ -333,7 +313,6 @@ return (
           > </td>
         
           {perMonth.map((m, idx) => {
-            const isLast = idx === perMonth.length - 1;
             return (
               <td
                 key={`footer-month-${idx}`}
@@ -341,7 +320,7 @@ return (
                   ...sCellBold,
                   background: gold,
                   color: "#000",
-                  fontSize: isLast ? 23 : 23,
+                  fontSize:25,
                   textAlign: "center",
                 }}
               >
