@@ -399,7 +399,49 @@ useEffect(() => {
     }
     return filas;
   }, [dataVenta, meses]);
+// Serie mensual del empleado abierto en el modal
+const serieEmpleadoMes = useMemo(() => {
+  if (!empleadoObjetivo) return [];
+  const objetivo = normalizeName(empleadoObjetivo);
 
+  return meses.map((_, colIndex) => {
+    const filas = getVentasDeCelda(objetivo, colIndex); // ya normaliza internamente
+    let total = 0;
+
+    for (const v of filas) {
+      // Servicios del empleado
+      const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+      for (const s of servicios) {
+        const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
+        if (empServ !== objetivo) continue;
+        const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+        const pUnit = Number(s?.tarifa_monto) || 0;
+        total += cant * pUnit;
+      }
+
+      // Productos del empleado
+      const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                        : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+      for (const p of productos) {
+        const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
+        if (empProd !== objetivo) continue;
+        const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+        const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+        total += cant * pUnit;
+      }
+    }
+
+    const label = columnas[colIndex]?.label || '';
+    return { label, total: round2(total) };
+  });
+}, [empleadoObjetivo, meses, columnas, getVentasDeCelda]);
+
+// Δ vs mes siguiente: delta[i] = total[i+1] - total[i]
+const deltasEmpleadoMes = useMemo(() => {
+  return serieEmpleadoMes.map((pt, i) =>
+    i < serieEmpleadoMes.length - 1 ? round2(serieEmpleadoMes[i + 1].total - pt.total) : null
+  );
+}, [serieEmpleadoMes]);
   const buildBreakdown = (brutoNum = 0) => {
     const bruto = Number(brutoNum) || 0;
     const igv = +(bruto * RATE_IGV).toFixed(2);
@@ -442,6 +484,7 @@ useEffect(() => {
       }, 0);
       return acc + sumaProd;
     }, 0);
+
 
     const resumen = buildBreakdown(ventaBrutaServicios + ventaBrutaProductos);
     resumen.costoCompra = totalCompra;
@@ -1226,6 +1269,95 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
     </table>
   </div>
 </div>
+{/* === COMPARATIVA MENSUAL DEL COLABORADOR === */}
+{empleadoObjetivo && serieEmpleadoMes.length > 0 && (
+  <div style={{ marginTop: 28 }}>
+    <div
+      style={{
+        fontWeight: 800,
+        fontSize: 24,
+        textAlign: "center",
+        marginBottom: 10,
+        letterSpacing: 0.3,
+      }}
+    >
+      RESUMEN POR MES – {empleadoObjetivo.toUpperCase()}
+    </div>
+
+    <table
+      style={{
+        ...baseTableStyle,
+        width: "100%",
+        tableLayout: "fixed",
+      }}
+    >
+      <thead>
+        <tr>
+          <th className="bg-primary" style={thStyle}>Concepto</th>
+          {serieEmpleadoMes.map((pt) => (
+            <th key={pt.label} className="bg-primary" style={thStyle}>
+              {pt.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {/* Totales por mes */}
+        <tr>
+          <td className="bg-primary" style={{ ...tdStyle, fontWeight: 800 }}>TOTAL MES</td>
+          {serieEmpleadoMes.map((pt, i) => (
+            <td
+              key={`t-${i}`}
+              style={{
+                ...tdStyle,
+                fontSize: 22,
+                fontWeight: i === serieEmpleadoMes.length - 1 ? 800 : 600, // último mes en negrita
+              }}
+              title={`Total ${pt.label}`}
+            >
+              <NumberFormatMoney amount={pt.total} />
+            </td>
+          ))}
+        </tr>
+
+        {/* Variación vs mes siguiente */}
+        <tr>
+          <td className="bg-primary" style={{ ...tdStyle, fontWeight: 800 }}>
+            VAR. VS MES SIGUIENTE
+          </td>
+
+          {serieEmpleadoMes.map((pt, i) => {
+            const delta = deltasEmpleadoMes[i];
+            // En el ÚLTIMO mes pide mostrar el valor real (no "-") en negrita
+            if (delta == null) {
+              return (
+                <td
+                  key={`d-${i}`}
+                  style={{ ...tdStyle, fontSize: 22, fontWeight: 800 }}
+                  title={`Total ${pt.label}`}
+                >
+                  <NumberFormatMoney amount={pt.total} />
+                </td>
+              );
+            }
+            const color = delta > 0 ? "#007b00" : delta < 0 ? "red" : "#000";
+            return (
+              <td
+                key={`d-${i}`}
+                style={{ ...tdStyle, fontSize: 22, color, fontWeight: 700 }}
+                title={`${serieEmpleadoMes[i + 1].label} – ${pt.label}`}
+              >
+                <NumberFormatMoney amount={delta} />
+              </td>
+            );
+          })}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+)}
+
         <div style={{ justifySelf: "center", marginTop:"100px" }}>
   <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
     PRODUCTOS VENDIDOS

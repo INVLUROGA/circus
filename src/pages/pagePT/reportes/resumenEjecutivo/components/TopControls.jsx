@@ -44,7 +44,7 @@ export function TopControls({
   cutDay,
   setCutDay,
   year = new Date().getFullYear(),
-  onUseLastDay, // <-- NUEVO
+  onUseLastDay,
 }) {
   const MESES = [
     "ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO",
@@ -82,9 +82,9 @@ export function TopControls({
 
   const handleClickUseLastDay = () => {
     if (typeof onUseLastDay === "function") {
-      onUseLastDay();          // <<-- llama la MISMA lógica de App
+      onUseLastDay();          
     } else {
-      fallbackUseLastDay();    // <<-- por si no te pasan el callback
+      fallbackUseLastDay();   
     }
   };
 
@@ -128,7 +128,7 @@ export function TopControls({
 
       {/* DÍA INICIO */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: "1.5rem" }}>
-        <label>Día de inicio:</label>
+        <label>FECHA de inicio:</label>
         <select
           value={initDay}
           onChange={(e) => {
@@ -145,7 +145,7 @@ export function TopControls({
 
       {/* DÍA CORTE */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: "1.5rem" }}>
-        <label>Día de corte:</label>
+        <label>FECHA de corte:</label>
         <select
           value={cutDay}
           onChange={(e) => {
