@@ -161,6 +161,65 @@ const METRIC_ALIASES = {
   const isMoney = ['totalVentas','ventasProductos','ventasServicios'].includes(metricKey);
   const meses = Array.isArray(filtrarFecha) ? filtrarFecha : [filtrarFecha].filter(Boolean);
 
+
+  const onRowTotalClick = (emp) => {
+  if (!emp) return;
+  const objetivo = normalizeName(emp);
+  setEmpleadoObjetivo(objetivo);
+
+  // Trae todas las ventas de los meses visibles donde participe el colaborador
+  const filas = meses.flatMap((_, colIndex) => getVentasDeCelda(emp, colIndex));
+  setModalRows(filas);
+
+  // === resumen: solo líneas del colaborador ===
+  let totalCompra = 0;
+
+  const ventaBrutaServicios = filas.reduce((acc, v) => {
+    const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const suma = servicios.reduce((a, s) => {
+      const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
+      if (empServ !== objetivo) return a;
+      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+      const pUnit = Number(s?.tarifa_monto) || 0;
+      return a + cant * pUnit;
+    }, 0);
+    return acc + suma;
+  }, 0);
+
+  const ventaBrutaProductos = filas.reduce((acc, v) => {
+    const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                    : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    const suma = productos.reduce((a, p) => {
+      const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
+      if (empProd !== objetivo) return a;
+      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+      totalCompra += cant * (Number(p?.tb_producto?.prec_compra) || 0);
+      return a + cant * pUnit;
+    }, 0);
+    return acc + suma;
+  }, 0);
+
+  const resumen = buildBreakdown(ventaBrutaServicios + ventaBrutaProductos);
+  resumen.costoCompra = totalCompra;
+  resumen.netoFinal = round2(resumen.neto - totalCompra);
+  setModalResumen(resumen);
+
+  // Título bonito con rango de meses + nombre
+  const primerMes = meses?.[0];
+  const ultimoMes = meses?.[meses.length - 1];
+  const nombre = (emp?.split?.(' ')?.[0] ?? emp) ?? '';
+  let titulo = `TOTAL – ${nombre.toUpperCase()}`;
+  if (primerMes && ultimoMes) {
+    const l1 = (primerMes.label || primerMes.mes || '').toUpperCase();
+    const l2 = (ultimoMes.label || ultimoMes.mes || '').toUpperCase();
+    titulo = `${l1} ${primerMes.anio} – ${l2} ${ultimoMes.anio}${cutDay ? ` (hasta el día ${cutDay})` : ''} – ${nombre.toUpperCase()}`;
+  }
+  setModalTitle(titulo);
+
+  setModalOpen(true);
+};
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRows, setModalRows] = useState([]);
   const [modalTitle, setModalTitle] = useState('');
@@ -791,8 +850,9 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
                     {isMoney ? <NumberFormatMoney amount={val} /> : val}
                   </td>
                 ))}
-                <td className="fs-3 bg-primary" style={{ ...tdStyle, fontWeight: 'bold' }}     onClick={onGrandTotalClick}
-      title="Ver detalle de TODOS los meses">
+                <td className="fs-3 bg-primary" 
+   style={{ ...tdStyle, fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline dotted' }}    onClick={() => onRowTotalClick(emp)} 
+      title="Ver detalle del total de ${emp}">
                   {isMoney ? <NumberFormatMoney amount={totalesFilaFiltrada[r]} /> : totalesFilaFiltrada[r]}
                   
                 </td>

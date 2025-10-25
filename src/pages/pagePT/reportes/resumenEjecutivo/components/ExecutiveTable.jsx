@@ -137,7 +137,6 @@ const mkCplMeta = Object.keys(cpl_por_red).length
 
 const mkCpl = safeDiv0(mkInv, clientesDigitales);
 
-// Exponer también contadores (por si los quieres mostrar)
 const mkLeadsTikTok = clientesTikTok;
 const mkLeadsMeta   = clientesMeta;
 const mkLeads       = clientesDigitales;

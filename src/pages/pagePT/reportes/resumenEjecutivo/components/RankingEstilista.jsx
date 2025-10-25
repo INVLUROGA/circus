@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { Dialog } from "primereact/dialog";
 import { NumberFormatMoney } from "@/components/CurrencyMask";
 import { useTerminoMetodoPagoStore } from "@/hooks/hookApi/FormaPagoStore/useTerminoMetodoPagoStore";
-
+import { Button } from "primereact/button";
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontWeight: "bold" };
 const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "20px" };
 
@@ -96,7 +96,6 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
   });
 }
 
-// 🔹 Agrupa por empleado
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
   const ventasPorEmpleado = new Map();
@@ -156,6 +155,9 @@ function rankingPorEmpleado(ventas = []) {
 }
 
 export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1, cutDay }) => {
+  const [q,setQ]=useState('');
+  const normq = (s='') => String(s).normalize('NFKC').toLowerCase().trim().replace(/\s+/g,' ');
+  const matchIncludes = (haystack, needle) => normq(haystack).includes(normq(needle));
   const { obtenerFormaDePagosActivos } = useTerminoMetodoPagoStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
@@ -364,7 +366,18 @@ const productosOrdenados = [...productosAgrupados].sort((a, b) => {
 
   return (
     <>
-      <TablaRanking ventas={ventasMes} onRowClick={handleRowClick} />
+     <div style={{  display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'flex-start' }}>
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Buscar colaborador..."
+          className="p-inputtext p-component"
+          style={{ minWidth: 260, padding: 8 }}
+          aria-label="Buscar colaborador"
+        />
+        {q && <Button label="Limpiar" onClick={() => setQ('')} severity="secondary" outlined />}
+      </div>
+      <TablaRanking ventas={ventasMes} onRowClick={handleRowClick} filtroNombre={q}/>
       <Dialog
         header={<div style={{ textAlign: "center", fontSize: 30, fontWeight: 800 }}>{modalTitle}</div>}
         visible={modalOpen}
@@ -427,7 +440,6 @@ const tdinicio={fontSize:22}
       <div className="bg-primary fs-2 fw-bold text-center py-2" style={{ borderRadius: 6 }}>
         DETALLE DE PRODUCTOS Y SERVICIOS
       </div>
-
       {/* === KPIs === */}
       <div style={{ display: "flex", justifyContent: "center", marginTop: 20 }}>
         <div style={{ borderRadius: 12, padding: 12, background: "#fffef5", marginBottom: 16 }}>
@@ -452,7 +464,7 @@ const tdinicio={fontSize:22}
           <div key={m} style={{ border: "2px solid #d4af37", borderRadius: 8, padding: 12 }}>
             <div style={{ fontSize: 15, opacity: 0.7, textAlign: "center" }}>{modalData.headerLabel[m] || m}</div>
             <div style={{ fontWeight: 800, fontSize: 25, textAlign: "center" }}>
-              <NumberFormatMoney amount={modalData.totalPorMetodo?.[m] || 0} />
+              <NumberFormatMoney amount={modalData.totalPorMetodo?.[m] || 0} />a¿
             </div>
           </div>
         ))}
@@ -764,18 +776,24 @@ const tdinicio={fontSize:22}
 
 
 
-function TablaRanking({ ventas, onRowClick }) {
+function TablaRanking({ ventas, onRowClick, filtroNombre='' }) {
   const ranking = useMemo(() => rankingPorEmpleado(ventas), [ventas]);
-
-  const totalClientes = ranking.reduce((acc, r) => acc + (r.cantidadVentas || 0), 0);
-  const totalCantServ = ranking.reduce((acc, r) => acc + (r.cantidadServicios || 0), 0);
-  const totalVentasServ = ranking.reduce((acc, r) => acc + (r.ventasServicios || 0), 0);
-  const totalCantProd = ranking.reduce((acc, r) => acc + (r.cantidadProductos || 0), 0);
-  const totalVentasProd = ranking.reduce((acc, r) => acc + (r.ventasProductos || 0), 0);
-  const totalGeneral = ranking.reduce((acc, r) => acc + (r.totalVentas || 0), 0);
+const norm = (s='') => String(s).normalize('NFKC').toLowerCase().trim().replace(/\s+/g,' ');
+  const rankingFiltrado = useMemo(() => {
+    if (!filtroNombre) return ranking;
+    const q = norm(filtroNombre);
+    return ranking.filter(r => norm(r.empleado).includes(q));
+ }, [ranking, filtroNombre]);
+  const totalClientes = rankingFiltrado.reduce((a, r) => a + (r.cantidadVentas || 0), 0);
+  const totalCantServ = rankingFiltrado.reduce((a, r) => a + (r.cantidadServicios || 0), 0);
+  const totalVentasServ = rankingFiltrado.reduce((a, r) => a + (r.ventasServicios || 0), 0);
+  const totalCantProd = rankingFiltrado.reduce((a, r) => a + (r.cantidadProductos || 0), 0);
+  const totalVentasProd = rankingFiltrado.reduce((a, r) => a + (r.ventasProductos || 0), 0);
+  const totalGeneral = rankingFiltrado.reduce((a, r) => a + (r.totalVentas || 0), 0);
 
   return (
     <div style={{ marginBottom: 24 }}>
+      
       <div
         style={{
           textAlign: "center",
@@ -786,6 +804,7 @@ function TablaRanking({ ventas, onRowClick }) {
       >
         DETALLE DE VENTAS TOTAL POR MES
       </div>
+      
       <div style={{ overflowX: "auto" }}>
         <table style={{ borderCollapse: "collapse", width: "100%" }}>
           <thead>
@@ -800,7 +819,7 @@ function TablaRanking({ ventas, onRowClick }) {
             </tr>
           </thead>
           <tbody>
-            {ranking.map((r, idx) => (
+            {rankingFiltrado.map((r, idx) => (
               <tr
                 key={idx}
                 onClick={() => onRowClick(r.empleado)}
