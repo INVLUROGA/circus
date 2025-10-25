@@ -1226,199 +1226,234 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
     </table>
   </div>
 </div>
-            <div style={{  justifySelf: "center",marginTop:"100px" }}>
-              <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
-                PRODUCTOS VENDIDOS
-              </div>
+        <div style={{ justifySelf: "center", marginTop:"100px" }}>
+  <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
+    PRODUCTOS VENDIDOS
+  </div>
 
-<table
-  style={{
-    ...baseTableStyle,
-    width: "100%",      
-    minWidth: 0,        
-    margin: 0,           
-    tableLayout: "fixed" 
-  }}
->
-  <thead>
-    <tr>
-<th
-  className="bg-primary"
-  style={{
-    ...thStyle,
-    width: "60px",
-    minWidth: "60px",
-    maxWidth: "60px",
-    textAlign: "center"
-  }}
->
-  Item
-</th>
-      <th className="bg-primary" style={thStyle}>Producto</th>
-      <th className="bg-primary" style={thStyle}>Cantidad</th>
-      <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
-      <th className="bg-primary" style={thStyle}>Precio <br/>    Venta</th>
-      <th className="bg-primary" style={thStyle}>IGV<br/>(-18%)</th>
-      <th className="bg-primary" style={thStyle}>Tarjeta<br/>(-4.5%)</th>
-      <th className="bg-primary" style={thStyle}>Renta<br/>(-3%)</th>
-      <th className="bg-primary" style={thStyle}>Costo<br/>Compra</th>
-      <th className="bg-primary" style={thStyle}>Utilidad<br/>Bruta</th>
-      <th className="bg-primary" style={thStyle}>Comisión</th>
-      <th className="bg-primary" style={thStyle}>Utilidad<br/>Neta</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {modalData.productosAgrupados.length === 0 ? (
+  <table
+    style={{
+      ...baseTableStyle,
+      width: "100%",
+      minWidth: 0,
+      margin: 0,
+      tableLayout: "fixed"
+    }}
+  >
+    <thead>
       <tr>
-        <td colSpan={12} style={tdStyle}>
-          No se vendieron productos.
+        <th
+          className="bg-primary"
+          style={{
+            ...thStyle,
+            width: "60px",
+            minWidth: "60px",
+            maxWidth: "60px",
+            textAlign: "center"
+          }}
+        >
+          Item
+        </th>
+        <th className="bg-primary" style={thStyle}>Producto</th>
+        <th className="bg-primary" style={thStyle}>Cantidad</th>
+        <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
+        <th className="bg-primary" style={thStyle}>Precio <br/> Venta</th>
+        <th className="bg-primary" style={thStyle}>IGV<br/>(-18%)</th>
+        <th className="bg-primary" style={thStyle}>Tarjeta<br/>(-4.5%)</th>
+        <th className="bg-primary" style={thStyle}>Renta<br/>(-3%)</th>
+        <th className="bg-primary" style={thStyle}>Costo<br/>Compra</th>
+        <th className="bg-primary" style={thStyle}>Utilidad<br/>Bruta</th>
+        <th className="bg-primary" style={thStyle}>Comisión</th>
+        <th className="bg-primary" style={thStyle}>Utilidad<br/>Neta</th>
+        {/* NUEVA COLUMNA */}
+        <th className="bg-primary" style={thStyle}>Utilidad<br/>por producto</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {modalData.productosAgrupados.length === 0 ? (
+        <tr>
+          {/* +1 al colSpan por la nueva columna */}
+          <td colSpan={13} style={tdStyle}>No se vendieron productos.</td>
+        </tr>
+      ) : (
+        [...modalData.productosAgrupados]
+          .sort((a, b) => {
+            const cantDiff = (b.cantidad || 0) - (a.cantidad || 0);
+            if (cantDiff !== 0) return cantDiff;
+            return (b.precioVentaU || 0) - (a.precioVentaU || 0);
+          })
+          .map((p, i) => {
+            const venta   = (p.precioVentaU || 0) * (p.cantidad || 0);
+            const compra  = (p.precioCompraU || 0) * (p.cantidad || 0);
+            const tarjeta = venta * RATE_TARJETA;
+            const igv     = venta * RATE_IGV;
+            const renta   = venta * RATE_RENTA;
+            const utilBase  = venta - tarjeta - igv - renta - compra;
+            const comision  = utilBase * RATE_COMISION;
+            const utilFinal = utilBase - comision;
+
+            // NUEVO: utilidad por producto (unitaria)
+            const qty = p.cantidad || 1;
+            const utilPorProducto = utilFinal / qty;
+
+            return (
+              <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
+                <td
+                  className='bg-primary'
+                  style={{ ...tdStyle, width: "60px", minWidth: "60px", maxWidth: "60px", textAlign: "center" }}
+                >
+                  {i + 1}
+                </td>
+
+                {/* PRODUCTO */}
+                <td
+                  className='bg-primary text-dark'
+                  style={{
+                    ...tdStyle,
+                    textAlign: "left",
+                    fontWeight: 700,
+                    whiteSpace: "normal",
+                    wordWrap: "break-word",
+                    maxWidth: 750,
+                  }}
+                >
+                  {p.nombre}
+                </td>
+
+                {/* CANTIDAD */}
+                <td style={tdStyle}>{p.cantidad}</td>
+
+                {/* P. UNITARIO */}
+                <td style={{ ...tdStyle, fontWeight: 600 }}>
+                  <NumberFormatMoney amount={p.precioVentaU || 0} />
+                </td>
+
+                {/* P. VENTA TOTAL */}
+                <td style={{ ...tdStyle, fontWeight: 600, color: "#007b00" }}>
+                  <NumberFormatMoney amount={venta} />
+                </td>
+
+                {/* IGV */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={igv} />
+                </td>
+
+                {/* TARJETA */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={tarjeta} />
+                </td>
+
+                {/* RENTA */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={renta} />
+                </td>
+
+                {/* COSTO COMPRA */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={compra} />
+                </td>
+
+                {/* UTILIDAD BRUTA */}
+                <td style={{ ...tdStyle, fontWeight: 600, color: "green" }}>
+                  <NumberFormatMoney amount={utilBase} />
+                </td>
+
+                {/* COMISIÓN */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={comision} />
+                </td>
+
+                {/* UTILIDAD NETA */}
+                <td
+                  style={{
+                    ...tdStyle,
+                    fontWeight: 700,
+                    color: utilFinal >= 0 ? "#007b00" : "red",
+                  }}
+                >
+                  <NumberFormatMoney amount={utilFinal} />
+                </td>
+
+                {/* NUEVA COLUMNA: UTILIDAD POR PRODUCTO */}
+                <td
+                  style={{
+                    ...tdStyle,
+                    fontWeight: 700,
+                    color: utilPorProducto >= 0 ? "#007b00" : "red",
+                  }}
+                >
+                  <NumberFormatMoney amount={utilPorProducto} />
+                </td>
+              </tr>
+            );
+          })
+      )}
+
+      {/* TOTALES */}
+      <tr style={{ backgroundColor: "var(--primary-color)" }}>
+        <td className="bg-primary text-dark" style={{ ...tdTotales, fontWeight: 1000 }} />
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          TOTALES
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          {modalData.totalCantidad}
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales }} />
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalPVentaProd} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalIGV} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalTarjeta} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalRenta} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalPCompraProd} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalUtilBase} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalComision} />
+        </td>
+        <td
+          className="bg-primary"
+          style={{
+            ...tdTotales,
+            fontWeight: 800,
+            color: modalData.totalUtilFinal >= 0 ? "white" : "red",
+            WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "white" : "red",
+          }}
+        >
+          <NumberFormatMoney amount={modalData.totalUtilFinal} />
+        </td>
+
+        <td
+          className="bg-primary"
+          style={{
+            ...tdTotales,
+            fontWeight: 800,
+            WebkitTextFillColor: "white"
+          }}
+        >
+          <NumberFormatMoney
+            amount={
+              (modalData.totalCantidad || 0) > 0
+                ? modalData.totalUtilFinal / modalData.totalCantidad
+                : 0
+            }
+          />
         </td>
       </tr>
-    ) : (
-[...modalData.productosAgrupados]
-  .sort((a, b) => {
-    const cantDiff = (b.cantidad || 0) - (a.cantidad || 0);
-    if (cantDiff !== 0) return cantDiff;
+    </tbody>
+  </table>
+</div>
 
-    return (b.precioVentaU || 0) - (a.precioVentaU || 0);
-  })
-  .map((p, i) => {
-        const venta = (p.precioVentaU || 0) * (p.cantidad || 0);
-        const compra = (p.precioCompraU || 0) * (p.cantidad || 0);
-        const tarjeta = venta * RATE_TARJETA;
-        const igv = venta * RATE_IGV;
-        const renta = venta * RATE_RENTA;
-        const utilBase = venta - tarjeta - igv - renta - compra;
-        const comision = utilBase * RATE_COMISION;
-        const utilFinal = utilBase - comision;
-
-        return (
-          <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-            <td className='bg-primary' style={{ ...tdStyle,    width: "60px", 
-    minWidth: "60px",
-    maxWidth: "60px", textAlign: "center" }}>
-              {i + 1}
-            </td>
-
-            {/* PRODUCTO */}
-            <td className='bg-primary text-dark'
-              style={{
-                ...tdStyle,
-                textAlign: "left",
-                fontWeight: 700,
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-                maxWidth: 750,
-              }}
-            >
-              {p.nombre}
-            </td>
-
-            {/* CANTIDAD */}
-            <td style={tdStyle}>{p.cantidad}</td>
-
-            {/* P. UNITARIO */}
-            <td style={{ ...tdStyle, fontWeight: 600 }}>
-              <NumberFormatMoney amount={p.precioVentaU || 0} />
-            </td>
-
-            {/* P. VENTA TOTAL */}
-            <td style={{ ...tdStyle, fontWeight: 600, color: "#007b00" }}>
-              <NumberFormatMoney amount={venta} />
-            </td>
-
-            {/* IGV */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={igv} />
-            </td>
-
-            {/* TARJETA */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={tarjeta} />
-            </td>
-
-            {/* RENTA */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={renta} />
-            </td>
-
-            {/* COSTO COMPRA */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={compra} />
-            </td>
-
-            {/* UTILIDAD BRUTA */}
-            <td style={{ ...tdStyle, fontWeight: 600, color: "green" }}>
-              <NumberFormatMoney amount={utilBase} />
-            </td>
-
-            {/* COMISIÓN */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={comision} />
-            </td>
-
-            {/* UTILIDAD NETA */}
-            <td
-              style={{
-                ...tdStyle,
-                fontWeight: 700,
-                color: utilFinal >= 0 ? "#007b00" : "red",
-              }}
-            >
-              <NumberFormatMoney amount={utilFinal} />
-            </td>
-          </tr>
-        );
-      })
-    )}
-
-    <tr style={{ backgroundColor: "var(--primary-color)" }}>
-         <td className="bg-primary text-dark" style={{ ...tdTotales, fontWeight: 1000 }}>
-      </td>
-      <td className="bg-primary " style={{ ...tdTotales, fontWeight: 1000,WebkitTextFillColor: "white" }}>
-        TOTALES
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        {modalData.totalCantidad}
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales }} />
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalPVentaProd} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalIGV} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalTarjeta} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalRenta} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalPCompraProd} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalUtilBase} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalComision} />
-      </td>
-      <td
-        className="bg-primary"
-        style={{
-          ...tdTotales,
-          fontWeight: 800,
-          color: modalData.totalUtilFinal >= 0 ? "white" : "red",
-          WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "white" : "red",
-        }}
-      >
-        <NumberFormatMoney amount={modalData.totalUtilFinal} />
-      </td>
-    </tr>
-  </tbody>
-</table>
-            </div>
           </>
         )}
       </Dialog>

@@ -7,10 +7,9 @@ dayjs.extend(utc);
 dayjs.locale("es");
 
 export const GraficoLinealInversionRedes = ({ data = [] }) => {
-  // 'ambos' | 'meta' | 'tiktok'
   const [red, setRed] = useState("ambos");
 
-  // --- helpers para detectar red ---
+  // ------------------------ Helpers ------------------------
   const norm = (s) =>
     String(s || "")
       .normalize("NFD")
@@ -55,21 +54,39 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
     return detectNetwork(it) === red;
   };
 
-  const lastFour = (Array.isArray(data) ? data : []).slice(0, 4).reverse();
+  // ------------------------ Corrección principal ------------------------
 
+  // Determina el mes base del contenedor (no del primer item)
+  const parseMonthFromContainer = (m) => {
+    const raw =
+      m?.fecha || m?.month || m?.mes || m?.label || m?.nombre || m?.key || "";
+    const d = dayjs.utc(raw).isValid() ? dayjs.utc(raw) : dayjs.utc(String(raw));
+    return d.isValid() ? d.startOf("month") : null;
+  };
+
+  // Ordena por mes ascendente y toma los últimos 4
+  const monthsSorted = (Array.isArray(data) ? data : [])
+    .map((m) => ({ m, base: parseMonthFromContainer(m) }))
+    .filter((x) => x.base)
+    .sort((a, b) => a.base.valueOf() - b.base.valueOf())
+    .map((x) => x.m);
+
+  const lastFour = monthsSorted.slice(-4); // últimos 4 meses
+
+  // ------------------------ Series ------------------------
   const series = useMemo(() => {
     return lastFour.map((m, idx) => {
       const items = Array.isArray(m?.items) ? m.items.filter(keepByFilter) : [];
-      const base = items[0] ? dayjs.utc(items[0].fecha) : dayjs();
+      const base = parseMonthFromContainer(m) || dayjs.utc();
       const daysInMonth = base.daysInMonth();
       const buckets = Array(daysInMonth).fill(0);
 
       for (const it of items) {
         const d = dayjs.utc(it?.fecha);
         if (!d.isValid()) continue;
-        if (d.month() !== base.month() || d.year() !== base.year()) continue;
+        if (!d.isSame(base, "month")) continue; // solo cuenta si pertenece al mes del contenedor
 
-        const day = d.date(); 
+        const day = d.date();
         const raw =
           typeof it?.cantidad === "string" ? it.cantidad.trim() : it?.cantidad;
         const val = Number(raw);
@@ -77,17 +94,18 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
       }
 
       return {
-        name: m?.fecha ?? `Serie ${idx + 1}`,
+        name: m?.fecha ?? m?.label ?? `Serie ${idx + 1}`,
         data: buckets,
       };
     });
   }, [lastFour, red]);
 
+  // ------------------------ Ejes ------------------------
   const baseMonthForAxis = useMemo(() => {
-    const withItems = lastFour.find((m) => Array.isArray(m?.items) && m.items.length > 0);
-    const ref = withItems?.items?.[0]?.fecha;
-    return ref ? dayjs(ref) : dayjs();
-  }, [lastFour, red]);
+    const last = lastFour[lastFour.length - 1];
+    const base = parseMonthFromContainer(last);
+    return base || dayjs.utc();
+  }, [lastFour]);
 
   const daysInMonth = baseMonthForAxis.daysInMonth();
   const categories = useMemo(
@@ -99,13 +117,12 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
     [baseMonthForAxis, daysInMonth]
   );
 
+  // ------------------------ Config Apex ------------------------
   const options = {
     chart: { type: "line", toolbar: { show: false }, parentHeightOffset: 0 },
     stroke: { curve: "smooth", width: 3 },
     markers: { size: 4 },
-    grid: {
-      padding: { bottom: 90, left: 8, right: 8 },
-    },
+    grid: { padding: { bottom: 90, left: 8, right: 8 } },
     xaxis: {
       categories,
       labels: {
@@ -119,15 +136,17 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
         maxHeight: 120,
       },
     },
-    yaxis: { title: { text: "Cantidad" } },
+    yaxis: { title: { text: "CANTIDAD" } },
     legend: { position: "top", floating: true, offsetY: 8 },
     tooltip: {
       x: { show: true },
       y: { formatter: (val) => `${val}` },
     },
   };
- const ICONS = {
-    ambos: { src: "/assets/change-logo-dark-transparente-6852406f.png", label: "Ambos" },
+
+  // ------------------------ Filtros con iconos ------------------------
+  const ICONS = {
+    ambos: { src: "/assets/change-logo-dark-transparente-6852406f.png", label: "Ambos", color: "#888" },
     meta: { src: "/meta.jpg", color: "#0d6efd", label: "Meta" },
     tiktok: { src: "/tiktok.png", color: "#000000", label: "TikTok" },
   };
@@ -137,11 +156,11 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
     const { src, color, label } = ICONS[keyName];
     return (
       <button
-      onClick={()=>setRed(keyName)}
-      aria-label={label}
-       title={label}
-      style={{
-         display: "inline-flex",
+        onClick={() => setRed(keyName)}
+        aria-label={label}
+        title={label}
+        style={{
+          display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
           width: 54,
@@ -153,10 +172,9 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
           cursor: "pointer",
           transition: "all .15s ease",
           boxShadow: active ? `0 0 0 2px ${color}22` : "none",
-      }}
-
+        }}
       >
-    <img
+        <img
           src={src}
           alt={label}
           style={{
@@ -170,6 +188,7 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
     );
   };
 
+  // ------------------------ Render ------------------------
   return (
     <div>
       {/* Filtro de redes */}
@@ -180,17 +199,16 @@ export const GraficoLinealInversionRedes = ({ data = [] }) => {
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 8,
-                    flexWrap: "wrap",
-
+          flexWrap: "wrap",
         }}
       >
-        <span style={{ fontSize: 12, opacity: 0.8 }}></span>
-      <IconFilter keyName="ambos"/>
-      <IconFilter keyName="meta"/>
-      <IconFilter keyName="tiktok"/>
+        <IconFilter keyName="ambos" />
+        <IconFilter keyName="meta" />
+        <IconFilter keyName="tiktok" />
       </div>
 
       <Chart options={options} series={series} type="line" height={500} />
     </div>
   );
 };
+  

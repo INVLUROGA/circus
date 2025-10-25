@@ -355,7 +355,7 @@ const productosOrdenados = [...productosAgrupados].sort((a, b) => {
       return matchServ || matchProd;
     });
 
-    const data = buildModalData(ventasEmpleado, key); // << pasamos la clave
+    const data = buildModalData(ventasEmpleado, key); 
     setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA ${cutDay}`);
     setModalData(data);
     setModalOpen(true);
