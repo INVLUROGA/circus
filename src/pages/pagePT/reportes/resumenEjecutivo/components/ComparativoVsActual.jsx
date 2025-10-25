@@ -62,7 +62,19 @@ export const ComparativoVsActual=({
     const v = Number(n || 0);
     return fmtMoney(v);
   };
-
+const fmtPctSigned = (n, {withPlus=true}={}) => {
+  const v = Number(n || 0);
+  const abs = Math.abs(v);
+  const body = new Intl.NumberFormat("es-PE",{maximumFractionDigits:0}).format(abs) + "%";
+  if (!withPlus) return body;                 // última columna
+  return v > 0 ? `+${body}` : v < 0 ? `-${body}` : body;
+};
+const fmtMoneySigned = (n, {withPlus=true}={}) => {
+  const v = Number(n || 0);
+  const absMoney = new Intl.NumberFormat("es-PE",{style:"currency",currency:"PEN"}).format(Math.abs(v));
+  if (!withPlus) return absMoney;             // última columna
+  return v > 0 ? `+${absMoney}` : v < 0 ? `-${absMoney}` : absMoney;
+};
   const getDetalleServicios = (v) => v?.detalle_ventaservicios || v?.detalle_ventaservicios || [];
   const getDetalleProductos = (v) =>
     v?.detalle_ventaProductos || v?.detalle_ventaproductos || v?.detalle_venta_productos || [];
@@ -118,13 +130,14 @@ export const ComparativoVsActual=({
   const columns = fechas.map((f) => {
     const key = keyOf(f.anio, f.mes);
     const vals = dataByMonth.get(key) || { serv: 0, prod: 0, total: 0 };
-    const dServ = refVals.serv-  vals.serv ;
-    const dProd = vals.prod - refVals.prod;
-    const dTot = vals.total - refVals.total;  
-    const pct = (val, ref) => {
-      if (!ref) return 0;
-      return ((val - ref) / ref) * 100;
-    };
+ 
+    const dServ = refVals.serv- vals.serv ;
+    const dProd =  refVals.prod-vals.prod ;
+    const dTot =  refVals.total -  vals.total ; 
+      const pct = (valMes, valRef) => {     const ref = Number(valRef || 0);
+     if (ref === 0) return 0;
+     return ((valRef - valMes) / ref) * 100;
+       };
     return {
       key,
       label: String(f.label || "").toUpperCase(),
@@ -152,7 +165,7 @@ const lastIdx = columns.length - 1;
   };
 
   const sTitle = {
-    background: C.black,
+     background: C.black,
     color: C.white,
     textAlign: "center",
     padding: "25px 12px",
@@ -179,11 +192,11 @@ const MoneyCell = ({ value, isLast }) => {
         color: isLast ? "#fff" : neg ? C.green : C.red_1,
         fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
         fontWeight: isLast ? 800 : sCellBold.fontWeight,
+        textAlign:"center"
       }}
     >
-              {neg ? "" : "+"}
+      {fmtMoneySigned(v, { withPlus: !isLast })}
 
-      {fmtDeltaMoney(v)}
     </td>
   );
 };
@@ -202,7 +215,7 @@ const PctCell = ({ value, isLast }) => {
         textAlign:"center"
       }}
     >
-      {fmtPct(v)}
+      {fmtPctSigned(v, { withPlus: !isLast })}
     </td>
   );
 };
@@ -223,7 +236,7 @@ const PctCell = ({ value, isLast }) => {
     <table style={sTable}>
       <thead>
         <tr>
-          <th style={sHeadLeft}>SERVICIOS</th>
+          <th className="bg-white text-primary" style={sHeadLeft}>SERVICIOS</th>
           {columns.map((c) => (
             <MonthHead key={c.key} col={c} />
           ))}
@@ -231,7 +244,7 @@ const PctCell = ({ value, isLast }) => {
       </thead>
       <tbody>
         <tr>
-          <td
+          <td 
             style={{
               ...sCellBold,
               textAlign: "left",
@@ -277,7 +290,7 @@ const PctCell = ({ value, isLast }) => {
     <table style={{ ...sTable, marginTop: 12 }}>
       <thead>
         <tr>
-          <th style={sHeadLeft}>PRODUCTOS</th>
+          <th className="bg-white text-primary" style={sHeadLeft}>PRODUCTOS</th>
           {columns.map((c) => (
             <MonthHead key={c.key} col={c} />
           ))}
@@ -331,7 +344,7 @@ const PctCell = ({ value, isLast }) => {
     <table style={{ ...sTable, marginTop: 12 }}>
       <thead>
         <tr>
-          <th style={{...sHeadLeft}}>TOTAL</th>
+          <th className="bg-white text-primary" style={{...sHeadLeft}}>TOTAL</th>
           {columns.map((c) => (
             <MonthHead key={c.key} col={c} />
           ))}

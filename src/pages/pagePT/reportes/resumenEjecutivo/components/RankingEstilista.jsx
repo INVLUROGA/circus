@@ -464,7 +464,7 @@ const tdinicio={fontSize:22}
           <div key={m} style={{ border: "2px solid #d4af37", borderRadius: 8, padding: 12 }}>
             <div style={{ fontSize: 15, opacity: 0.7, textAlign: "center" }}>{modalData.headerLabel[m] || m}</div>
             <div style={{ fontWeight: 800, fontSize: 25, textAlign: "center" }}>
-              <NumberFormatMoney amount={modalData.totalPorMetodo?.[m] || 0} />a¿
+              <NumberFormatMoney amount={modalData.totalPorMetodo?.[m] || 0} />
             </div>
           </div>
         ))}
@@ -506,83 +506,175 @@ const tdinicio={fontSize:22}
           </table>
         </div>
       )}
+{/* === DETALLE DE SERVICIOS (panel con borde oscuro) === */}
+<div style={sPanel}>
+  <div style={{ fontSize: 25 }} className="text-white bg-primary text-center">
+    DETALLE DE SERVICIOS
+  </div>
 
-      {/* === DETALLE DE SERVICIOS (panel con borde oscuro) === */}
-      <div style={sPanel}>
-        <div style={{fontSize:25}} className="text-white bg-primary text-center" >DETALLE DE SERVICIOS</div>
-        <div style={sPanelBody}>
-          <table style={tableBase}>
-            <thead className="text-white bg-primary" >
-              <tr>
-                <th style={{ ...thCell, width: "60px", minWidth: "60px", maxWidth: "60px" }}>Item</th>
-                <th style={{ ...thCell, textAlign: "left" }}>Servicio</th>
-                <th style={thCell}>Precio Unitario</th>
-                <th style={thCell}>Venta Total</th>
-                {modalData.methodsToShow.map((m) => (
-                  <th key={m} style={thCell}>
-                    {modalData.headerLabel[m] || m}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+  <div style={sPanelBody}>
+    {/** helper: si el encabezado tiene exactamente 2 palabras, parte con <br/> */}
+    {(() => {
+      const breakTwoWords = (label) => {
+        const parts = String(label ?? "").trim().split(/\s+/);
+        if (parts.length === 2) {
+          return (
+            <>
+              {parts[0]}
+              <br />
+              {parts[1]}
+            </>
+          );
+        }
+        return label;
+      };
+      const fmtInt = (n) =>
+        new Intl.NumberFormat("es-PE", { maximumFractionDigits: 0 }).format(
+          Number(n || 0)
+        );
 
-            <tbody>
-              {modalData.serviciosOrdenados.map((s, i) => {
-                const totalLinea = (s.pVenta || 0) * (s.cantidad || 0);
-                return (
-                  <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-                    <td style={tdCell}>{i + 1}</td>
-                    <td style={{ ...tdCell, textAlign: "left", fontWeight: 700, whiteSpace: "normal", wordWrap: "break-word" }}>
-                      {s.nombre || s.circus_servicio?.nombre_servicio || "—"}
-                    </td>
-                    <td style={{...tdCell,textAlign:"center"}}>
-                      <NumberFormatMoney amount={s.pVenta || 0} />
-                    </td>
-                    <td style={{...tdCell,textAlign:"center"}}>
-                      <NumberFormatMoney amount={totalLinea} />
-                    </td>
-                    {modalData.methodsToShow.map((m) => (
-                      <td key={m} style={{...tdCell,textAlign:"center"}}>
-                        <NumberFormatMoney amount={Number(s[m]) || 0} />
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
+      return (
+        <table style={tableBase}>
+          <thead className="text-white bg-primary">
+            <tr>
+              <th
+                style={{
+                  ...thCell,
+                  width: "60px",
+                  minWidth: "60px",
+                  maxWidth: "60px",
+                  fontSize: 20,
+                }}
+              >
+                Item
+              </th>
 
-              {(() => {
-                const servicios = modalData.serviciosOrdenados || [];
-                const totales = {};
-                const promedios = {};
-                modalData.methodsToShow.forEach((m) => {
-                  const valores = servicios.map((s) => Number(s[m]) || 0);
-                  const suma = valores.reduce((a, b) => a + b, 0);
-                  const prom = suma / (valores.length || 1);
-                  totales[m] = suma;
-                  promedios[m] = prom;
-                });
-                const totalVenta = servicios.reduce((acc, s) => acc + (s.pVenta || 0) * (s.cantidad || 0), 0);
+              <th style={{ ...thCell, textAlign: "center" }}>
+                {breakTwoWords("Servicio")}
+              </th>
 
-                return (
-                  <tr className="text-white" style={{ background: DARK, fontWeight: 700 }}>
-                    <td style={{ ...tdfinal, textAlign: "center", fontSize: 19 }}>TOTAL</td>
-                    <td style={{ ...tdfinal, textAlign: "center" }}>—</td>
-                    <td style={{ ...tdfinal, textAlign: "center" }} />
-                    <td style={{ ...tdfinal, textAlign: "center" }}>
-                      <NumberFormatMoney amount={totalVenta} />
+              <th style={thCell}>{breakTwoWords("Precio Unitario")}</th>
+
+              <th style={{width:"90px",fontSize:22}}>canti<br/>dad</th>
+
+              <th style={thCell}>{breakTwoWords("Venta Total")}</th>
+
+              {modalData.methodsToShow.map((m) => (
+                <th key={m} style={thCell}>
+                  {breakTwoWords(modalData.headerLabel[m] || m)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {modalData.serviciosOrdenados.map((s, i) => {
+              const totalLinea = (s.pVenta || 0) * (s.cantidad || 0);
+              return (
+                <tr
+                  className="text-center"
+                  key={i}
+                  style={i % 2 ? { background: "#fcfcfc" } : null}
+                >
+                  <td style={tdCell}>{i + 1}</td>
+
+                  <td
+                    style={{
+                      ...tdCell,
+                      textAlign: "left",
+                      fontWeight: 700,
+                      whiteSpace: "normal",
+                      wordWrap: "break-word",
+                    }}
+                  >
+                    {s.nombre ||
+                      s.circus_servicio?.nombre_servicio ||
+                      "—"}
+                  </td>
+
+                  <td style={{ ...tdCell, textAlign: "center" }}>
+                    <NumberFormatMoney amount={s.pVenta || 0} />
+                  </td>
+
+                  {/* NUEVA COLUMNA: CANTIDAD */}
+                  <td style={{ ...tdCell, textAlign: "center" }}>
+                    {fmtInt(s.cantidad || 0)}
+                  </td>
+
+                  <td style={{ ...tdCell, textAlign: "center" }}>
+                    <NumberFormatMoney amount={totalLinea} />
+                  </td>
+
+                  {modalData.methodsToShow.map((m) => (
+                    <td key={m} style={{ ...tdCell, textAlign: "center" }}>
+                      <NumberFormatMoney amount={Number(s[m]) || 0} />
                     </td>
-                    {modalData.methodsToShow.map((m) => (
-                      <td key={m} style={{ ...tdfinal, textAlign: "center" }}>
-                        {totales[m] > promedios[m] ? <NumberFormatMoney amount={totales[m]} /> : "—"}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })()}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  ))}
+                </tr>
+              );
+            })}
+
+            {(() => {
+              const servicios = modalData.serviciosOrdenados || [];
+              const totales = {};
+              const promedios = {};
+
+              modalData.methodsToShow.forEach((m) => {
+                const valores = servicios.map((s) => Number(s[m]) || 0);
+                const suma = valores.reduce((a, b) => a + b, 0);
+                const prom = suma / (valores.length || 1);
+                totales[m] = suma;
+                promedios[m] = prom;
+              });
+
+              const totalVenta = servicios.reduce(
+                (acc, s) => acc + (s.pVenta || 0) * (s.cantidad || 0),
+                0
+              );
+
+              const totalCantidad = servicios.reduce(
+                (acc, s) => acc + (Number(s.cantidad) || 0),
+                0
+              );
+
+              return (
+                <tr
+                  className="text-white"
+                  style={{ background: DARK, fontWeight: 700 }}
+                >
+                  <td style={{ ...tdfinal, textAlign: "center", fontSize: 19 }}>
+                    
+                  </td>
+                  <td style={{ ...tdfinal, textAlign: "center" }}>-</td>
+                  <td style={{ ...tdfinal, textAlign: "center" }} >TOTAL</td>
+                  {/* TOTAL CANTIDAD */}
+                  <td style={{ ...tdfinal, textAlign: "center" }}>
+                    {fmtInt(totalCantidad)}
+                  </td>
+                  {/* TOTAL VENTA */}
+                  <td style={{ ...tdfinal, textAlign: "center" }}>
+                    <NumberFormatMoney amount={totalVenta} />
+                  </td>
+
+                  {modalData.methodsToShow.map((m) => (
+                    <td key={m} style={{ ...tdfinal, textAlign: "center" }}>
+                      {totales[m] > promedios[m] ? (
+                        <NumberFormatMoney amount={totales[m]} />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })()}
+          </tbody>
+        </table>
+      );
+    })()}
+  </div>
+</div>
+
 
 {/* === PRODUCTOS VENDIDOS === */}
 <div style={{ ...sPanel, marginTop: 40 }}>
@@ -620,8 +712,9 @@ const tdinicio={fontSize:22}
             <tr>
               <th style={{ ...headCellGrid, width: 60, minWidth: 60 }}>ITEM</th>
               <th style={{ ...headCellGrid, textAlign: "left" }}>PRODUCTO</th>
-              <th style={headCellGrid}>CANTIDAD</th>
               <th style={headCellGrid}>PRECIO UNITARIO</th>
+                            <th style={headCellGrid}>CANTIDAD</th>
+
               <th style={headCellGrid}>PRECIO VENTA</th>
               <th style={headCellGrid}>IGV (-18%)</th>
               <th style={headCellGrid}>TARJETA (-4.5%)</th>
@@ -679,8 +772,9 @@ const tdinicio={fontSize:22}
                         <td style={{ ...bodyCellGrid, textAlign: "left", fontWeight: 700, whiteSpace: "normal", wordWrap: "break-word", maxWidth: 350 }}>
                           {p.nombre}
                         </td>
-                        <td style={{ ...bodyCellGrid, textAlign: "center" }}>{p.cantidad}</td>
                         <td style={bodyCellMoney}><NumberFormatMoney amount={p.precioVentaU || 0} /></td>
+                                                <td style={{ ...bodyCellGrid, textAlign: "center" }}>{p.cantidad}</td>
+
                         <td style={{ ...bodyCellMoney, fontWeight: 600, color: "#007b00" }}>
                           <NumberFormatMoney amount={venta} />
                         </td>
@@ -731,9 +825,10 @@ const tdinicio={fontSize:22}
                   return (
                     <tr style={{ background: DARK, color: "#fff", fontWeight: 900 }}>
                       <td style={bodyCellGrid}></td>
-                      <td style={{ ...bodyCellGrid, textAlign: "left" }}>TOTALES</td>
-                      <td style={{ ...bodyCellGrid, textAlign: "center" }}>{totalCantidad}</td>
+                      <td style={{ ...bodyCellGrid, textAlign: "left" }}>TOTAL</td>
                       <td style={bodyCellGrid}></td>
+                                            <td style={{ ...bodyCellGrid, textAlign: "center" }}>{totalCantidad}</td>
+
                       <td style={{ ...bodyCellGrid, textAlign: "center",fontSize:25 }}>
                         <NumberFormatMoney amount={totalVenta} />
                       </td>
