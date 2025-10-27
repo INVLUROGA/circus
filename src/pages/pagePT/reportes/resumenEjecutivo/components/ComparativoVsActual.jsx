@@ -204,21 +204,42 @@ const MoneyCell = ({ value, isLast }) => {
 const PctCell = ({ value, isLast }) => {
   const v = Number(value || 0);
   const neg = v < 0;
+
+  // ✅ Si es la última columna, mostramos siempre "100%"
+  if (isLast) {
+    return (
+      <td
+        style={{
+          ...sCellBold,
+          background: "#ffc000",
+          color: "#fff",
+          fontSize: sCellBold.fontSize + 3,
+          fontWeight: 800,
+          textAlign: "center",
+        }}
+      >
+        100%
+      </td>
+    );
+  }
+
+  // 📊 En las demás columnas, mostrar con signo
   return (
     <td
       style={{
         ...sCellBold,
-        background: isLast ? "#ffc000" : sCellBold.background,
-        color: isLast ? "#fff" : neg ? C.green : C.red_1,
-        fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
-        fontWeight: isLast ? 800 : sCellBold.fontWeight,
-        textAlign:"center"
+        background: sCellBold.background,
+        color: neg ? C.green : C.red_1,
+        fontSize: sCellBold.fontSize,
+        fontWeight: sCellBold.fontWeight,
+        textAlign: "center",
       }}
     >
-      {fmtPctSigned(v, { withPlus: !isLast })}
+      {fmtPctSigned(v, { withPlus: true })}
     </td>
   );
 };
+
 
 
   const MonthHead = ({ col }) => (
