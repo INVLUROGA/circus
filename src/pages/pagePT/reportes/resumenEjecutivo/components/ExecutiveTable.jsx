@@ -119,8 +119,8 @@ function computeMetricsForMonth(anio, mesNombre) {
   
   const invMetaUSD   = invVal(["1515","meta","facebook","instagram"]);
   const invTikTokUSD = invVal(["1514","tiktok","tik tok"]);
-  const invMetaPEN   = invMetaUSD   
-  const invTikTokPEN = invTikTokUSD 
+  const invMetaPEN   = invMetaUSD   * 3.39;
+  const invTikTokPEN = invTikTokUSD * 3.39;
   const invTotalPEN  = invMetaPEN + invTikTokPEN;
 
   const leads_por_red = mk?.leads_por_red || {};
