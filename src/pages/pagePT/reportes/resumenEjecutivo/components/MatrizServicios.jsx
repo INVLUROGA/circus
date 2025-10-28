@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo,useState } from "react";
 
 export default function MatrizServicios({
   ventas = [],
@@ -8,7 +8,7 @@ export default function MatrizServicios({
   serviciosConCostoIds = null,  
   esTratamiento = null,         
   serviciosConCostoLista = null, 
-  maxColsPorTabla = 12,
+  maxColsPorTabla = 17,
 }) {
   // ====== Utils ======
   const MESES = [
@@ -234,75 +234,99 @@ export default function MatrizServicios({
   );
 
   const renderDataset = ({ title }, data) => {
-    if (!data.services.length) {
-      return (
-        <>
-          {tituloBloque(title)}
-          <div style={{ textAlign: "center", padding: 16, opacity: 0.7 }}>Sin datos</div>
-        </>
-      );
-    }
-
-    const getQty = (emp, srv) => data.matrix.get(emp)?.get(srv) || 0;
-    const columnasEnChunks = chunk(data.services, Math.max(1, maxColsPorTabla));
-
+  if (!data.services.length) {
     return (
       <>
         {tituloBloque(title)}
-        <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
-          {columnasEnChunks.map((cols, idxChunk) => {
-            const colTotals = cols.map(
-              (s) => data.employees.reduce((acc, e) => acc + (data.matrix.get(e)?.get(s) || 0), 0)
-            );
-            return (
-              <table key={idxChunk} style={sTable}>
-                <thead>
-                  <tr>
-                    <th style={thLeft}>COLABORADOR</th>
-                    {cols.map((s) => (
-                      <th key={s} style={th}>{norm(s)}</th>
-                    ))}
-                    <th style={th}>TOTAL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.employees.map((emp) => {
-                    const totalRow = cols.reduce((a, s) => a + getQty(emp, s), 0);
-                    return (
-                      <tr key={emp}>
-                        <td style={tdLeft}>{emp}</td>
-                        {cols.map((srv) => (
-                          <td key={`${emp}-${srv}`} style={td}>{getQty(emp, srv)}</td>
-                        ))}
-                        <td className="bg-primary" style={{ ...td, fontWeight: 900,fontSize:22 }}>{totalRow}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-primary " style={{ color: "#000", fontSize: 22 }}>
-                    <td className="bg-primary " style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
-                    {colTotals.map((t, i) => (
-                      <td className="bg-primary " key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
-                        {t || ""}
-                      </td>
-                    ))}
-                    <td className="bg-primary" style={{ ...td, fontWeight: 900, fontSize: 22 }}>
-                      {colTotals.reduce((a, b) => a + b, 0)}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            );
-          })}
+        <div style={{ textAlign: "center", padding: 16, opacity: 0.7 }}>Sin datos</div>
+      </>
+    );
+  }
+
+  const getQty = (emp, srv) => data.matrix.get(emp)?.get(srv) || 0;
+  const columnasEnChunks = chunk(data.services, Math.max(1, maxColsPorTabla));
+
+  // === NUEVO: filtrar empleados ===
+  const employeesFiltered = q
+    ? data.employees.filter((e) => normFilter(e).includes(normFilter(q)))
+    : data.employees;
+
+  if (employeesFiltered.length === 0) {
+    return (
+      <>
+        {tituloBloque(title)}
+        <div style={{ textAlign: "center", padding: 16, opacity: 0.7 }}>
+          Sin coincidencias para “{q}”
         </div>
       </>
     );
-  };
+  }
 
+  return (
+    <>
+      {tituloBloque(title)}
+      <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
+        {columnasEnChunks.map((cols, idxChunk) => {
+          // Totales por columna (solo empleados filtrados)
+          const colTotals = cols.map(
+            (s) => employeesFiltered.reduce((acc, e) => acc + getQty(e, s), 0)
+          );
+
+          return (
+            <table key={idxChunk} style={sTable}>
+              <thead>
+                <tr>
+                  <th style={thLeft}>COLABORADOR</th>
+                  {cols.map((s) => (
+                    <th key={s} style={th}>{norm(s)}</th>
+                  ))}
+                  <th style={th}>TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employeesFiltered.map((emp) => {
+                  const totalRow = cols.reduce((a, s) => a + getQty(emp, s), 0);
+                  return (
+                    <tr key={emp}>
+                      <td style={tdLeft}>{emp}</td>
+                      {cols.map((srv) => (
+                        <td key={`${emp}-${srv}`} style={td}>{getQty(emp, srv)}</td>
+                      ))}
+                      <td className="bg-primary" style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                        {totalRow}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-primary " style={{ color: "#000", fontSize: 22 }}>
+                  <td className="bg-primary " style={{ ...tdLeft, fontWeight: 900, color: "#000" }}>TOTAL</td>
+                  {colTotals.map((t, i) => (
+                    <td className="bg-primary " key={`tot-${i}`} style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                      {t || ""}
+                    </td>
+                  ))}
+                  <td className="bg-primary" style={{ ...td, fontWeight: 900, fontSize: 22 }}>
+                    {colTotals.reduce((a, b) => a + b, 0)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          );
+        })}
+      </div>
+    </>
+  );
+};
+
+const [q, setQ] = useState("");
+const normFilter = (s="") =>
+  String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g,"").trim().toUpperCase();
   const rango = lastMonth ? ` – ${lastMonth.mName.toUpperCase()}/${lastMonth.y}` : "";
   const corte = cutDay ? ` (DEL ${initialDay} AL ${cutDay})` : "";
 return (
+  
   <div
     style={{
       marginBottom: "100px",
@@ -310,6 +334,26 @@ return (
       marginTop: 100,
     }}
   >
+<div style={{ display: "flex", gap: 8, alignItems: "center", margin: "12px 0" }}>
+  <input
+    value={q}
+    onChange={(e) => setQ(e.target.value)}
+    placeholder="BUSCAR COLABORADOR..."
+    className="p-inputtext p-component"
+    style={{ minWidth: 280, padding: 8, fontWeight: 700 }}
+    aria-label="Buscar colaborador"
+  />
+  {q && (
+    <button
+      type="button"
+      onClick={() => setQ("")}
+      style={{ padding: "8px 12px", fontWeight: 600, border: "1px solid #ccc", borderRadius: 6 }}
+    >
+      Limpiar
+    </button>
+  )}
+</div>
+
     <div className="mb-4">
       {renderDataset(
         { title: `SERVICIOS ${rango}${corte}` },

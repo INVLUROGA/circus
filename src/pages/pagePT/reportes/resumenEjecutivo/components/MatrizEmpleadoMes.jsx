@@ -161,6 +161,65 @@ const METRIC_ALIASES = {
   const isMoney = ['totalVentas','ventasProductos','ventasServicios'].includes(metricKey);
   const meses = Array.isArray(filtrarFecha) ? filtrarFecha : [filtrarFecha].filter(Boolean);
 
+
+  const onRowTotalClick = (emp) => {
+  if (!emp) return;
+  const objetivo = normalizeName(emp);
+  setEmpleadoObjetivo(objetivo);
+
+  // Trae todas las ventas de los meses visibles donde participe el colaborador
+  const filas = meses.flatMap((_, colIndex) => getVentasDeCelda(emp, colIndex));
+  setModalRows(filas);
+
+  // === resumen: solo líneas del colaborador ===
+  let totalCompra = 0;
+
+  const ventaBrutaServicios = filas.reduce((acc, v) => {
+    const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const suma = servicios.reduce((a, s) => {
+      const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
+      if (empServ !== objetivo) return a;
+      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+      const pUnit = Number(s?.tarifa_monto) || 0;
+      return a + cant * pUnit;
+    }, 0);
+    return acc + suma;
+  }, 0);
+
+  const ventaBrutaProductos = filas.reduce((acc, v) => {
+    const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                    : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    const suma = productos.reduce((a, p) => {
+      const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
+      if (empProd !== objetivo) return a;
+      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+      totalCompra += cant * (Number(p?.tb_producto?.prec_compra) || 0);
+      return a + cant * pUnit;
+    }, 0);
+    return acc + suma;
+  }, 0);
+
+  const resumen = buildBreakdown(ventaBrutaServicios + ventaBrutaProductos);
+  resumen.costoCompra = totalCompra;
+  resumen.netoFinal = round2(resumen.neto - totalCompra);
+  setModalResumen(resumen);
+
+  // Título bonito con rango de meses + nombre
+  const primerMes = meses?.[0];
+  const ultimoMes = meses?.[meses.length - 1];
+  const nombre = (emp?.split?.(' ')?.[0] ?? emp) ?? '';
+  let titulo = `TOTAL – ${nombre.toUpperCase()}`;
+  if (primerMes && ultimoMes) {
+    const l1 = (primerMes.label || primerMes.mes || '').toUpperCase();
+    const l2 = (ultimoMes.label || ultimoMes.mes || '').toUpperCase();
+    titulo = `${l1} ${primerMes.anio} – ${l2} ${ultimoMes.anio}${cutDay ? ` (hasta el día ${cutDay})` : ''} – ${nombre.toUpperCase()}`;
+  }
+  setModalTitle(titulo);
+
+  setModalOpen(true);
+};
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRows, setModalRows] = useState([]);
   const [modalTitle, setModalTitle] = useState('');
@@ -340,7 +399,49 @@ useEffect(() => {
     }
     return filas;
   }, [dataVenta, meses]);
+// Serie mensual del empleado abierto en el modal
+const serieEmpleadoMes = useMemo(() => {
+  if (!empleadoObjetivo) return [];
+  const objetivo = normalizeName(empleadoObjetivo);
 
+  return meses.map((_, colIndex) => {
+    const filas = getVentasDeCelda(objetivo, colIndex); // ya normaliza internamente
+    let total = 0;
+
+    for (const v of filas) {
+      // Servicios del empleado
+      const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+      for (const s of servicios) {
+        const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
+        if (empServ !== objetivo) continue;
+        const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+        const pUnit = Number(s?.tarifa_monto) || 0;
+        total += cant * pUnit;
+      }
+
+      // Productos del empleado
+      const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                        : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+      for (const p of productos) {
+        const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
+        if (empProd !== objetivo) continue;
+        const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+        const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+        total += cant * pUnit;
+      }
+    }
+
+    const label = columnas[colIndex]?.label || '';
+    return { label, total: round2(total) };
+  });
+}, [empleadoObjetivo, meses, columnas, getVentasDeCelda]);
+
+// Δ vs mes siguiente: delta[i] = total[i+1] - total[i]
+const deltasEmpleadoMes = useMemo(() => {
+  return serieEmpleadoMes.map((pt, i) =>
+    i < serieEmpleadoMes.length - 1 ? round2(serieEmpleadoMes[i + 1].total - pt.total) : null
+  );
+}, [serieEmpleadoMes]);
   const buildBreakdown = (brutoNum = 0) => {
     const bruto = Number(brutoNum) || 0;
     const igv = +(bruto * RATE_IGV).toFixed(2);
@@ -383,6 +484,7 @@ useEffect(() => {
       }, 0);
       return acc + sumaProd;
     }, 0);
+
 
     const resumen = buildBreakdown(ventaBrutaServicios + ventaBrutaProductos);
     resumen.costoCompra = totalCompra;
@@ -791,8 +893,9 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
                     {isMoney ? <NumberFormatMoney amount={val} /> : val}
                   </td>
                 ))}
-                <td className="fs-3 bg-primary" style={{ ...tdStyle, fontWeight: 'bold' }}     onClick={onGrandTotalClick}
-      title="Ver detalle de TODOS los meses">
+                <td className="fs-3 bg-primary" 
+   style={{ ...tdStyle, fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline dotted' }}    onClick={() => onRowTotalClick(emp)} 
+      title="Ver detalle del total de ${emp}">
                   {isMoney ? <NumberFormatMoney amount={totalesFilaFiltrada[r]} /> : totalesFilaFiltrada[r]}
                   
                 </td>
@@ -1166,199 +1269,323 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
     </table>
   </div>
 </div>
-            <div style={{  justifySelf: "center",marginTop:"100px" }}>
-              <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
-                PRODUCTOS VENDIDOS
-              </div>
+{/* === COMPARATIVA MENSUAL DEL COLABORADOR === */}
+{empleadoObjetivo && serieEmpleadoMes.length > 0 && (
+  <div style={{ marginTop: 28 }}>
+    <div
+      style={{
+        fontWeight: 800,
+        fontSize: 24,
+        textAlign: "center",
+        marginBottom: 10,
+        letterSpacing: 0.3,
+      }}
+    >
+      RESUMEN POR MES – {empleadoObjetivo.toUpperCase()}
+    </div>
 
-<table
-  style={{
-    ...baseTableStyle,
-    width: "100%",      
-    minWidth: 0,        
-    margin: 0,           
-    tableLayout: "fixed" 
-  }}
->
-  <thead>
-    <tr>
-<th
-  className="bg-primary"
-  style={{
-    ...thStyle,
-    width: "60px",
-    minWidth: "60px",
-    maxWidth: "60px",
-    textAlign: "center"
-  }}
->
-  Item
-</th>
-      <th className="bg-primary" style={thStyle}>Producto</th>
-      <th className="bg-primary" style={thStyle}>Cantidad</th>
-      <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
-      <th className="bg-primary" style={thStyle}>Precio <br/>    Venta</th>
-      <th className="bg-primary" style={thStyle}>IGV<br/>(-18%)</th>
-      <th className="bg-primary" style={thStyle}>Tarjeta<br/>(-4.5%)</th>
-      <th className="bg-primary" style={thStyle}>Renta<br/>(-3%)</th>
-      <th className="bg-primary" style={thStyle}>Costo<br/>Compra</th>
-      <th className="bg-primary" style={thStyle}>Utilidad<br/>Bruta</th>
-      <th className="bg-primary" style={thStyle}>Comisión</th>
-      <th className="bg-primary" style={thStyle}>Utilidad<br/>Neta</th>
-    </tr>
-  </thead>
+    <table
+      style={{
+        ...baseTableStyle,
+        width: "100%",
+        tableLayout: "fixed",
+      }}
+    >
+      <thead>
+        <tr>
+          <th className="bg-primary" style={thStyle}>Concepto</th>
+          {serieEmpleadoMes.map((pt) => (
+            <th key={pt.label} className="bg-primary" style={thStyle}>
+              {pt.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
 
-  <tbody>
-    {modalData.productosAgrupados.length === 0 ? (
+      <tbody>
+        {/* Totales por mes */}
+        <tr>
+          <td className="bg-primary" style={{ ...tdStyle, fontWeight: 800 }}>TOTAL MES</td>
+          {serieEmpleadoMes.map((pt, i) => (
+            <td
+              key={`t-${i}`}
+              style={{
+                ...tdStyle,
+                fontSize: 22,
+                fontWeight: i === serieEmpleadoMes.length - 1 ? 800 : 600, // último mes en negrita
+              }}
+              title={`Total ${pt.label}`}
+            >
+              <NumberFormatMoney amount={pt.total} />
+            </td>
+          ))}
+        </tr>
+
+        {/* Variación vs mes siguiente */}
+        <tr>
+          <td className="bg-primary" style={{ ...tdStyle, fontWeight: 800 }}>
+            VAR. VS MES SIGUIENTE
+          </td>
+
+          {serieEmpleadoMes.map((pt, i) => {
+            const delta = deltasEmpleadoMes[i];
+            // En el ÚLTIMO mes pide mostrar el valor real (no "-") en negrita
+            if (delta == null) {
+              return (
+                <td
+                  key={`d-${i}`}
+                  style={{ ...tdStyle, fontSize: 22, fontWeight: 800 }}
+                  title={`Total ${pt.label}`}
+                >
+                  <NumberFormatMoney amount={pt.total} />
+                </td>
+              );
+            }
+            const color = delta > 0 ? "#007b00" : delta < 0 ? "red" : "#000";
+            return (
+              <td
+                key={`d-${i}`}
+                style={{ ...tdStyle, fontSize: 22, color, fontWeight: 700 }}
+                title={`${serieEmpleadoMes[i + 1].label} – ${pt.label}`}
+              >
+                <NumberFormatMoney amount={delta} />
+              </td>
+            );
+          })}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+)}
+
+        <div style={{ justifySelf: "center", marginTop:"100px" }}>
+  <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
+    PRODUCTOS VENDIDOS
+  </div>
+
+  <table
+    style={{
+      ...baseTableStyle,
+      width: "100%",
+      minWidth: 0,
+      margin: 0,
+      tableLayout: "fixed"
+    }}
+  >
+    <thead>
       <tr>
-        <td colSpan={12} style={tdStyle}>
-          No se vendieron productos.
+        <th
+          className="bg-primary"
+          style={{
+            ...thStyle,
+            width: "60px",
+            minWidth: "60px",
+            maxWidth: "60px",
+            textAlign: "center"
+          }}
+        >
+          Item
+        </th>
+        <th className="bg-primary" style={thStyle}>Producto</th>
+        <th className="bg-primary" style={thStyle}>Cantidad</th>
+        <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
+        <th className="bg-primary" style={thStyle}>Precio <br/> Venta</th>
+        <th className="bg-primary" style={thStyle}>IGV<br/>(-18%)</th>
+        <th className="bg-primary" style={thStyle}>Tarjeta<br/>(-4.5%)</th>
+        <th className="bg-primary" style={thStyle}>Renta<br/>(-3%)</th>
+        <th className="bg-primary" style={thStyle}>Costo<br/>Compra</th>
+        <th className="bg-primary" style={thStyle}>Utilidad<br/>Bruta</th>
+        <th className="bg-primary" style={thStyle}>Comisión</th>
+        <th className="bg-primary" style={thStyle}>Utilidad<br/>Neta</th>
+        {/* NUEVA COLUMNA */}
+        <th className="bg-primary" style={thStyle}>Utilidad<br/>por producto</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {modalData.productosAgrupados.length === 0 ? (
+        <tr>
+          {/* +1 al colSpan por la nueva columna */}
+          <td colSpan={13} style={tdStyle}>No se vendieron productos.</td>
+        </tr>
+      ) : (
+        [...modalData.productosAgrupados]
+          .sort((a, b) => {
+            const cantDiff = (b.cantidad || 0) - (a.cantidad || 0);
+            if (cantDiff !== 0) return cantDiff;
+            return (b.precioVentaU || 0) - (a.precioVentaU || 0);
+          })
+          .map((p, i) => {
+            const venta   = (p.precioVentaU || 0) * (p.cantidad || 0);
+            const compra  = (p.precioCompraU || 0) * (p.cantidad || 0);
+            const tarjeta = venta * RATE_TARJETA;
+            const igv     = venta * RATE_IGV;
+            const renta   = venta * RATE_RENTA;
+            const utilBase  = venta - tarjeta - igv - renta - compra;
+            const comision  = utilBase * RATE_COMISION;
+            const utilFinal = utilBase - comision;
+
+            // NUEVO: utilidad por producto (unitaria)
+            const qty = p.cantidad || 1;
+            const utilPorProducto = utilFinal / qty;
+
+            return (
+              <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
+                <td
+                  className='bg-primary'
+                  style={{ ...tdStyle, width: "60px", minWidth: "60px", maxWidth: "60px", textAlign: "center" }}
+                >
+                  {i + 1}
+                </td>
+
+                {/* PRODUCTO */}
+                <td
+                  className='bg-primary text-dark'
+                  style={{
+                    ...tdStyle,
+                    textAlign: "left",
+                    fontWeight: 700,
+                    whiteSpace: "normal",
+                    wordWrap: "break-word",
+                    maxWidth: 750,
+                  }}
+                >
+                  {p.nombre}
+                </td>
+
+                {/* CANTIDAD */}
+                <td style={tdStyle}>{p.cantidad}</td>
+
+                {/* P. UNITARIO */}
+                <td style={{ ...tdStyle, fontWeight: 600 }}>
+                  <NumberFormatMoney amount={p.precioVentaU || 0} />
+                </td>
+
+                {/* P. VENTA TOTAL */}
+                <td style={{ ...tdStyle, fontWeight: 600, color: "#007b00" }}>
+                  <NumberFormatMoney amount={venta} />
+                </td>
+
+                {/* IGV */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={igv} />
+                </td>
+
+                {/* TARJETA */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={tarjeta} />
+                </td>
+
+                {/* RENTA */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={renta} />
+                </td>
+
+                {/* COSTO COMPRA */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={compra} />
+                </td>
+
+                {/* UTILIDAD BRUTA */}
+                <td style={{ ...tdStyle, fontWeight: 600, color: "green" }}>
+                  <NumberFormatMoney amount={utilBase} />
+                </td>
+
+                {/* COMISIÓN */}
+                <td style={{ ...tdStyle, color: "red" }}>
+                  <NumberFormatMoney amount={comision} />
+                </td>
+
+                {/* UTILIDAD NETA */}
+                <td
+                  style={{
+                    ...tdStyle,
+                    fontWeight: 700,
+                    color: utilFinal >= 0 ? "#007b00" : "red",
+                  }}
+                >
+                  <NumberFormatMoney amount={utilFinal} />
+                </td>
+
+                {/* NUEVA COLUMNA: UTILIDAD POR PRODUCTO */}
+                <td
+                  style={{
+                    ...tdStyle,
+                    fontWeight: 700,
+                    color: utilPorProducto >= 0 ? "#007b00" : "red",
+                  }}
+                >
+                  <NumberFormatMoney amount={utilPorProducto} />
+                </td>
+              </tr>
+            );
+          })
+      )}
+
+      {/* TOTALES */}
+      <tr style={{ backgroundColor: "var(--primary-color)" }}>
+        <td className="bg-primary text-dark" style={{ ...tdTotales, fontWeight: 1000 }} />
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          TOTALES
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          {modalData.totalCantidad}
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales }} />
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalPVentaProd} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalIGV} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalTarjeta} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalRenta} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalPCompraProd} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalUtilBase} />
+        </td>
+        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "white" }}>
+          <NumberFormatMoney amount={modalData.totalComision} />
+        </td>
+        <td
+          className="bg-primary"
+          style={{
+            ...tdTotales,
+            fontWeight: 800,
+            color: modalData.totalUtilFinal >= 0 ? "white" : "red",
+            WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "white" : "red",
+          }}
+        >
+          <NumberFormatMoney amount={modalData.totalUtilFinal} />
+        </td>
+
+        <td
+          className="bg-primary"
+          style={{
+            ...tdTotales,
+            fontWeight: 800,
+            WebkitTextFillColor: "white"
+          }}
+        >
+          <NumberFormatMoney
+            amount={
+              (modalData.totalCantidad || 0) > 0
+                ? modalData.totalUtilFinal / modalData.totalCantidad
+                : 0
+            }
+          />
         </td>
       </tr>
-    ) : (
-[...modalData.productosAgrupados]
-  .sort((a, b) => {
-    const cantDiff = (b.cantidad || 0) - (a.cantidad || 0);
-    if (cantDiff !== 0) return cantDiff;
+    </tbody>
+  </table>
+</div>
 
-    return (b.precioVentaU || 0) - (a.precioVentaU || 0);
-  })
-  .map((p, i) => {
-        const venta = (p.precioVentaU || 0) * (p.cantidad || 0);
-        const compra = (p.precioCompraU || 0) * (p.cantidad || 0);
-        const tarjeta = venta * RATE_TARJETA;
-        const igv = venta * RATE_IGV;
-        const renta = venta * RATE_RENTA;
-        const utilBase = venta - tarjeta - igv - renta - compra;
-        const comision = utilBase * RATE_COMISION;
-        const utilFinal = utilBase - comision;
-
-        return (
-          <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-            <td className='bg-primary' style={{ ...tdStyle,    width: "60px", 
-    minWidth: "60px",
-    maxWidth: "60px", textAlign: "center" }}>
-              {i + 1}
-            </td>
-
-            {/* PRODUCTO */}
-            <td className='bg-primary text-dark'
-              style={{
-                ...tdStyle,
-                textAlign: "left",
-                fontWeight: 700,
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-                maxWidth: 750,
-              }}
-            >
-              {p.nombre}
-            </td>
-
-            {/* CANTIDAD */}
-            <td style={tdStyle}>{p.cantidad}</td>
-
-            {/* P. UNITARIO */}
-            <td style={{ ...tdStyle, fontWeight: 600 }}>
-              <NumberFormatMoney amount={p.precioVentaU || 0} />
-            </td>
-
-            {/* P. VENTA TOTAL */}
-            <td style={{ ...tdStyle, fontWeight: 600, color: "#007b00" }}>
-              <NumberFormatMoney amount={venta} />
-            </td>
-
-            {/* IGV */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={igv} />
-            </td>
-
-            {/* TARJETA */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={tarjeta} />
-            </td>
-
-            {/* RENTA */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={renta} />
-            </td>
-
-            {/* COSTO COMPRA */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={compra} />
-            </td>
-
-            {/* UTILIDAD BRUTA */}
-            <td style={{ ...tdStyle, fontWeight: 600, color: "green" }}>
-              <NumberFormatMoney amount={utilBase} />
-            </td>
-
-            {/* COMISIÓN */}
-            <td style={{ ...tdStyle, color: "red" }}>
-              <NumberFormatMoney amount={comision} />
-            </td>
-
-            {/* UTILIDAD NETA */}
-            <td
-              style={{
-                ...tdStyle,
-                fontWeight: 700,
-                color: utilFinal >= 0 ? "#007b00" : "red",
-              }}
-            >
-              <NumberFormatMoney amount={utilFinal} />
-            </td>
-          </tr>
-        );
-      })
-    )}
-
-    <tr style={{ backgroundColor: "var(--primary-color)" }}>
-         <td className="bg-primary text-dark" style={{ ...tdTotales, fontWeight: 1000 }}>
-      </td>
-      <td className="bg-primary " style={{ ...tdTotales, fontWeight: 1000,WebkitTextFillColor: "white" }}>
-        TOTALES
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        {modalData.totalCantidad}
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales }} />
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalPVentaProd} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalIGV} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalTarjeta} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalRenta} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalPCompraProd} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalUtilBase} />
-      </td>
-      <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "white" }}>
-        <NumberFormatMoney amount={modalData.totalComision} />
-      </td>
-      <td
-        className="bg-primary"
-        style={{
-          ...tdTotales,
-          fontWeight: 800,
-          color: modalData.totalUtilFinal >= 0 ? "white" : "red",
-          WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "white" : "red",
-        }}
-      >
-        <NumberFormatMoney amount={modalData.totalUtilFinal} />
-      </td>
-    </tr>
-  </tbody>
-</table>
-            </div>
           </>
         )}
       </Dialog>

@@ -184,7 +184,7 @@ export const ClientesPorOrigen = ({
   return (
     <div style={{ fontFamily: "Inter, system-ui, Segoe UI, Roboto, sans-serif" }}>
       <div style={sTitle}>
-        CLIENTES POR ORIGEN DEL {initialDay} HASTA {cutDay}
+        CLIENTES POR ORIGEN DEL AL {cutDay}
       </div>
 
       <table style={sTable}>
