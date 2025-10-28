@@ -10,6 +10,7 @@ export const ClientesPorOrigen = ({
     1455: "DIGITAL",
     1456: "REFERIDO",
     1457: "CARTERA",
+    1523: "TIKTOK",
   },
   uniqueByClient = true,
 }) => {

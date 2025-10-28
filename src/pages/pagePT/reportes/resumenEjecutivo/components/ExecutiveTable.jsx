@@ -131,26 +131,19 @@ function computeMetricsForMonth(anio, mesNombre) {
   const leadsTikTok = leadVal(["1514","tiktok","tik tok"]);
   const leadsTotal  = leadsMeta + leadsTikTok;
 
-  // CPL (costo por lead)
   const cplMeta   = safeDiv0(invMetaPEN,   leadsMeta);
   const cplTikTok = safeDiv0(invTikTokPEN, leadsTikTok);
   const cplTotal  = safeDiv0(invTotalPEN,  leadsTotal);
 
-  // --- clientes cerrados (CAC) ---
-  // estos vienen ya calculados en App:
-  //   mk.clientes_digitales -> clientes cerrados FB+IG (lo que se ve en tu tabla de origenes: INSTAGRAM + FACEBOOK)
-  //   mk.clientes_tiktok    -> clientes cerrados por TikTok (a futuro)
-  const clientesMetaReal   = Number(mk?.clientes_digitales ?? 0); // FB + IG
+  const clientesMetaReal   = Number(mk?.clientes_digitales ?? 0);
   const clientesTikTokReal = Number(mk?.clientes_tiktok    ?? 0);
   const clientesTotalReal  = clientesMetaReal + clientesTikTokReal;
 
-  // CAC (costo adquisición de cliente = inversión / clientes cerrados)
   const cacMeta   = safeDiv0(invMetaPEN,   clientesMetaReal);
   const cacTikTok = safeDiv0(invTikTokPEN, clientesTikTokReal);
   const cacTotal  = safeDiv0(invTotalPEN,  clientesTotalReal);
 
   return {
-    // ---- métricas de marketing que vamos a pintar ----
     invMetaPEN,
     leadsMeta,
     cplMeta,
@@ -166,7 +159,6 @@ function computeMetricsForMonth(anio, mesNombre) {
     cplTotal,
     cacTotal,
 
-    // ---- métricas de ventas que ya tenías ----
     totalServ,
     cantServ,
     ticketServ,
@@ -184,9 +176,6 @@ function computeMetricsForMonth(anio, mesNombre) {
     totalMesFull: totalServFull + totalProdFull,
   };
 }
-
-
-  // Filas de las primeras dos tablas (ya las tenías)
   const rows = [
     { key: "invTotalPEN",         label: "INVERSIÓN TOTAL REDES",                 type: "money" },
         { key: "leadsTotal",       label: "TOTAL LEADS DE META + TIKTOK",          type: "int"   },
@@ -200,7 +189,6 @@ function computeMetricsForMonth(anio, mesNombre) {
   { key: "leadsTikTok",    label: "CANTIDAD LEADS TIKTOK",                   type: "int"    },
   { key: "cplTikTok",      label: "COSTO POR LEAD TIKTOK",                   type: "float2" },
   { key: "cacTikTok",      label: "COSTO ADQUISICION DE CLIENTES TIKTOK",    type: "float2" },
-
     { key: "totalServ",     label: "VENTA SERVICIOS",                       type: "money" },
     { key: "cantServ",      label: "CANTIDAD SERVICIOS",                    type: "int"   },
     { key: "ticketServ",    label: "TICKET MEDIO SERVICIOS",                type: "money" },

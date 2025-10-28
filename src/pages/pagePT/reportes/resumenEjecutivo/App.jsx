@@ -235,6 +235,7 @@
                     1451: "YOHANDRY",
                     1450: "CANJE",
                     1449: "Preferencial",
+                    1523: "TIKTOK,"
                   }}
                 />
               </Col>
