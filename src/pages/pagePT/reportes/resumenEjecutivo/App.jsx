@@ -145,28 +145,53 @@
 
       return uniques.size;
     };
+const countClientsForMonthByOrigin = (ventasList, anio, mesNombre, fromDay, cut, allowed) => {
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const mLower = String(mesNombre).toLowerCase();
+  const monthIdx = MESES.indexOf(mLower);
+  if (monthIdx < 0) return 0;
+
+  const uniques = new Set();
+  for (const v of (ventasList || [])) {
+    const d = toDateSafe(v?.fecha_venta || v?.fecha || v?.createdAt);
+    if (!d || d.getFullYear() !== Number(anio) || d.getMonth() !== monthIdx) continue;
+
+    const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const from = Math.max(1, Math.min(Number(fromDay || 1), last));
+    const to   = Math.max(from, Math.min(Number(cut || last), last));
+    const dia  = d.getDate();
+    if (dia < from || dia > to) continue;
+
+    const idOrigen = Number(v?.id_origen ?? v?.origen);
+    if (allowed.has(idOrigen)) {
+      const idCli = v?.id_cli ?? v?.tb_cliente?.id_cli ?? v?.tb_ventum?.id_cli ?? v?.venta?.id_cli ?? v?.id;
+      if (idCli != null) uniques.add(String(idCli));
+    }
+  }
+  return uniques.size;
+};
 
     const dataMktWithCac = useMemo(() => {
       const base = { ...(dataMkt || {}) };
 
-      for (const f of mesesDinamicos) {
-        const mesKey = f.mes === "septiembre" ? "setiembre" : f.mes; 
-        const key = `${f.anio}-${mesKey}`;
-        const obj = { ...(base[key] || {}) };
+     const META_ORIGINS   = new Set([1452, 1453]); // FB, IG
+const TIKTOK_ORIGINS = new Set([1526]);       // TikTok
 
-        const inversion = Number(
-          obj.inversiones_redes ?? obj.inversion_redes ?? obj.inv ?? 0
-        );
+for (const f of mesesDinamicos) {
+  const mesKey = f.mes === "septiembre" ? "setiembre" : f.mes;
+  const key = `${f.anio}-${mesKey}`;
+  const obj = { ...(base[key] || {}) };
 
-        const clientes = countDigitalClientsForMonth(
-          dataVentas || [], f.anio, f.mes, initDay, cutDay
-        );
+  const clientesMeta   = countClientsForMonthByOrigin(dataVentas || [], f.anio, f.mes, initDay, cutDay, META_ORIGINS);
+  const clientesTikTok = countClientsForMonthByOrigin(dataVentas || [], f.anio, f.mes, initDay, cutDay, TIKTOK_ORIGINS);
 
-        obj.clientes_digitales = clientes;
-        obj.cac = clientes > 0 ? inversion / clientes : 0;
+  obj.clientes_meta     = clientesMeta;
+  obj.clientes_tiktok   = clientesTikTok;
+  obj.clientes_digitales = clientesMeta + clientesTikTok; // si quieres mantener el total
 
-        base[key] = obj;
-      }
+  base[key] = obj;
+}
+
       return base;
     }, [dataMkt, dataVentas, mesesDinamicos, initDay, cutDay, countDigitalClientsForMonth]);
 
@@ -184,7 +209,22 @@
       const mesLabel = mesesLabel[selectedMonth - 1];
       return [{ label: mesLabel, anio: year.toString(), mes: mesNombre }];
     }, [selectedMonth, year]);
-
+const originMap = {
+    1458: "WALKING",
+                    1457: "VIP",
+                    1456: "TELEVISION",
+                    1455: "REGULAR",
+                    1454: "WSP organico",
+                    1453: "INSTAGRAM",
+                    1452: "FACEBOOK",
+                    1451: "YOHANDRY",
+                    1450: "CANJE",
+                    1449: "Preferencial",
+                    1526: "TIKTOK,",
+  0: "OTROS",                   
+  "": "OTROS",               
+  null: "OTROS", undefined: "OTROS" 
+};
     return (
       <>
         <PageBreadcrumb title="INFORME GERENCIAL" subName="Ventas" />
@@ -214,6 +254,8 @@
                   dataMktByMonth={dataMktWithCac} 
                   initialDay={initDay}
                   cutDay={cutDay}
+                  originMap={originMap}  
+
                 />
               </Col>
 

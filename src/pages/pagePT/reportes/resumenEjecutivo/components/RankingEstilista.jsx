@@ -69,32 +69,45 @@ function toLimaDate(iso) {
     return null;
   }
 }
+const parseIsoLocal = (iso) => {
+  if (!iso) return null;
+  const s = String(iso).trim()
+    .replace(" ", "T")            // "YYYY-MM-DD HH:mm..." -> "YYYY-MM-DDTHH:mm..."
+    .replace(/\s\+00:00$/, "Z")   // "... +00:00" -> "...Z"
+    .replace(/(\.\d{3})\d+/, "$1"); // recorta a 3 decimales
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
 
 function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
-  const mapa = {
-    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
-    julio: 6, agosto: 7, septiembre: 8, setiembre: 8,
-    octubre: 9, noviembre: 10, diciembre: 11,
-  };
-  const monthIdx = mapa[filtro.mes.toLowerCase()] ?? -1;
-  if (monthIdx < 0) return ventas;
-  const yearNum = Number(filtro.anio);
-  const lastDay = new Date(yearNum, monthIdx + 1, 0).getDate();
-  const from = Math.max(1, Math.min(initDay, lastDay));
-  const to = Math.max(from, Math.min(cutDay || lastDay, lastDay));
 
-  return ventas.filter((v) => {
-    const d = toLimaDate(v?.fecha_venta ?? v?.createdAt ?? v?.fecha);
+  const mapa = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,
+    julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11};
+  const m = mapa[String(filtro.mes).toLowerCase()];
+  if (m == null) return ventas;
+
+  const y = Number(filtro.anio);
+  const last = new Date(y, m + 1, 0).getDate();
+  const from = Math.max(1, Math.min(initDay, last));
+  const to   = Math.max(from, Math.min(cutDay || last, last));
+
+  const inRangeLocal = (iso) => {
+    const d = parseIsoLocal(iso);
     if (!d) return false;
-    return (
-      d.getFullYear() === yearNum &&
-      d.getMonth() === monthIdx &&
-      d.getDate() >= from &&
-      d.getDate() <= to
-    );
+    return d.getFullYear() === y && d.getMonth() === m &&
+           d.getDate() >= from && d.getDate() <= to;
+  };
+
+  return ventas.filter(v => {
+    if (inRangeLocal(v?.fecha_venta ?? v?.fecha ?? v?.createdAt)) return true;
+    const ds = (v?.detalle_ventaservicios || []).some(x => inRangeLocal(x?.createdAt));
+    const dp = (v?.detalle_ventaProductos || []).some(x => inRangeLocal(x?.createdAt));
+    return ds || dp;
   });
 }
+
+
 
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
@@ -169,13 +182,18 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     );
   }, []);
 
-
+const rows17243 = (dataVenta||[])
+  .flatMap(v => v?.detalle_ventaservicios || [])
+  .filter(s => Number(s.id_venta) === 17243)
+  .map(s => ({ id_venta: s.id_venta, tarifa: s.tarifa_monto, createdAt: s.createdAt }));
+console.log('DET 17243 ->', rows17243);
 const canon = (s) =>
   String(s ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .toUpperCase();  const ventasMes = useMemo(() => {
+    .toUpperCase(); 
+     const ventasMes = useMemo(() => {
     if (Array.isArray(filtrarFecha)) {
       return filtrarFecha.flatMap((f) =>
         filtrarVentasPorMes(dataVenta, f, initialDay, cutDay)

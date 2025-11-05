@@ -47,16 +47,16 @@ function agruparYOrdenar(array) {
 	return resultado;
 }
 export const useTerminoMetodoPagoStore = () => {
-    
-	const obtenerFormaDePagosActivos = async () => {
-		try {
-			let { data } = await PTApi.get('/parametros/get_params/forma_pago');
-			setdataFormaPagoActivoVentas(agruparYOrdenar(data.formaPago));
-		} catch (error) {
-			console.log(error);
-		}
-	};
-	return {
-        obtenerFormaDePagosActivos
-    };
+  const obtenerFormaDePagosActivos = async () => {
+    try {
+      const { data } = await PTApi.get('/parametros/get_params/forma_pago');
+      return agruparYOrdenar(data.formaPago);
+    } catch (error) {
+      console.error('Error al obtener formas de pago activas:', error);
+      return [];
+    }
+  };
+
+  return { obtenerFormaDePagosActivos };
 };
+

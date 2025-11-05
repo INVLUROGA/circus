@@ -13,7 +13,6 @@ import { Dialog } from 'primereact/dialog';
 
 dayjs.extend(isoWeek);
 
-// Normaliza strings: minúsculas, sin acentos, espacios colapsados
 const canon = (s='') =>
   s.toString()
    .trim()
@@ -21,7 +20,6 @@ const canon = (s='') =>
    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
    .replace(/\s+/g,' ');
 
-// Reglas: agrega aquí sinónimos/variantes que quieras mapear a una etiqueta final
 const RULES = [
   { to: 'TRANSFERENCIA', when: ['transf', 'transferencia', 'transferencias', 'transferencia bancaria', 'TRANSFERENCIA', 'bcp', 'interbank'] },
   { to: 'tarjeta',        when: ['tarjeta', "OPENPAY", 'tarjeta credito', 'tarjeta debito', 'visa', 'mastercard', 'amex', 'niubiz', 'culqi', 'mercado pago'] },

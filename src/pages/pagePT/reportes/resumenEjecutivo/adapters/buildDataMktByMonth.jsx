@@ -122,7 +122,7 @@ const toLimaBucketDate = (iso) => {
     acc[key].clientes_digitales += clientes;
 
    const chKey = id || slug; 
-  if (chKey) {+    add(acc[key].por_red, chKey, inv);
+  if (chKey) {   add(acc[key].por_red, chKey, inv);
     add(acc[key].leads_por_red, chKey, leads);
   }
   }
