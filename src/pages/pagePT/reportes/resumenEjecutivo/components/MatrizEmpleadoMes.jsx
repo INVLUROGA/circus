@@ -26,17 +26,49 @@ const firstWord = (s='') => toKey(s).split(' ')[0] || '';
 const normalizeName = (s) => (!s ? '' : s.normalize('NFKC').trim().replace(/\s+/g, ' '));
 const round2 = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
 
-function filtrarVentasPorMes(ventas = [], filtro) {
+// MatrizEmpleadoMes.jsx
+function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay = null) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
-  const monthIdx = mesAIndice(filtro.mes);
-  const yearNum = Number(filtro.anio);
-  if (monthIdx < 0 || !Number.isFinite(yearNum)) return ventas;
+
+  const mapa = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,
+    julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11};
+  const m = mapa[String(filtro.mes).toLowerCase()];
+  const y = Number(filtro.anio);
+  if (m == null || !Number.isFinite(y)) return ventas;
+
+  const last = new Date(y, m + 1, 0).getDate();
+  const from = Math.max(1, Math.min(initDay || 1, last));
+  const to   = Math.max(from, Math.min(cutDay || last, last));
+
+  const parseIsoLima = (iso) => {
+    if (!iso) return null;
+    const s = String(iso).trim()
+      .replace(" ", "T")
+      .replace(" +00:00", "Z")
+      .replace("+00:00", "Z");
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return null;
+    // llevar a hora Lima
+    return new Date(d.getTime() - 5 * 60 * 60000);
+  };
+
+  const inRange = (iso) => {
+    const d = parseIsoLima(iso);
+    return d &&
+      d.getFullYear() === y &&
+      d.getMonth() === m &&
+      d.getDate() >= from &&
+      d.getDate() <= to;
+  };
+
   return ventas.filter((v) => {
-    const d = dayjs.utc(v?.fecha_venta);
-    if (!d.isValid()) return false;
-    return d.year() === yearNum && d.month() === monthIdx;
+    if (inRange(v?.fecha_venta || v?.fecha || v?.createdAt)) return true;
+    const ds = (v?.detalle_ventaservicios || []).some(x => inRange(x?.createdAt));
+    const dp = (v?.detalle_ventaProductos || v?.detalle_ventaproductos || []).some(x => inRange(x?.createdAt));
+    return ds || dp;
   });
 }
+
 
 function rankingPorEmpleado(
   ventas = [],

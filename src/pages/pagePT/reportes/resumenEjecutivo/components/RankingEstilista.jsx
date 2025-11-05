@@ -220,7 +220,11 @@ const canon = (s) =>
 
   for (const v of ventasEmpleado) {
     const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
-    const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : [];
+const productos = Array.isArray(v?.detalle_ventaProductos)
+  ? v.detalle_ventaProductos
+  : Array.isArray(v?.detalle_ventaproductos)
+  ? v.detalle_ventaproductos
+  : [];
 
     const pagosByMethod = getPagos(v).reduce((acc, p) => {
       const k = methodKey(p.label);

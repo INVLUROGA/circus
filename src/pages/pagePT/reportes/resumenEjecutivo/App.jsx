@@ -320,6 +320,8 @@ const originMap = {
               dataVenta={dataVentas}
               filtrarFecha={mesesEmpleados}
               datoEstadistico="Total Ventas"
+                initialDay={initDay}
+
               cutDay={cutDay}
             />
           </Col>
