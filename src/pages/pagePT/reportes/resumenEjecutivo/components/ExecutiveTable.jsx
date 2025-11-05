@@ -402,7 +402,7 @@ const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
       </div>
       <table style={sTable}><TableHead /><tbody>{renderRows(rowsParte1)}</tbody></table>
 
-      <div style={{ background:"#000", color:"#fff", textAlign:"center", padding:"25px 12px", fontWeight:700, letterSpacing:0.3, marginTop:40 ,fontsize:25}}>
+      <div style={{ background:"#000", color:"#fff", textAlign:"center", padding:"25px 12px", fontWeight:700, letterSpacing:0.3, marginTop:40 ,fontSize:25}}>
         DETALLE DE VENTAS POR TIPO AL {cutDay} DE CADA MES
       </div>
       <table style={sTable}>
@@ -432,7 +432,7 @@ const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
       {sortedOriginKeys.map((okey)=>(
         <div key={okey} style={{ marginTop:40 }}>
           <div style={{ background:"#000", color:"#fff", textAlign:"center", padding:"25px 12px", fontWeight:700, letterSpacing:0.3, fontSize:25 }}>
-            {`DETALLE DE SERVICIOS POR ORIGEN: ${labelFromKey(okey)}`}
+            {` ${labelFromKey(okey)}`}
           </div>
           <table style={sTable}>
             <TableHeadForOrigin />

@@ -175,10 +175,10 @@ const lastIdx = columns.length - 1;
   };
 
   const sTable = { width: "100%", borderCollapse: "collapse", tableLayout: "fixed" };
-  const sHeadLeft = { background: C.red, color: C.white, padding: "10px", border: C.cellBorder, textAlign: "left", fontSize: 20 };
-  const sHead = { background: C.red, color: C.white, padding: "10px", border: C.cellBorder, textAlign: "center", fontSize: 20 };
-  const sCell = { background: C.white, color: "#000", padding: "8px 10px", border: C.cellBorder, fontSize: 13 };
-  const sCellBold = { ...sCell, fontWeight: 700, fontSize: 17 };
+  const sHeadLeft = { background: C.red, color: C.white, padding: "10px", border: C.cellBorder, textAlign: "left", fontSize: 25 };
+  const sHead = { background: C.red, color: C.white, padding: "10px", border: C.cellBorder, textAlign: "center", fontSize: 25 };
+  const sCell = { background: C.white, color: "#000", padding: "8px 10px", border: C.cellBorder };
+  const sCellBold = { ...sCell, fontWeight: 700, };
   const sRowShade = { background: C.greyRow };
 
 const MoneyCell = ({ value, isLast }) => {
@@ -190,7 +190,7 @@ const MoneyCell = ({ value, isLast }) => {
         ...sCellBold,
         background: isLast ? "#ffc000" : sCellBold.background,
         color: isLast ? "#fff" : neg ? C.green : C.red_1,
-        fontSize: isLast ? sCellBold.fontSize + 3 : sCellBold.fontSize,
+        fontSize: isLast ? 25 + 3 : 25,
         fontWeight: isLast ? 800 : sCellBold.fontWeight,
         textAlign:"center"
       }}
@@ -213,7 +213,7 @@ const PctCell = ({ value, isLast }) => {
           ...sCellBold,
           background: "#ffc000",
           color: "#fff",
-          fontSize: sCellBold.fontSize + 3,
+          fontSize: 25,
           fontWeight: 800,
           textAlign: "center",
         }}
@@ -230,7 +230,7 @@ const PctCell = ({ value, isLast }) => {
         ...sCellBold,
         background: sCellBold.background,
         color: neg ? C.green : C.red_1,
-        fontSize: sCellBold.fontSize,
+        fontSize:25,
         fontWeight: sCellBold.fontWeight,
         textAlign: "center",
       }}
@@ -245,7 +245,7 @@ const PctCell = ({ value, isLast }) => {
   const MonthHead = ({ col }) => (
     <th style={sHead}>
       <div>{col.label}</div>
-      {col.isRef && <div style={{ fontSize: 12 }}></div>}
+      {col.isRef && <div style={{ fontSize: 25 }}></div>}
     </th>
   );
 
@@ -272,6 +272,7 @@ const PctCell = ({ value, isLast }) => {
               background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
+              fontSize: 25,
             }}
           >
             VENTAS
@@ -291,6 +292,7 @@ const PctCell = ({ value, isLast }) => {
               textAlign: "left",
               background: "#ffc000",
               color: "#fff",
+              fontSize: 25,
               fontWeight: 800,
             }}
           >
@@ -325,6 +327,7 @@ const PctCell = ({ value, isLast }) => {
               textAlign: "left",
               background: "#ffc000",
               color: "#fff",
+              fontSize: 25,
               fontWeight: 800,
             }}
           >
@@ -346,6 +349,7 @@ const PctCell = ({ value, isLast }) => {
               background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
+              fontSize: 25,
             }}
           >
             %
@@ -380,6 +384,7 @@ const PctCell = ({ value, isLast }) => {
               background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
+              fontSize: 25,
             }}
           >
             VENTAS
@@ -400,6 +405,7 @@ const PctCell = ({ value, isLast }) => {
               background: "#ffc000",
               color: "#fff",
               fontWeight: 800,
+              fontSize: 25,
             }}
           >
             %
