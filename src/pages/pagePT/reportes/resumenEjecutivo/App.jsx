@@ -11,8 +11,9 @@
   import { RankingEstilista } from "./components/RankingEstilista";
   import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
   import { TopControls } from "./components/TopControls";
+      import PTApi from '@/common/api/PTApi';
+
   import MatrizServicios from "./components/MatrizServicios";
-  import axios from "axios";
   const generarMesesDinamicos = (cantidad = 8, baseMonth1to12, baseYear) => {
     const meses = [
       "enero","febrero","marzo","abril","mayo","junio",
@@ -53,25 +54,32 @@
 
   const [canalParams, setCanalParams] = useState([]);
 
-    useEffect(() => {
-      (async () => {
-        try {
-          const { data } = await axios.get(
-            "http://localhost:4000/api/parametros/get_params/inversion/redes"
-          );        const mapped = (Array.isArray(data) ? data : []).map(d => ({
-                id_param: (d.value),
-          label_param: (d.label),
-          }));
-          setCanalParams(mapped);
-      } catch (e) {
-        console.warn("No se pudieron cargar canalParams, uso fallback 1514/1515:", e?.message);
-        setCanalParams([
-          { id_param: "1514", label_param: "TIKTOK ADS" },
-          { id_param: "1515", label_param: "META ADS"  },
-        ]);
-      }
-    })();
-  }, []);
+useEffect(() => {
+  (async () => {
+    try {
+      const { data } = await PTApi.get(
+        '/parametros/get_params/inversion/redes'
+      );
+
+      const mapped = (Array.isArray(data) ? data : []).map(d => ({
+        id_param: d.value,
+        label_param: d.label,
+      }));
+
+      setCanalParams(mapped);
+    } catch (e) {
+      console.warn(
+        'No se pudieron cargar canalParamsSSS, uso fallback 1514/1515:',
+        e?.message
+      );
+      setCanalParams([
+        { id_param: 1514, label_param: 'TIKTOK ADS' },
+        { id_param: 1515, label_param: 'META ADS'  },
+      ]);
+    }
+  })();
+}, []);
+
     const mesesDinamicos = useMemo(
       () => generarMesesDinamicos(8, selectedMonth, year),
       [selectedMonth, year]

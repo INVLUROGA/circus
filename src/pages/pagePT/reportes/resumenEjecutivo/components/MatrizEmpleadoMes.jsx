@@ -1,25 +1,18 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { NumberFormatMoney } from '@/components/CurrencyMask';
-import { Dialog } from 'primereact/dialog';
 import { Button } from 'primereact/button';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import 'dayjs/locale/es';
 import { PTApi } from '@/common/api/';
+import { DetalleVentasDialog } from "./dialogs/DetalleVentasDialog";
+
 import { useTerminoMetodoPagoStore } from "@/hooks/hookApi/FormaPagoStore/useTerminoMetodoPagoStore";
 
 dayjs.extend(utc);
 dayjs.locale('es');
 
-const mesAIndice = (m = '') => {
-  const k = m.trim().toLowerCase();
-  const mapa = {
-    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
-    julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9,
-    noviembre: 10, diciembre: 11,
-  };
-  return mapa[k] ?? -1;
-};
+
 const toKey = (s='') =>
   s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
 const firstWord = (s='') => toKey(s).split(' ')[0] || '';
@@ -151,10 +144,11 @@ export const MatrizEmpleadoMes = ({
   excluirNombres = ['LUIS', 'JESUS', 'FATIMA', 'MIA', 'KATIA', 'TIBISAY'],
   cutDay=null,
 }) => {
-  const RATE_IGV = 0.18;
-  const RATE_RENTA = 0.03;
-  const RATE_TARJETA = 0.045;
-  const RATE_COMISION = 0.10;
+ const [rateIgv, setRateIgv] = useState(0.18);
+const [rateRenta, setRateRenta] = useState(0.03);
+const [rateTarjeta, setRateTarjeta] = useState(0.045);
+const RATE_COMISION = 0.10;
+
 
   const [q, setQ] = useState('');
   const normq = (s='') => s.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
@@ -474,14 +468,23 @@ const deltasEmpleadoMes = useMemo(() => {
     i < serieEmpleadoMes.length - 1 ? round2(serieEmpleadoMes[i + 1].total - pt.total) : null
   );
 }, [serieEmpleadoMes]);
-  const buildBreakdown = (brutoNum = 0) => {
-    const bruto = Number(brutoNum) || 0;
-    const igv = +(bruto * RATE_IGV).toFixed(2);
-    const renta = +(bruto * RATE_RENTA).toFixed(2);
-    const tarjeta = +(bruto * RATE_TARJETA).toFixed(2);
-    const neto = +(bruto - igv - renta - tarjeta).toFixed(2);
-    return { bruto, igv, renta, tarjeta, neto };
-  };
+ const buildBreakdown = (brutoNum = 0) => {
+  const bruto = Number(brutoNum) || 0;
+
+  // 1) Descontar comisión de tarjeta sobre la venta bruta
+  const tarjeta = round2(bruto * rateTarjeta);
+  const base = round2(bruto - tarjeta);
+
+  // 2) IGV y Renta calculados sobre el neto después de tarjeta
+  const igv = round2(base * rateIgv);
+  const renta = round2(base * rateRenta);
+
+  // 3) Ingreso neto final
+  const neto = round2(base - igv - renta);
+
+  return { bruto, tarjeta, igv, renta, neto };
+};
+
 
   const onCellClick = (emp, colIndex) => {
     if (!emp || !meses[colIndex]) return;
@@ -659,6 +662,18 @@ const onGrandTotalClick = () => {
       setTotalPorMetodo(nuevosTotales);
     }
   }, [modalOpen, modalRows, calcularTotales]);
+useEffect(() => {
+  if (!modalOpen || !modalResumen) return;
+
+  const bruto = Number(modalResumen.bruto) || 0;
+  const costoCompra = Number(modalResumen.costoCompra) || 0;
+
+  const nuevo = buildBreakdown(bruto);
+  nuevo.costoCompra = costoCompra;
+  nuevo.netoFinal = round2(nuevo.neto - costoCompra);
+
+  setModalResumen(nuevo);
+}, [rateIgv, rateRenta, rateTarjeta, modalOpen]);
 
   const modalData = useMemo(() => {
     if (!modalOpen || modalRows.length === 0) {
@@ -829,18 +844,39 @@ const onGrandTotalClick = () => {
       }
       return Array.from(m.values());
     };
-const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantidad)||0), 0);
+const totalServCantidad = serviciosAgrupados.reduce(
+  (a, b) => a + (Number(b.cantidad) || 0),
+  0
+);
 
-    const productosAgrupados = agruparProductos(flatProductos);
-    const totalPVentaProd  = productosAgrupados.reduce((a,b)=> a + b.precioVentaU*b.cantidad, 0);
-    const totalPCompraProd = productosAgrupados.reduce((a,b)=> a + b.precioCompraU*b.cantidad, 0);
-    const totalTarjeta     = totalPVentaProd * RATE_TARJETA;
-    const totalIGV         = totalPVentaProd * RATE_IGV;
-    const totalRenta       = totalPVentaProd * RATE_RENTA;
-    const totalUtilBase    = totalPVentaProd - totalTarjeta - totalIGV - totalRenta - totalPCompraProd;
-    const totalComision    = totalUtilBase * RATE_COMISION;
-    const totalUtilFinal   = totalUtilBase - totalComision;
-    const totalCantidad    = productosAgrupados.reduce((a,b)=>a+b.cantidad,0);
+const productosAgrupados = agruparProductos(flatProductos);
+const totalPVentaProd = productosAgrupados.reduce(
+  (a, b) => a + b.precioVentaU * b.cantidad,
+  0
+);
+const totalPCompraProd = productosAgrupados.reduce(
+  (a, b) => a + b.precioCompraU * b.cantidad,
+  0
+);
+
+// 1) Tarjeta sobre venta bruta de productos
+const totalTarjeta = round2(totalPVentaProd * rateTarjeta);
+const baseProd = round2(totalPVentaProd - totalTarjeta);
+
+// 2) IGV y Renta sobre el neto después de tarjeta
+const totalIGV = round2(baseProd * rateIgv);
+const totalRenta = round2(baseProd * rateRenta);
+
+// 3) Utilidad base y final (después de costo compra y comisión)
+const totalUtilBase = round2(baseProd - totalIGV - totalRenta - totalPCompraProd);
+const totalComision = round2(totalUtilBase * RATE_COMISION);
+const totalUtilFinal = round2(totalUtilBase - totalComision);
+
+const totalCantidad = productosAgrupados.reduce(
+  (a, b) => a + b.cantidad,
+  0
+);
+
 
     const METHOD_META_KEYS = new Set(["nombre","cantidad","duracion","pVenta","tarifa","id_servicio"]);
     const allMethodsInLines = [...new Set(
@@ -859,7 +895,16 @@ const totalServCantidad = serviciosAgrupados.reduce((a,b)=> a + (Number(b.cantid
       totalPorMetodo: totalesMetodo,
       methodsToShow
     };
-  }, [modalOpen, modalRows, empleadoObjetivo, headerLabel, normalizePagoMethod]);
+}, [
+  modalOpen,
+  modalRows,
+  empleadoObjetivo,
+  headerLabel,
+  normalizePagoMethod,
+  rateIgv,
+  rateRenta,
+  rateTarjeta
+]);
 
   const thStyle = { border: '1px solid #ccc', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '20px' };
   const tdStyle = { border: '1px solid #ccc', padding: '6px 8px', textAlign: 'center', fontSize: '24px', verticalAlign: 'middle' };
@@ -970,657 +1015,31 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
         </table>
       </div>
 
-<Dialog
-  header={
-    <div
-      style={{
-        textAlign: "center",
-        fontSize: 30,
-        fontWeight: 800,
-        letterSpacing: 0.5,
-      }}
-    >
-      {modalTitle || "Ventas"}
-    </div>
-  }
-  visible={modalOpen}
-  style={{
-    width: "100vw",
-    maxWidth: "150vw",
-    margin: "0 auto",
-    borderRadius: "12px",
-  }}
-  modal
-  onHide={() => setModalOpen(false)}
-  footer={
-    <div className="flex justify-end gap-2">
-      <Button label="Cerrar" onClick={() => setModalOpen(false)} />
-    </div>
-  }
->
-  {modalRows.length === 0 ? (
-    <div className="py-2">Sin ventas para esta celda.</div>
-  ) : (
-    <>
-      {/* === Título === */}
-      <div
-        className="bg-primary fs-2 fw-bold text-center py-2"
-        style={{
-          fontWeight: 1000,
-          marginBottom: 10,
-          textAlign: "center",
-          fontSize: 25,
-          letterSpacing: 0.3,
-          marginTop: 4,
-          borderRadius: 6,
-        }}
-      >
-        DETALLE DE PRODUCTOS Y SERVICIOS
-      </div>
-
-<div style={{ display: "flex", justifyContent: "center" }}>
-      <div
-        style={{
-          borderRadius: 12,
-          padding: 12,
-          background: "#fffef5",
-          textAlign: "center",
-          alignItems: "center",
-          marginBottom: 16,
-          display: "inline-block",
-        }}
-      >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0,1fr))",
-            gap: 10,
-          }}
-        >
-          {[
-             { label: "Cantidad de servicios", value: modalData.totalServCantidad },
-            {
-              label: "Venta Servicios",
-              value: <NumberFormatMoney amount={modalData.totalPVentaServs} />,
-            },
-            { label: "Cantidad de productos", value: modalData.totalCantidad },
-            {
-              label: "Venta Productos",
-              value: <NumberFormatMoney amount={modalData.totalPVentaProd} />,
-            },
-           
-          ].map((item, i) => (
-            <div
-              key={i}
-              style={{
-                border: "2px solid #d4af37",
-                borderRadius: 8,
-                padding: 12,
-                background: "#fff",
-                transition: "transform 0.2s, box-shadow 0.2s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.boxShadow =
-                  "0 0 10px rgba(212,175,55,0.6)")
-              }
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "none")}
-            >
-              <div style={{ fontSize: 15, opacity: 0.7 }}>{item.label}</div>
-              <div style={{ fontWeight: 800, fontSize: 25 }}>{item.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 8,
-          textAlign: 'center',
-          margin: "10px 0 18px",
-          justifyContent: "center",
-        }}
-      >
-        {Object.entries(headerLabel)
-          .sort(
-            (a, b) =>
-              (modalData.totalPorMetodo[b[0]] || 0) -
-              (modalData.totalPorMetodo[a[0]] || 0)
-          )
-          .map(([key, label]) => (
-            <div
-              key={key}
-              style={{
-                padding: 12,
-                border: "2px solid #d4af37",
-                borderRadius: 8,
-                background: "#fff",
-              }}
-            >
-              <div style={{ fontSize: 15, opacity: 0.7 }}>
-                {label.toUpperCase()}
-              </div>
-              <div style={{ fontWeight: 800, fontSize: 25 }}>
-                <NumberFormatMoney
-                  amount={modalData.totalPorMetodo[key] || 0}
-                />
-              </div>
-            </div>
-          ))}
-      </div>
-
-       {modalResumen && (
-  <div style={{ marginTop: 80 }}>
-    <div style={{ fontWeight: 700, marginBottom: 8, textAlign: "center", fontSize: 30 }}>
-           VENTAS POR SERVICIOS
-    </div>
-<table style={{ ...baseTableStyle, margin: '24px auto 12px', fontSize: 22 }}>
-      <thead>
-        <tr style={{ fontSize: 22 }}>
-          <th className="bg-primary" style={thStyle}>Venta<br/> Bruta</th>
-          <th className="bg-primary" style={thStyle}>IGV <br/> (-18%)</th>
-          <th className="bg-primary" style={thStyle}>Renta <br/> (-3%)</th>
-          <th className="bg-primary" style={thStyle}>Tarjeta <br/> (-4.5%)</th>
-          <th className="bg-primary" style={thStyle}>Ingreso <br/> Neto</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td style={tdTotales}><NumberFormatMoney amount={modalResumen.bruto} /></td>
-          <td style={{ ...tdTotales, color: "red" }}>- <NumberFormatMoney amount={modalResumen.igv} /></td>
-          <td style={{ ...tdTotales, color: "red" }}>- <NumberFormatMoney amount={modalResumen.renta} /></td>
-          <td style={{ ...tdTotales, color: "red" }}>- <NumberFormatMoney amount={modalResumen.tarjeta} /></td>
-          <td style={{ ...tdTotales, fontWeight: "700", color: "#007b00" }}>
-            <NumberFormatMoney amount={modalResumen.neto} />
-          </td>
-        </tr>  
-      </tbody>
-    </table>
-  </div>
-)}
-  <div style={{ display: "flex", justifyContent: "center", width: "100%",marginTop:"100px" }}>
-  <div style={{ marginTop: 6, position: "relative" }}>
-    <div
-      style={{
-        fontWeight: 700,
-        marginBottom: 20,
-        fontSize: 30,
-        textAlign: "center",
-      }}
-    >
-      DETALLE DE SERVICIOS
-    </div>
-<table
-  style={{
-    ...baseTableStyle,
-    width: "100%",          
-    minWidth: "100%",       
-    tableLayout: "fixed",   
-    position: "relative",
-  }}
->
-  <thead>
-  <tr>
-<th
-  className="bg-primary"
-  style={{
-    ...thStyle,
-    width: "60px", 
-    minWidth: "60px",
-    maxWidth: "60px",
-  }}
->
-  Item
-</th>
-    <th className="bg-primary" style={thStyle}>Servicio</th>
-    <th className="bg-primary" style={thStyle}>Cant.</th>
-    <th className="bg-primary" style={thStyle}>Precio<br/>Unitario</th>
-    <th
-  className="bg-primary"
-  style={thStyle}
-  dangerouslySetInnerHTML={{ __html: "Venta<br/>Total" }}
+<DetalleVentasDialog
+  open={modalOpen}
+  title={modalTitle}
+  onClose={() => setModalOpen(false)}
+  modalRows={modalRows}
+  modalResumen={modalResumen}
+  modalData={modalData}
+  empleadoObjetivo={empleadoObjetivo}
+  serieEmpleadoMes={serieEmpleadoMes}
+  deltasEmpleadoMes={deltasEmpleadoMes}
+  headerLabel={headerLabel}
+  baseTableStyle={baseTableStyle}
+  thStyle={thStyle}
+  tdStyle={tdStyle}
+  tdTotales={tdTotales}
+  rateIgv={rateIgv}
+  rateRenta={rateRenta}
+  rateTarjeta={rateTarjeta}
+  rateComision={RATE_COMISION}
+  setRateIgv={setRateIgv}
+  setRateRenta={setRateRenta}
+  setRateTarjeta={setRateTarjeta}
 />
-    {modalData.methodsToShow.map((m) => (
-      <th
-        key={m}
-        className="bg-primary"
-        style={thStyle}
-        dangerouslySetInnerHTML={{
-          __html: (headerLabel[m] || m).replace(/\s+/g, "<br/>"),
-        }}
-      />
-    ))}
 
-  </tr>
-</thead>
 
-<tbody>
-  {modalData.serviciosOrdenados.map((s, i) => {
-    const totalLinea = (Number(s.pVenta) || 0) * (Number(s.cantidad) || 0);
-    const vals = Object.fromEntries(
-      modalData.methodsToShow.map((m) => [m, round2(Number(s[m]) || 0)])
-    );
-    let suma = round2(modalData.methodsToShow.reduce((a, k) => a + (vals[k] || 0), 0));
-    let delta = round2(totalLinea - suma);
-
-    return (
-      <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-        {/* ITEM */}
-        <td className='bg-primary' style={{ ...tdStyle, fontWeight: 700, width: 64, textAlign: "center" }}>
-          {i + 1}
-        </td>
-        {/* Servicio */}
-      <td
-  className="bg-primary"
-  style={{
-    ...tdStyle,
-    textAlign: "left",
-    fontWeight: 600,
-    whiteSpace: "normal",     
-    wordWrap: "break-word",   
-    maxWidth: 250,            
-  }}
->
-  {s.nombre}
-</td>
-        {/* Cantidad */}
-        <td style={tdStyle}>{s.cantidad}</td>
-
-        {/* P. Unitario */}
-        <td style={{ ...tdStyle, fontWeight: 600 }}>
-          {s.pVenta ? <NumberFormatMoney amount={s.pVenta} /> : "—"}
-        </td>
-
-      
-        {/* Total línea */}
-        <td style={{ ...tdStyle, fontWeight: 600 }}>
-          <NumberFormatMoney amount={totalLinea} />
-        </td>
-          {/* Métodos */}
-        {modalData.methodsToShow.map((m, idx) => {
-          let val = vals[m] || 0;
-          if (idx === 0 && Math.abs(delta) >= 0.01) { val = round2(val + delta); delta = 0; }
-          return (
-            <td key={m} style={tdStyle}>
-               <NumberFormatMoney amount={val || 0  } /> 
-            </td>
-          );
-        })}
-      </tr>
-
-    );
-  })}
-
-  {modalData.serviciosOrdenados.length > 0 && (
-    <tr className='bg-primary text-dark'>
-      <td style={tdStyle} />
-      <td  style={{ ...tdTotales, fontWeight: 800, textAlign: "right",WebkitTextFillColor: "white" }}>
-        TOTAL SERVICIOS
-      </td>
-      <td style={{ ...tdTotales, fontWeight: 800 ,WebkitTextFillColor: "white"}}>
-        {modalData.serviciosOrdenados.reduce((a, b) => a + (Number(b.cantidad) || 0), 0)}
-      </td>
-      <td style={{ ...tdTotales, fontWeight: 800 }} />
-      {(() => {
-        const totalPVentaServs = round2(
-          modalData.serviciosOrdenados.reduce(
-            (acc, s) => acc + (Number(s.pVenta) || 0) * (Number(s.cantidad) || 0),
-            0
-          )
-        );
-        const totalsByMethod = modalData.methodsToShow.reduce((acc, m) => {
-          acc[m] = round2(
-            modalData.serviciosOrdenados.reduce((sum, s) => sum + (Number(s[m]) || 0), 0)
-          );
-          return acc;
-        }, {});
-        let sumMethods = round2(modalData.methodsToShow.reduce((a, m) => a + (totalsByMethod[m] || 0), 0));
-        let delta = round2(totalPVentaServs - sumMethods);
-        if (Math.abs(delta) >= 0.01 && modalData.methodsToShow[0]) {
-          const first = modalData.methodsToShow[0];
-          totalsByMethod[first] = round2((totalsByMethod[first] || 0) + delta);
-        }
-        return (
-          <>
-            {modalData.methodsToShow.map((m) => (
-              <td key={m} style={{ ...tdTotales, fontWeight: 800,WebkitTextFillColor: "white" }}>
-                <NumberFormatMoney amount={totalsByMethod[m]} />
-              </td>
-            ))}
-            <td style={{ ...tdTotales, fontWeight: 800, color: "white" }}>
-              <NumberFormatMoney amount={totalPVentaServs} />
-            </td>
-          </>
-        );
-      })()}
-    </tr>
-  )}
-</tbody>
-
-    </table>
-  </div>
-</div>
-{/* === COMPARATIVA MENSUAL DEL COLABORADOR === */}
-{empleadoObjetivo && serieEmpleadoMes.length > 0 && (
-  <div style={{ marginTop: 28 }}>
-    <div
-      style={{
-        fontWeight: 800,
-        fontSize: 24,
-        textAlign: "center",
-        marginBottom: 10,
-        letterSpacing: 0.3,
-      }}
-    >
-      RESUMEN POR MES – {empleadoObjetivo.toUpperCase()}
-    </div>
-
-    <table
-      style={{
-        ...baseTableStyle,
-        width: "100%",
-        tableLayout: "fixed",
-      }}
-    >
-      <thead>
-        <tr>
-          <th className="bg-primary" style={thStyle}>Concepto</th>
-          {serieEmpleadoMes.map((pt) => (
-            <th key={pt.label} className="bg-primary" style={thStyle}>
-              {pt.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-
-      <tbody>
-        {/* Totales por mes */}
-        <tr>
-          <td className="bg-primary" style={{ ...tdStyle, fontWeight: 800 }}>TOTAL MES</td>
-          {serieEmpleadoMes.map((pt, i) => (
-            <td
-              key={`t-${i}`}
-              style={{
-                ...tdStyle,
-                fontSize: 22,
-                fontWeight: i === serieEmpleadoMes.length - 1 ? 800 : 600, // último mes en negrita
-              }}
-              title={`Total ${pt.label}`}
-            >
-              <NumberFormatMoney amount={pt.total} />
-            </td>
-          ))}
-        </tr>
-
-        {/* Variación vs mes siguiente */}
-        <tr>
-          <td className="bg-primary" style={{ ...tdStyle, fontWeight: 800 }}>
-            VAR. VS MES SIGUIENTE
-          </td>
-
-          {serieEmpleadoMes.map((pt, i) => {
-            const delta = deltasEmpleadoMes[i];
-            // En el ÚLTIMO mes pide mostrar el valor real (no "-") en negrita
-            if (delta == null) {
-              return (
-                <td
-                  key={`d-${i}`}
-                  style={{ ...tdStyle, fontSize: 22, fontWeight: 800 }}
-                  title={`Total ${pt.label}`}
-                >
-                  <NumberFormatMoney amount={pt.total} />
-                </td>
-              );
-            }
-            const color = delta > 0 ? "#007b00" : delta < 0 ? "red" : "#000";
-            return (
-              <td
-                key={`d-${i}`}
-                style={{ ...tdStyle, fontSize: 22, color, fontWeight: 700 }}
-                title={`${serieEmpleadoMes[i + 1].label} – ${pt.label}`}
-              >
-                <NumberFormatMoney amount={delta} />
-              </td>
-            );
-          })}
-        </tr>
-      </tbody>
-    </table>
-  </div>
-)}
-
-        <div style={{ justifySelf: "center", marginTop:"100px" }}>
-  <div style={{ fontWeight: 700, marginBottom: 10, fontSize: 30, textAlign: "center" }}>
-    PRODUCTOS VENDIDOS
-  </div>
-
-  <table
-    style={{
-      ...baseTableStyle,
-      width: "100%",
-      minWidth: 0,
-      margin: 0,
-      tableLayout: "fixed"
-    }}
-  >
-    <thead>
-      <tr>
-        <th
-          className="bg-primary"
-          style={{
-            ...thStyle,
-            width: "60px",
-            minWidth: "60px",
-            maxWidth: "60px",
-            textAlign: "center"
-          }}
-        >
-          Item
-        </th>
-        <th className="bg-primary" style={thStyle}>Producto</th>
-        <th className="bg-primary" style={thStyle}>Cantidad</th>
-        <th className="bg-primary" style={thStyle}>Precio<br/> Unitario</th>
-        <th className="bg-primary" style={thStyle}>Precio <br/> Venta</th>
-        <th className="bg-primary" style={thStyle}>IGV<br/>(-18%)</th>
-        <th className="bg-primary" style={thStyle}>Tarjeta<br/>(-4.5%)</th>
-        <th className="bg-primary" style={thStyle}>Renta<br/>(-3%)</th>
-        <th className="bg-primary" style={thStyle}>Costo<br/>Compra</th>
-        <th className="bg-primary" style={thStyle}>Utilidad<br/>Bruta</th>
-        <th className="bg-primary" style={thStyle}>Comisión</th>
-        <th className="bg-primary" style={thStyle}>Utilidad<br/>Neta</th>
-        {/* NUEVA COLUMNA */}
-        <th className="bg-primary" style={thStyle}>Utilidad<br/>por producto</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      {modalData.productosAgrupados.length === 0 ? (
-        <tr>
-          {/* +1 al colSpan por la nueva columna */}
-          <td colSpan={13} style={tdStyle}>No se vendieron productos.</td>
-        </tr>
-      ) : (
-        [...modalData.productosAgrupados]
-          .sort((a, b) => {
-            const cantDiff = (b.cantidad || 0) - (a.cantidad || 0);
-            if (cantDiff !== 0) return cantDiff;
-            return (b.precioVentaU || 0) - (a.precioVentaU || 0);
-          })
-          .map((p, i) => {
-            const venta   = (p.precioVentaU || 0) * (p.cantidad || 0);
-            const compra  = (p.precioCompraU || 0) * (p.cantidad || 0);
-            const tarjeta = venta * RATE_TARJETA;
-            const igv     = venta * RATE_IGV;
-            const renta   = venta * RATE_RENTA;
-            const utilBase  = venta - tarjeta - igv - renta - compra;
-            const comision  = utilBase * RATE_COMISION;
-            const utilFinal = utilBase - comision;
-
-            // NUEVO: utilidad por producto (unitaria)
-            const qty = p.cantidad || 1;
-            const utilPorProducto = utilFinal / qty;
-
-            return (
-              <tr key={i} style={i % 2 ? { background: "#fcfcfc" } : null}>
-                <td
-                  className='bg-primary'
-                  style={{ ...tdStyle, width: "60px", minWidth: "60px", maxWidth: "60px", textAlign: "center" }}
-                >
-                  {i + 1}
-                </td>
-
-                {/* PRODUCTO */}
-                <td
-                  className='bg-primary text-dark'
-                  style={{
-                    ...tdStyle,
-                    textAlign: "left",
-                    fontWeight: 700,
-                    whiteSpace: "normal",
-                    wordWrap: "break-word",
-                    maxWidth: 750,
-                  }}
-                >
-                  {p.nombre}
-                </td>
-
-                {/* CANTIDAD */}
-                <td style={tdStyle}>{p.cantidad}</td>
-
-                {/* P. UNITARIO */}
-                <td style={{ ...tdStyle, fontWeight: 600 }}>
-                  <NumberFormatMoney amount={p.precioVentaU || 0} />
-                </td>
-
-                {/* P. VENTA TOTAL */}
-                <td style={{ ...tdStyle, fontWeight: 600, color: "#007b00" }}>
-                  <NumberFormatMoney amount={venta} />
-                </td>
-
-                {/* IGV */}
-                <td style={{ ...tdStyle, color: "red" }}>
-                  <NumberFormatMoney amount={igv} />
-                </td>
-
-                {/* TARJETA */}
-                <td style={{ ...tdStyle, color: "red" }}>
-                  <NumberFormatMoney amount={tarjeta} />
-                </td>
-
-                {/* RENTA */}
-                <td style={{ ...tdStyle, color: "red" }}>
-                  <NumberFormatMoney amount={renta} />
-                </td>
-
-                {/* COSTO COMPRA */}
-                <td style={{ ...tdStyle, color: "red" }}>
-                  <NumberFormatMoney amount={compra} />
-                </td>
-
-                {/* UTILIDAD BRUTA */}
-                <td style={{ ...tdStyle, fontWeight: 600, color: "green" }}>
-                  <NumberFormatMoney amount={utilBase} />
-                </td>
-
-                {/* COMISIÓN */}
-                <td style={{ ...tdStyle, color: "red" }}>
-                  <NumberFormatMoney amount={comision} />
-                </td>
-
-                {/* UTILIDAD NETA */}
-                <td
-                  style={{
-                    ...tdStyle,
-                    fontWeight: 700,
-                    color: utilFinal >= 0 ? "#007b00" : "red",
-                  }}
-                >
-                  <NumberFormatMoney amount={utilFinal} />
-                </td>
-
-                {/* NUEVA COLUMNA: UTILIDAD POR PRODUCTO */}
-                <td
-                  style={{
-                    ...tdStyle,
-                    fontWeight: 700,
-                    color: utilPorProducto >= 0 ? "#007b00" : "red",
-                  }}
-                >
-                  <NumberFormatMoney amount={utilPorProducto} />
-                </td>
-              </tr>
-            );
-          })
-      )}
-
-      {/* TOTALES */}
-      <tr style={{ backgroundColor: "var(--primary-color)" }}>
-        <td className="bg-primary text-dark" style={{ ...tdTotales, fontWeight: 1000 }} />
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          TOTALES
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          {modalData.totalCantidad}
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales }} />
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalPVentaProd} />
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalIGV} />
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalTarjeta} />
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalRenta} />
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalPCompraProd} />
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "green", WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalUtilBase} />
-        </td>
-        <td className="bg-primary" style={{ ...tdTotales, fontWeight: 1000, color: "red", WebkitTextFillColor: "white" }}>
-          <NumberFormatMoney amount={modalData.totalComision} />
-        </td>
-        <td
-          className="bg-primary"
-          style={{
-            ...tdTotales,
-            fontWeight: 800,
-            color: modalData.totalUtilFinal >= 0 ? "white" : "red",
-            WebkitTextFillColor: modalData.totalUtilFinal >= 0 ? "white" : "red",
-          }}
-        >
-          <NumberFormatMoney amount={modalData.totalUtilFinal} />
-        </td>
-
-        <td
-          className="bg-primary"
-          style={{
-            ...tdTotales,
-            fontWeight: 800,
-            WebkitTextFillColor: "white"
-          }}
-        >
-          <NumberFormatMoney
-            amount={
-              (modalData.totalCantidad || 0) > 0
-                ? modalData.totalUtilFinal / modalData.totalCantidad
-                : 0
-            }
-          />
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-          </>
-        )}
-      </Dialog>
     </>
   );
 };
