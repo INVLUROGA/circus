@@ -72,9 +72,9 @@ function toLimaDate(iso) {
 const parseIsoLocal = (iso) => {
   if (!iso) return null;
   const s = String(iso).trim()
-    .replace(" ", "T")            // "YYYY-MM-DD HH:mm..." -> "YYYY-MM-DDTHH:mm..."
-    .replace(/\s\+00:00$/, "Z")   // "... +00:00" -> "...Z"
-    .replace(/(\.\d{3})\d+/, "$1"); // recorta a 3 decimales
+    .replace(" ", "T")            
+    .replace(/\s\+00:00$/, "Z")   
+    .replace(/(\.\d{3})\d+/, "$1"); 
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? null : d;
 };
@@ -535,7 +535,6 @@ const tdinicio={fontSize:22}
   </div>
 
   <div style={sPanelBody}>
-    {/** helper: si el encabezado tiene exactamente 2 palabras, parte con <br/> */}
     {(() => {
       const breakTwoWords = (label) => {
         const parts = String(label ?? "").trim().split(/\s+/);

@@ -28,12 +28,17 @@ export const DetalleVentasDialog = ({
   rateRenta = 0.03,
   rateTarjeta = 0.045,
   rateComision = 0.10,
+  inicialRateComisionEstilista = 0.30,
   setRateIgv,
   setRateRenta,
   setRateTarjeta,
 }) => {
     const [activeRateEditor, setActiveRateEditor] = useState(null); // 'tarjeta' | 'igv' | 'renta' | null
-
+const [rateComisionEstilista, setRateComisionEstilista] = React.useState(
+inicialRateComisionEstilista);
+const safeSetRateIgv = setRateIgv || (() => {});
+const safeSetRateRenta = setRateRenta || (() => {});
+ const safeSetRateTarjeta = setRateTarjeta || (() => {});
   return (
     <Dialog
       header={
@@ -196,52 +201,17 @@ export const DetalleVentasDialog = ({
     {(() => {
       const bruto = Number(modalResumen.bruto || 0);
 
-      // Tasas
-      const rateComisionEstilista = 0.30;
+      // descuentos (todos sobre venta bruta)
+      const igvMonto = round2(bruto * rateIgv);
+      const tarjetaMonto = round2(bruto * rateTarjeta);
+      const rentaMonto = round2(bruto * rateRenta);
+      const comisionEstilistaMonto = round2(bruto * rateComisionEstilista);
 
-      // 1) Tarjeta sobre venta bruta
-      const tarjeta = round2(bruto * rateTarjeta);
-
-      // 2) Ingreso neto base después de tarjeta
-      const ingresoBase = round2(bruto - tarjeta);
-
-      // 3) IGV y Renta sobre ingresoBase
-      const igv = round2(ingresoBase * rateIgv);
-      const renta = round2(ingresoBase * rateRenta);
-
-      // 4) Ingreso neto antes de comisión del estilista
-      const ingresoNetoSinComision = round2(ingresoBase - igv - renta);
-
-      // 5) Comisión estilista (30% del ingreso neto sin comisión)
-      const comisionEstilista = round2(
-        ingresoNetoSinComision * rateComisionEstilista
+      const ingresoNeto = round2(
+        bruto - igvMonto - tarjetaMonto - rentaMonto - comisionEstilistaMonto
       );
 
-      // 6) Ingreso neto final (última columna)
-      const ingresoNetoFinal = round2(
-        ingresoNetoSinComision - comisionEstilista
-      );
-
-      // Estilos inputs pequeños (si dejas edición de tasas)
-      const tinyInputStyle = {
-        width: 60,
-        height: 22,
-        fontSize: 10,
-      };
-      const tinyInputInnerStyle = {
-        textAlign: "center",
-        fontWeight: "bold",
-        fontSize: 10,
-        padding: "0 4px",
-      };
-      const clickableSpan = {
-        cursor: "pointer",
-        textDecoration: "underline dotted",
-        fontWeight: 700,
-        fontSize: 14,
-        display: "inline-block",
-        marginTop: 2,
-      };
+      const pctLabel = (v) => `${(v * 100).toFixed(2)}%`;
 
       return (
         <table
@@ -260,91 +230,86 @@ export const DetalleVentasDialog = ({
                 BRUTA
               </th>
 
+              {/* IGV */}
+              <th className="bg-primary" style={thStyle}>
+                IGV{" "}
+                <br />
+                <span
+                  style={{
+                    cursor: "pointer",
+                    textDecoration: "underline dotted",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveRateEditor(
+                      activeRateEditor === "igv" ? null : "igv"
+                    );
+                  }}
+                >
+                  (-{pctLabel(rateIgv)})
+                </span>
+                {activeRateEditor === "igv" && (
+                  <div style={{ marginTop: 4 }}>
+                    <InputNumber
+                      value={rateIgv * 100}
+                      onValueChange={(e) =>
+                        safeSetRateIgv((e.value || 0) / 100)
+                      }
+                      mode="decimal"
+                      minFractionDigits={0}
+                      maxFractionDigits={2}
+                      suffix="%"
+                      inputStyle={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        fontSize: 12,
+                      }}
+                      style={{ width: 70 }}
+                      onBlur={() => setActiveRateEditor(null)}
+                    />
+                  </div>
+                )}
+              </th>
+
               {/* TARJETA */}
               <th className="bg-primary" style={thStyle}>
                 TARJETA
                 <br />
                 <span
-                  style={clickableSpan}
+                  style={{
+                    cursor: "pointer",
+                    textDecoration: "underline dotted",
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveRateEditor((cur) =>
-                      cur === "tarjeta" ? null : "tarjeta"
+                    setActiveRateEditor(
+                      activeRateEditor === "tarjeta" ? null : "tarjeta"
                     );
                   }}
                 >
-                  (-{(rateTarjeta * 100).toFixed(2)}%)
+                  (-{pctLabel(rateTarjeta)})
                 </span>
-                {typeof setRateTarjeta === "function" &&
-                  activeRateEditor === "tarjeta" && (
-                    <div style={{ marginTop: 2 }}>
-                      <InputNumber
-                        autoFocus
-                        value={round2(rateTarjeta * 100)}
-                        onValueChange={(e) =>
-                          setRateTarjeta((e.value || 0) / 100)
-                        }
-                        mode="decimal"
-                        minFractionDigits={0}
-                        maxFractionDigits={2}
-                        suffix="%"
-                        inputStyle={tinyInputInnerStyle}
-                        style={tinyInputStyle}
-                        onBlur={() =>
-                          setActiveRateEditor((cur) =>
-                            cur === "tarjeta" ? null : cur
-                          )
-                        }
-                      />
-                    </div>
-                  )}
-              </th>
-
-              {/* INGRESO NETO BASE */}
-              <th className="bg-primary" style={thStyle}>
-                INGRESO
-                <br />
-                NETO BASE
-              </th>
-
-              {/* IGV */}
-              <th className="bg-primary" style={thStyle}>
-                IGV
-                <br />
-                <span
-                  style={clickableSpan}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveRateEditor((cur) =>
-                      cur === "igv" ? null : "igv"
-                    );
-                  }}
-                >
-                  (-{(rateIgv * 100).toFixed(2)}%)
-                </span>
-                {typeof setRateIgv === "function" &&
-                  activeRateEditor === "igv" && (
-                    <div style={{ marginTop: 2 }}>
-                      <InputNumber
-                        autoFocus
-                        value={round2(rateIgv * 100)}
-                        onValueChange={(e) =>
-                          setRateIgv((e.value || 0) / 100)
-                        }
-                        mode="decimal"
-                        minFractionDigits={0}
-                        maxFractionDigits={2}
-                        suffix="%"
-                        inputStyle={tinyInputInnerStyle}
-                        style={tinyInputStyle}
-                        onBlur={() =>
-                          setActiveRateEditor((cur) =>
-                            cur === "igv" ? null : cur
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+                {activeRateEditor === "tarjeta" && (
+                  <div style={{ marginTop: 4 }}>
+                    <InputNumber
+                      value={rateTarjeta * 100}
+                      onValueChange={(e) =>
+                        safeSetRateTarjeta((e.value || 0) / 100)
+                      }
+                      mode="decimal"
+                      minFractionDigits={0}
+                      maxFractionDigits={2}
+                      suffix="%"
+                      inputStyle={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        fontSize: 12,
+                      }}
+                      style={{ width: 70 }}
+                      onBlur={() => setActiveRateEditor(null)}
+                    />
+                  </div>
+                )}
               </th>
 
               {/* RENTA */}
@@ -352,51 +317,90 @@ export const DetalleVentasDialog = ({
                 RENTA
                 <br />
                 <span
-                  style={clickableSpan}
+                  style={{
+                    cursor: "pointer",
+                    textDecoration: "underline dotted",
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveRateEditor((cur) =>
-                      cur === "renta" ? null : "renta"
+                    setActiveRateEditor(
+                      activeRateEditor === "renta" ? null : "renta"
                     );
                   }}
                 >
-                  (-{(rateRenta * 100).toFixed(2)}%)
+                  (-{pctLabel(rateRenta)})
                 </span>
-                {typeof setRateRenta === "function" &&
-                  activeRateEditor === "renta" && (
-                    <div style={{ marginTop: 2 }}>
-                      <InputNumber
-                        autoFocus
-                        value={round2(rateRenta * 100)}
-                        onValueChange={(e) =>
-                          setRateRenta((e.value || 0) / 100)
-                        }
-                        mode="decimal"
-                        minFractionDigits={0}
-                        maxFractionDigits={2}
-                        suffix="%"
-                        inputStyle={tinyInputInnerStyle}
-                        style={tinyInputStyle}
-                        onBlur={() =>
-                          setActiveRateEditor((cur) =>
-                            cur === "renta" ? null : cur
-                          )
-                        }
-                      />
-                    </div>
-                  )}
+                {activeRateEditor === "renta" && (
+                  <div style={{ marginTop: 4 }}>
+                    <InputNumber
+                      value={rateRenta * 100}
+                      onValueChange={(e) =>
+                        safeSetRateRenta((e.value || 0) / 100)
+                      }
+                      mode="decimal"
+                      minFractionDigits={0}
+                      maxFractionDigits={2}
+                      suffix="%"
+                      inputStyle={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        fontSize: 12,
+                      }}
+                      style={{ width: 70 }}
+                      onBlur={() => setActiveRateEditor(null)}
+                    />
+                  </div>
+                )}
               </th>
 
-              {/* COMISIÓN ESTILISTA */}
+              {/* COMISIÓN ESTILISTA (30% por defecto, editable localmente) */}
               <th className="bg-primary" style={thStyle}>
                 COMISIÓN
                 <br />
                 ESTILISTA
                 <br />
-                (30%)
+                <span
+                  style={{
+                    cursor: "pointer",
+                    textDecoration: "underline dotted",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveRateEditor(
+                      activeRateEditor === "comision"
+                        ? null
+                        : "comision"
+                    );
+                  }}
+                >
+                  (-{pctLabel(rateComisionEstilista)})
+                </span>
+                {activeRateEditor === "comision" && (
+                  <div style={{ marginTop: 4 }}>
+                    <InputNumber
+                      value={rateComisionEstilista * 100}
+                      onValueChange={(e) =>
+                        setRateComisionEstilista(
+                          (e.value || 0) / 100
+                        )
+                      }
+                      mode="decimal"
+                      minFractionDigits={0}
+                      maxFractionDigits={2}
+                      suffix="%"
+                      inputStyle={{
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        fontSize: 12,
+                      }}
+                      style={{ width: 70 }}
+                      onBlur={() => setActiveRateEditor(null)}
+                    />
+                  </div>
+                )}
               </th>
 
-              {/* INGRESO NETO FINAL */}
+              {/* INGRESO NETO (última col) */}
               <th className="bg-primary" style={thStyle}>
                 INGRESO
                 <br />
@@ -407,43 +411,24 @@ export const DetalleVentasDialog = ({
 
           <tbody>
             <tr>
-              {/* Venta Bruta */}
               <td style={tdTotales}>
                 <NumberFormatMoney amount={bruto} />
               </td>
-
-              {/* Tarjeta */}
               <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={tarjeta} />
+                - <NumberFormatMoney amount={igvMonto} />
               </td>
-
-              {/* Ingreso Neto Base */}
-              <td style={{ ...tdTotales, fontWeight: 700 }}>
-                <NumberFormatMoney amount={ingresoBase} />
-              </td>
-
-              {/* IGV */}
               <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={igv} />
+                - <NumberFormatMoney amount={tarjetaMonto} />
               </td>
-
-              {/* Renta */}
               <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={renta} />
+                - <NumberFormatMoney amount={rentaMonto} />
               </td>
-
-              {/* Comisión Estilista */}
-              <td
-                style={{
-                  ...tdTotales,
-                  fontWeight: 700,
-                  color: "red",
-                }}
-              >
-                - <NumberFormatMoney amount={comisionEstilista} />
+              <td style={{ ...tdTotales, color: "red" }}>
+                -{" "}
+                <NumberFormatMoney
+                  amount={comisionEstilistaMonto}
+                />
               </td>
-
-              {/* Ingreso Neto Final */}
               <td
                 style={{
                   ...tdTotales,
@@ -451,7 +436,7 @@ export const DetalleVentasDialog = ({
                   color: "#007b00",
                 }}
               >
-                <NumberFormatMoney amount={ingresoNetoFinal} />
+                <NumberFormatMoney amount={ingresoNeto} />
               </td>
             </tr>
           </tbody>
@@ -460,6 +445,7 @@ export const DetalleVentasDialog = ({
     })()}
   </div>
 )}
+
 
 
           {/* === DETALLE DE SERVICIOS === */}
