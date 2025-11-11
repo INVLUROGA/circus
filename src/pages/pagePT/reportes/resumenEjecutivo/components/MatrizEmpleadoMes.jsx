@@ -153,16 +153,14 @@ const RATE_COMISION = 0.10;
   const [q, setQ] = useState('');
   const normq = (s='') => s.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
   const matchIncludes = (haystack, needle) => normq(haystack).includes(normq(needle));
-// Normaliza etiquetas entrantes (quita tildes, puntos, dobles espacios, etc.)
 const normalizeMetricLabel = (s = "") =>
   String(s)
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // sin tildes
-    .replace(/\./g, " ")                               // puntos -> espacio (can.t -> can t)
-    .replace(/\s+/g, " ")                              // colapsa espacios
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
+    .replace(/\./g, " ")                              
+    .replace(/\s+/g, " ")                             
     .trim()
     .toUpperCase();
 
-// Aliases aceptados -> etiqueta canónica usada en METRIC_MAP
 const METRIC_ALIASES = {
   "CANT VENTAS": "Cant. Ventas",
   "CAN T VENTAS": "Cant. Ventas",

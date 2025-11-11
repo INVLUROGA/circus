@@ -155,6 +155,7 @@ export const ClientesPorOrigen = ({
     border: C.border,
     textAlign: "left",
     width: 260,
+    fontSize:25,
   };
   const sHead = {
     background: C.gold,
@@ -168,10 +169,10 @@ export const ClientesPorOrigen = ({
     color: "#000",
     padding: "10px",
     border: C.border,
-    fontSize: 19,
+    fontSize: 23,
     textAlign: "center",
   };
-  const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700, fontSize: 15 };
+  const sCellLeft = { ...sCell, textAlign: "left", fontWeight: 700 };
 
   const sTotalRow = {
     background: "#ffc000",

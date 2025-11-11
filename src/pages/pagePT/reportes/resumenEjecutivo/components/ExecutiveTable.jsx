@@ -38,7 +38,7 @@ export default function ExecutiveTable({
     tiktok:    new Set(["1514","695","tiktok","tik tok","tik-tok"]),
     facebook:  new Set(["694","facebook","fb"]),
     instagram: new Set(["693","instagram","ig"]),
-    meta:      new Set(["1515","meta"]),
+    meta:      new Set(["1515","meta","1454"]),
   };
   const canonicalKeyFromRaw = (originMap, raw) => {
     const rawStr = String(raw ?? "").trim();
@@ -65,17 +65,13 @@ export default function ExecutiveTable({
     let totalServ=0,cantServ=0,totalProd=0,cantProd=0;
     let totalServFull=0,cantServFull=0,totalProdFull=0,cantProdFull=0;
 
-    // --- por ORIGEN (solo servicios) ---
-    const byOrigin = {};       // { key: {label,total,cant} }  (al corte)
-    const byOriginFull = {};   // (mes completo)
-    // NUEVO: clientes únicos por ORIGEN (al corte y full)
-    const byOriginCliSet = {};     // { key: Set<id_cli> } (al corte)
-    const byOriginCliSetFull = {}; // (mes completo)
+    const byOrigin = {};      
+    const byOriginFull = {};   
+    const byOriginCliSet = {};    
+    const byOriginCliSetFull = {}; 
 
-    // Acumuladores META para repartir a FB/IG
     let metaServTotalCut=0,  metaServCantCut=0;
     let metaServTotalFull=0, metaServCantFull=0;
-    // NUEVO: clientes META para repartir
     const metaCliSetCut = new Set();
     const metaCliSetFull = new Set();
 
@@ -105,9 +101,7 @@ export default function ExecutiveTable({
       const servicios = getDetalleServicios(v);
       const idCli = v?.id_cli ?? `venta-${v?.id ?? Math.random()}`;
 
-      // --- MES COMPLETO ---
       if (servicios.length > 0) {
-        // clientes únicos por ORIGEN (full)
         if (oKey !== "meta") addCli(byOriginCliSetFull, oKey, idCli);
         else metaCliSetFull.add(String(idCli));
       }
@@ -124,14 +118,12 @@ export default function ExecutiveTable({
         totalProdFull += linea; cantProdFull += cant;
       }
 
-      // --- AL CORTE ---
       const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       const to = clamp(Number(cutDay || lastDay), from, lastDay);
       const dia = d.getDate();
       if (dia < from || dia > to) continue;
 
       if (servicios.length > 0) {
-        // clientes únicos por ORIGEN (corte)
         if (oKey !== "meta") addCli(byOriginCliSet, oKey, idCli);
         else metaCliSetCut.add(String(idCli));
       }
@@ -149,7 +141,6 @@ export default function ExecutiveTable({
       }
     }
 
-    // Reparto META → FB/IG (mismos shares) y también clientes
     const keyMonth = `${anio}-${mesAlias}`;
     const mk = dataMktByMonth?.[keyMonth] || {};
     const por_red = mk?.por_red || {};
@@ -159,25 +150,21 @@ export default function ExecutiveTable({
     let fbShare = 0.5, igShare = 0.5;
     if ((rawFB + rawIG) > 0) { fbShare = rawFB / (rawFB + rawIG); igShare = 1 - fbShare; }
 
-    // corte: servicios + clientes únicos
     if (metaServTotalCut > 0) {
       addTo(byOrigin, "facebook",  "FACEBOOK",  metaServTotalCut * fbShare,  metaServCantCut * fbShare);
       addTo(byOrigin, "instagram", "INSTAGRAM", metaServTotalCut * igShare,  metaServCantCut * igShare);
     }
-    // distribuir clientes enteros
     if (metaCliSetCut.size > 0) {
       const tot = metaCliSetCut.size;
       const fbInt = Math.round(tot * fbShare);
       const igInt = Math.max(0, tot - fbInt);
       if (!byOriginCliSet["facebook"])  byOriginCliSet["facebook"]  = new Set();
       if (!byOriginCliSet["instagram"]) byOriginCliSet["instagram"] = new Set();
-      // No conocemos los IDs exactos para cada red, pero repartimos la cuenta (enteros).
-      // Guardamos "placeholders" para conservar el tamaño:
+  
       for (let i=0;i<fbInt;i++) byOriginCliSet["facebook"].add(`fb-${i}`);
       for (let i=0;i<igInt;i++) byOriginCliSet["instagram"].add(`ig-${i}`);
     }
 
-    // full: servicios + clientes únicos (no se muestran, pero mantenemos coherencia)
     if (metaServTotalFull > 0) {
       addTo(byOriginFull, "facebook",  "FACEBOOK",  metaServTotalFull * fbShare,  metaServCantFull * fbShare);
       addTo(byOriginFull, "instagram", "INSTAGRAM", metaServTotalFull * igShare,  metaServCantFull * igShare);
@@ -197,13 +184,12 @@ export default function ExecutiveTable({
     const ticketServFull = cantServFull ? totalServFull / cantServFull : 0;
     const ticketProdFull = cantProdFull ? totalProdFull / cantProdFull : 0;
 
-    // Marketing (igual que tenías)
     const safeDiv0 = (n, d) => (Number(d||0) > 0 ? Number(n||0)/Number(d||0) : 0);
     const invVal = (kArr) => kArr.reduce((acc, k) => acc + Number(por_red?.[k] ?? 0), 0);
     const invMetaUSD   = invVal(["1515","meta","facebook","instagram"]);
     const invTikTokUSD = invVal(["1514","tiktok","tik tok"]);
-    const invMetaPEN   = invMetaUSD * 3.39;
-    const invTikTokPEN = invTikTokUSD * 3.39;
+    const invMetaPEN   = invMetaUSD * 3.34;
+    const invTikTokPEN = invTikTokUSD * 3.34;
     const invTotalPEN  = invMetaPEN + invTikTokPEN;
     const leads_por_red = mk?.leads_por_red || {};
     const leadVal = (kArr) => kArr.reduce((acc, k) => acc + Number(leads_por_red?.[k] ?? 0), 0);

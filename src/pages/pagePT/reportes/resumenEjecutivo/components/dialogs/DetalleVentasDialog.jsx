@@ -838,7 +838,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                           fontWeight: 800,
                         }}
                       >
-                        VAR. VS MES SIGUIENTE
+                        VS MES SIGUIENTE
                       </td>
                       {deltasEmpleadoMes.map(
                         (delta, i) => {

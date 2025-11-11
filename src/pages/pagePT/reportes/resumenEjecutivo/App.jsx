@@ -182,8 +182,8 @@ const countClientsForMonthByOrigin = (ventasList, anio, mesNombre, fromDay, cut,
     const dataMktWithCac = useMemo(() => {
       const base = { ...(dataMkt || {}) };
 
-     const META_ORIGINS   = new Set([1452, 1453]); // FB, IG
-const TIKTOK_ORIGINS = new Set([1526]);       // TikTok
+     const META_ORIGINS   = new Set([1452, 1453,1454,1526]); 
+     const TIKTOK_ORIGINS = new Set([1526]);       
 
 for (const f of mesesDinamicos) {
   const mesKey = f.mes === "septiembre" ? "setiembre" : f.mes;
