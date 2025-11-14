@@ -188,7 +188,7 @@ export default function ExecutiveTable({
     const invVal = (kArr) => kArr.reduce((acc, k) => acc + Number(por_red?.[k] ?? 0), 0);
     const invMetaUSD   = invVal(["1515","meta","facebook","instagram"]);
     const invTikTokUSD = invVal(["1514","tiktok","tik tok"]);
-    const invMetaPEN   = invMetaUSD * 3.34;
+    const invMetaPEN   = invMetaUSD   
     const invTikTokPEN = invTikTokUSD * 3.34;
     const invTotalPEN  = invMetaPEN + invTikTokPEN;
     const leads_por_red = mk?.leads_por_red || {};

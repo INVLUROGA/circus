@@ -51,6 +51,7 @@
     const [cutDay, setCutDay] = useState(new Date().getDate());
     const [initDay, setInitDay] = useState(1);
     const year = new Date().getFullYear();
+  const [tasaCambio, setTasaCambio] = React.useState(3.37); // 👈 estado global
 
   const [canalParams, setCanalParams] = useState([]);
 
@@ -88,12 +89,6 @@ useEffect(() => {
       () => generarMesesDinamicos(5, selectedMonth, year),
       [selectedMonth, year]
     );
-
-    const columns = useMemo(
-      () => mesesDinamicos.map(m => ({ key: m.mes, label: m.label, currency: "S/." })),
-      [mesesDinamicos]
-    );
-
   const handleSetUltimoDiaMesesDinamicos = () => {
     const lastDaysMap = mesesDinamicos.reduce((acc, f) => {
       const monthIdx = new Date(`${f.anio}-${f.mes}-01`).getMonth();
@@ -101,8 +96,6 @@ useEffect(() => {
       acc[f.mes] = lastDay;
       return acc;
     }, {});
-    
-  
     setCutDay(lastDaysMap[meses[selectedMonth - 1]] || 30);
   };
     const dataMkt = useMemo(
@@ -248,6 +241,8 @@ const originMap = {
             setCutDay={setCutDay}
             year={year}
               onUseLastDay={handleSetUltimoDiaMesesDinamicos}
+               tasaCambio={tasaCambio}          // 👈 valor
+        onChangeTasa={setTasaCambio} 
           />
   </div>
 
@@ -263,7 +258,7 @@ const originMap = {
                   initialDay={initDay}
                   cutDay={cutDay}
                   originMap={originMap}  
-
+ tasaCambio={tasaCambio}          // 👈 valor
                 />
               </Col>
 
