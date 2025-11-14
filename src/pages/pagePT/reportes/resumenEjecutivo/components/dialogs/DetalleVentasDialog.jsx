@@ -3,11 +3,8 @@ import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
 import { NumberFormatMoney } from "@/components/CurrencyMask";
 import { InputNumber } from "primereact/inputnumber";
-
-
 const round2 = (x) =>
   Math.round((Number(x) + Number.EPSILON) * 100) / 100;
-
 export const DetalleVentasDialog = ({
   open,
   title,
@@ -16,6 +13,7 @@ export const DetalleVentasDialog = ({
   modalResumen,
   modalData,
   empleadoObjetivo,
+  totalCostoServicios,
   serieEmpleadoMes,
   deltasEmpleadoMes,
   headerLabel,
@@ -33,7 +31,7 @@ export const DetalleVentasDialog = ({
   setRateRenta,
   setRateTarjeta,
 }) => {
-    const [activeRateEditor, setActiveRateEditor] = useState(null); // 'tarjeta' | 'igv' | 'renta' | null
+    const [activeRateEditor, setActiveRateEditor] = useState(null); 
 const [rateComisionEstilista, setRateComisionEstilista] = React.useState(
 inicialRateComisionEstilista);
 const safeSetRateIgv = setRateIgv || (() => {});
@@ -200,79 +198,208 @@ const safeSetRateRenta = setRateRenta || (() => {});
 
     {(() => {
       const bruto = Number(modalResumen.bruto || 0);
-
-      // descuentos (todos sobre venta bruta)
-      const igvMonto = round2(bruto * rateIgv);
+      const costoTotal = Number(totalCostoServicios || 0);
+      const baseImponible=round2(bruto/1.18)
+      const igvMonto = round2(bruto -baseImponible);
       const tarjetaMonto = round2(bruto * rateTarjeta);
-      const rentaMonto = round2(bruto * rateRenta);
-      const comisionEstilistaMonto = round2(bruto * rateComisionEstilista);
+      const rentaMonto = round2(baseImponible * rateRenta);
+      const netoParaComision = round2( bruto - igvMonto - tarjetaMonto - rentaMonto);
+      
+      const netoAntesComision=round2(bruto-igvMonto-tarjetaMonto-rentaMonto-costoTotal);
+      const comisionEstilistaMonto = round2(netoParaComision * rateComisionEstilista);
 
-      const ingresoNeto = round2(
-        bruto - igvMonto - tarjetaMonto - rentaMonto - comisionEstilistaMonto
-      );
-
+      const ingresoNeto = round2(netoAntesComision - comisionEstilistaMonto);
       const pctLabel = (v) => `${(v * 100).toFixed(2)}%`;
+       return (
 
-      return (
         <table
+
           style={{
+
             ...baseTableStyle,
+
             margin: "24px auto 12px",
+
             fontSize: 22,
+
           }}
+
         >
+
           <thead>
+
             <tr style={{ fontSize: 22 }}>
+
               {/* VENTA BRUTA */}
+
               <th className="bg-primary" style={thStyle}>
+
                 VENTA
+
                 <br />
+
                 BRUTA
+
               </th>
 
+
+
               {/* IGV */}
+
               <th className="bg-primary" style={thStyle}>
+
                 IGV{" "}
+
+                <br />
+
+                <span
+
+                  style={{
+
+                    cursor: "pointer",
+
+                    textDecoration: "underline dotted",
+
+                  }}
+
+                  onClick={(e) => {
+
+                    e.stopPropagation();
+
+                    setActiveRateEditor(
+
+                      activeRateEditor === "igv" ? null : "igv"
+
+                    );
+
+                  }}
+
+                >
+
+                  (-{pctLabel(rateIgv)})
+
+                </span>
+
+                {activeRateEditor === "igv" && (
+
+                  <div style={{ marginTop: 4 }}>
+
+                    <InputNumber
+
+                      value={rateIgv * 100}
+
+                      onValueChange={(e) =>
+
+                        safeSetRateIgv((e.value || 0) / 100)
+
+                      }
+
+                      mode="decimal"
+
+                      minFractionDigits={0}
+
+                      maxFractionDigits={2}
+
+                      suffix="%"
+
+                      inputStyle={{
+
+                        textAlign: "center",
+
+                        fontWeight: "bold",
+
+                        fontSize: 12,
+
+                      }}
+
+                      style={{ width: 70 }}
+
+                      onBlur={() => setActiveRateEditor(null)}
+
+                    />
+
+                  </div>
+
+                )}
+
+              </th>
+           {/* TARJETA */}
+          
+              {/* RENTA */}
+              <th className="bg-primary" style={thStyle}>
+                RENTA
                 <br />
                 <span
                   style={{
                     cursor: "pointer",
+
                     textDecoration: "underline dotted",
+
                   }}
+
                   onClick={(e) => {
+
                     e.stopPropagation();
+
                     setActiveRateEditor(
-                      activeRateEditor === "igv" ? null : "igv"
+
+                      activeRateEditor === "renta" ? null : "renta"
+
                     );
+
                   }}
+
                 >
-                  (-{pctLabel(rateIgv)})
+
+                  (-{pctLabel(rateRenta)})
+
                 </span>
-                {activeRateEditor === "igv" && (
+
+                {activeRateEditor === "renta" && (
+
                   <div style={{ marginTop: 4 }}>
+
                     <InputNumber
-                      value={rateIgv * 100}
+
+                      value={rateRenta * 100}
+
                       onValueChange={(e) =>
-                        safeSetRateIgv((e.value || 0) / 100)
+
+                        safeSetRateRenta((e.value || 0) / 100)
+
                       }
+
                       mode="decimal"
+
                       minFractionDigits={0}
+
                       maxFractionDigits={2}
+
                       suffix="%"
+
                       inputStyle={{
+
                         textAlign: "center",
+
                         fontWeight: "bold",
+
                         fontSize: 12,
+
                       }}
+
                       style={{ width: 70 }}
+
                       onBlur={() => setActiveRateEditor(null)}
+
                     />
+
                   </div>
+
                 )}
+
               </th>
 
-              {/* TARJETA */}
-              <th className="bg-primary" style={thStyle}>
+    <th className="bg-primary" style={thStyle}>
                 TARJETA
                 <br />
                 <span
@@ -312,116 +439,159 @@ const safeSetRateRenta = setRateRenta || (() => {});
                 )}
               </th>
 
-              {/* RENTA */}
+              {/* === NUEVA COLUMNA: COSTO === */}
+
               <th className="bg-primary" style={thStyle}>
-                RENTA
+
+                COSTO
+
                 <br />
-                <span
-                  style={{
-                    cursor: "pointer",
-                    textDecoration: "underline dotted",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveRateEditor(
-                      activeRateEditor === "renta" ? null : "renta"
-                    );
-                  }}
-                >
-                  (-{pctLabel(rateRenta)})
-                </span>
-                {activeRateEditor === "renta" && (
-                  <div style={{ marginTop: 4 }}>
-                    <InputNumber
-                      value={rateRenta * 100}
-                      onValueChange={(e) =>
-                        safeSetRateRenta((e.value || 0) / 100)
-                      }
-                      mode="decimal"
-                      minFractionDigits={0}
-                      maxFractionDigits={2}
-                      suffix="%"
-                      inputStyle={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        fontSize: 12,
-                      }}
-                      style={{ width: 70 }}
-                      onBlur={() => setActiveRateEditor(null)}
-                    />
-                  </div>
-                )}
+
+                SERVICIOS
+
               </th>
 
-              {/* COMISIÓN ESTILISTA (30% por defecto, editable localmente) */}
+
+
+              {/* COMISIÓN ESTILISTA */}
+
               <th className="bg-primary" style={thStyle}>
+
                 COMISIÓN
+
                 <br />
+
                 ESTILISTA
+
                 <br />
+
                 <span
+
                   style={{
+
                     cursor: "pointer",
+
                     textDecoration: "underline dotted",
+
                   }}
+
                   onClick={(e) => {
+
                     e.stopPropagation();
+
                     setActiveRateEditor(
+
                       activeRateEditor === "comision"
+
                         ? null
+
                         : "comision"
+
                     );
+
                   }}
+
                 >
+
                   (-{pctLabel(rateComisionEstilista)})
+
                 </span>
+
                 {activeRateEditor === "comision" && (
+
                   <div style={{ marginTop: 4 }}>
+
                     <InputNumber
+
                       value={rateComisionEstilista * 100}
+
                       onValueChange={(e) =>
+
                         setRateComisionEstilista(
+
                           (e.value || 0) / 100
+
                         )
+
                       }
+
                       mode="decimal"
+
                       minFractionDigits={0}
+
                       maxFractionDigits={2}
+
                       suffix="%"
+
                       inputStyle={{
+
                         textAlign: "center",
+
                         fontWeight: "bold",
+
                         fontSize: 12,
+
                       }}
+
                       style={{ width: 70 }}
+
                       onBlur={() => setActiveRateEditor(null)}
+
                     />
+
                   </div>
+
                 )}
+
               </th>
+
+
 
               {/* INGRESO NETO (última col) */}
+
               <th className="bg-primary" style={thStyle}>
+
                 INGRESO
+
                 <br />
+
                 NETO
+
               </th>
+
             </tr>
+
           </thead>
 
+
+
           <tbody>
+
             <tr>
+
               <td style={tdTotales}>
+
                 <NumberFormatMoney amount={bruto} />
+
               </td>
+
               <td style={{ ...tdTotales, color: "red" }}>
+
                 - <NumberFormatMoney amount={igvMonto} />
+
               </td>
-              <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={tarjetaMonto} />
-              </td>
+
+             
+
               <td style={{ ...tdTotales, color: "red" }}>
                 - <NumberFormatMoney amount={rentaMonto} />
+              </td>
+               <td style={{ ...tdTotales, color: "red" }}>
+                - <NumberFormatMoney amount={tarjetaMonto} />
+              </td>
+              {/* === NUEVA CELDA: COSTO === */}
+              <td style={{ ...tdTotales, color: "red" }}>
+                - <NumberFormatMoney amount={costoTotal} />
               </td>
               <td style={{ ...tdTotales, color: "red" }}>
                 -{" "}
@@ -445,9 +615,6 @@ const safeSetRateRenta = setRateRenta || (() => {});
     })()}
   </div>
 )}
-
-
-
           {/* === DETALLE DE SERVICIOS === */}
           <div
             style={{

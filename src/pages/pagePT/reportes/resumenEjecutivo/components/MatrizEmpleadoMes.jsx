@@ -195,9 +195,8 @@ const METRIC_ALIASES = {
   const filas = meses.flatMap((_, colIndex) => getVentasDeCelda(emp, colIndex));
   setModalRows(filas);
 
-  // === resumen: solo líneas del colaborador ===
+let totalCostoServicios = 0;
   let totalCompra = 0;
-
   const ventaBrutaServicios = filas.reduce((acc, v) => {
     const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
     const suma = servicios.reduce((a, s) => {
@@ -205,6 +204,7 @@ const METRIC_ALIASES = {
       if (empServ !== objetivo) return a;
       const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
       const pUnit = Number(s?.tarifa_monto) || 0;
+      totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
       return a + cant * pUnit;
     }, 0);
     return acc + suma;
@@ -228,7 +228,7 @@ const METRIC_ALIASES = {
   resumen.costoCompra = totalCompra;
   resumen.netoFinal = round2(resumen.neto - totalCompra);
   setModalResumen(resumen);
-
+setModalCostoServicios(totalCostoServicios);
   // Título bonito con rango de meses + nombre
   const primerMes = meses?.[0];
   const ultimoMes = meses?.[meses.length - 1];
@@ -249,7 +249,7 @@ const METRIC_ALIASES = {
   const [modalTitle, setModalTitle] = useState('');
   const [modalResumen, setModalResumen] = useState(null);
   const [empleadoObjetivo, setEmpleadoObjetivo] = useState('');
-
+const [modalCostoServicios, setModalCostoServicios] = useState(0);
   const { obtenerFormaDePagosActivos } = useTerminoMetodoPagoStore();
   const [dataFormaPagoActivoVentas, setDataFormaPagoActivoVentas] = useState([]);
 useEffect(() => {
@@ -492,6 +492,8 @@ const deltasEmpleadoMes = useMemo(() => {
     setModalRows(filas);
 
     let totalCompra = 0;
+    let totalCostoServicios = 0;
+
     const ventaBrutaServicios = filas.reduce((acc, v) => {
       const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
       const sumaServ = servicios.reduce((a, s) => {
@@ -499,6 +501,7 @@ const deltasEmpleadoMes = useMemo(() => {
         if (empServ !== objetivo) return a;
         const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
         const pUnit = Number(s?.tarifa_monto) || 0;
+        totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
         return a + cant * pUnit;
       }, 0);
       return acc + sumaServ;
@@ -523,7 +526,7 @@ const deltasEmpleadoMes = useMemo(() => {
     resumen.costoCompra = totalCompra;
     resumen.netoFinal = round2(resumen.neto - totalCompra);
     setModalResumen(resumen);
-
+    setModalCostoServicios(totalCostoServicios);
     const mes = columnas[colIndex]?.label || '';
     const nombre = (emp?.split?.(' ')?.[0] ?? emp) ?? '';
     setModalTitle(`${mes.toUpperCase?.() || mes} – ${nombre.toUpperCase?.() || nombre}`);
@@ -552,107 +555,144 @@ const deltasEmpleadoMes = useMemo(() => {
     return totals;
   }, [normalizePagoMethod]);
 const onTotalClick = (colIndex) => {
-  if (!meses[colIndex]) return;
+  if (!meses[colIndex]) return;
 
-  const filas = filtrarVentasPorMes(dataVenta, meses[colIndex]).map((v, i) => ({
-    id: v?.id ?? v?.numero_transac ?? `venta_total_${i}_${colIndex}`,
-    fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
-    ...v,
-  }));
-   
-  setEmpleadoObjetivo(''); 
-  setModalRows(filas);
+  const filas = filtrarVentasPorMes(dataVenta, meses[colIndex]).map((v, i) => ({
+    id: v?.id ?? v?.numero_transac ?? `venta_total_${i}_${colIndex}`,
+    fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
+    ...v,
+  }));
+   
+  setEmpleadoObjetivo(''); 
+  setModalRows(filas);
 
-  const bruto = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+  // --- AÑADIDO ---
+  let totalCostoServicios = 0; // 1. Inicializar costo de servicios
+const sumServs = servs.reduce((a, s) => {
+    // Se obtiene la cantidad
+    const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0; 
+    const pUnit = Number(s?.tarifa_monto) || 0;
 
-    const sumProds = prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
-      return a + cant * pUnit;
-    }, 0);
+    // 2. ¡AQUÍ SE MULTIPLICA! (Cantidad * precio_compra)
+    totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0); 
+    
+    return a + cant * pUnit; // Se suma la venta bruta
+}, 0);
+  const bruto = filas.reduce((acc, v) => {
+    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
 
-    const sumServs = servs.reduce((a, s) => {
-      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
-      const pUnit = Number(s?.tarifa_monto) || 0;
-      return a + cant * pUnit;
-    }, 0);
+    const sumProds = prods.reduce((a, p) => {
+      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+      return a + cant * pUnit;
+    }, 0);
 
-    return acc + sumProds + sumServs;
-  }, 0);
+    const sumServs = servs.reduce((a, s) => {
+      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+      const pUnit = Number(s?.tarifa_monto) || 0;
 
-  const res = buildBreakdown(bruto);
-  const costoCompra = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    return acc + prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
-      return a + cant * cUnit;
-    }, 0);
-  }, 0);
-  res.costoCompra = costoCompra;
-  res.netoFinal = round2(res.neto - costoCompra);
-  setModalResumen(res);
+      // --- AÑADIDO ---
+      // 2. Calcular costo de servicio
+      totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0); 
+      // -----------------
 
-  const mes = columnas[colIndex]?.label || '';
-  setModalTitle(`${mes.toUpperCase?.() || mes} – TOTAL`);
-  setModalOpen(true);
+      return a + cant * pUnit;
+    }, 0);
+
+    return acc + sumProds + sumServs;
+  }, 0);
+
+  const res = buildBreakdown(bruto);
+  const costoCompra = filas.reduce((acc, v) => {
+    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    return acc + prods.reduce((a, p) => {
+      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+      const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
+      return a + cant * cUnit;
+    }, 0);
+  }, 0);
+  res.costoCompra = costoCompra;
+  res.netoFinal = round2(res.neto - costoCompra);
+  setModalResumen(res);
+
+  // --- AÑADIDO ---
+  setModalCostoServicios(totalCostoServicios); // 3. Setear el estado
+  // -----------------
+
+  const mes = columnas[colIndex]?.label || '';
+  setModalTitle(`${mes.toUpperCase?.() || mes} – TOTAL`);
+  setModalOpen(true);
 };
 const onGrandTotalClick = () => {
-  const filas = meses.flatMap((f, colIndex) =>
-    filtrarVentasPorMes(dataVenta, f).map((v, i) => ({
-      id: v?.id ?? v?.numero_transac ?? `venta_total_all_${colIndex}_${i}`,
-      fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
-      ...v,
-    }))
-  );
-  setModalTitle('TODOS LOS MESES – TOTAL');  
-  setEmpleadoObjetivo('');
-  setModalRows(filas);
-  setModalOpen(true);
+  const filas = meses.flatMap((f, colIndex) =>
+    filtrarVentasPorMes(dataVenta, f).map((v, i) => ({
+      id: v?.id ?? v?.numero_transac ?? `venta_total_all_${colIndex}_${i}`,
+      fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
+      ...v,
+    }))
+  );
+  setModalTitle('TODOS LOS MESES – TOTAL');  
+  setEmpleadoObjetivo('');
+  setModalRows(filas);
+  setModalOpen(true);
 
-  const bruto = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
-    const sumProds = prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
-      return a + cant * pUnit;
-    }, 0);
-    const sumServs = servs.reduce((a, s) => {
-      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
-      const pUnit = Number(s?.tarifa_monto) || 0;
-      return a + cant * pUnit;
-    }, 0);
-    return acc + sumProds + sumServs;
-  }, 0);
+  // --- AÑADIDO ---
+  let totalCostoServicios = 0; // 1. Inicializar costo de servicios
+  // -----------------
 
-  const res = buildBreakdown(bruto);
-  const costoCompra = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    return acc + prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
-      return a + cant * cUnit;
-    }, 0);
-  }, 0);
-  res.costoCompra = costoCompra;
-  res.netoFinal = round2(res.neto - costoCompra);
- const primerMes = meses?.[0];
-  const ultimoMes = meses?.[meses.length - 1];
+  const bruto = filas.reduce((acc, v) => {
+    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    const sumProds = prods.reduce((a, p) => {
+      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+      return a + cant * pUnit;
+    }, 0);
+    const sumServs = servs.reduce((a, s) => {
+      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+      const pUnit = Number(s?.tarifa_monto) || 0;
 
-  let titulo = 'TODOS LOS MESES – TOTAL';
-  if (primerMes && ultimoMes) {
-    titulo = `${primerMes.label.toUpperCase()} ${primerMes.anio} – ${ultimoMes.label.toUpperCase()} ${ultimoMes.anio}`;
-    if (cutDay) titulo += ` (hasta el día ${cutDay})`;
-  }
-  setModalResumen(res);
-  setModalTitle(titulo);
+      // --- AÑADIDO ---
+      // 2. Calcular costo de servicio
+      totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
+      // -----------------
+
+      return a + cant * pUnit;
+    }, 0);
+    return acc + sumProds + sumServs;
+  }, 0);
+
+  const res = buildBreakdown(bruto);
+  const costoCompra = filas.reduce((acc, v) => {
+    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
+                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    return acc + prods.reduce((a, p) => {
+      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+      const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
+      return a + cant * cUnit;
+    }, 0);
+  }, 0);
+  res.costoCompra = costoCompra;
+  res.netoFinal = round2(res.neto - costoCompra);
+ const primerMes = meses?.[0];
+  const ultimoMes = meses?.[meses.length - 1];
+
+  let titulo = 'TODOS LOS MESES – TOTAL';
+  if (primerMes && ultimoMes) {
+    titulo = `${primerMes.label.toUpperCase()} ${primerMes.anio} – ${ultimoMes.label.toUpperCase()} ${ultimoMes.anio}`;
+    if (cutDay) titulo += ` (hasta el día ${cutDay})`;
+  }
+  setModalResumen(res);
+
+  // --- AÑADIDO ---
+  setModalCostoServicios(totalCostoServicios); // 3. Setear el estado
+  // -----------------
+
+ setModalTitle(titulo);
 };
   useEffect(() => {
     if (modalOpen) {
@@ -1019,6 +1059,7 @@ const headerPretty = DISPLAY_LABEL[canonicalMetric] || canonicalMetric;
   onClose={() => setModalOpen(false)}
   modalRows={modalRows}
   modalResumen={modalResumen}
+  totalCostoServicios={modalCostoServicios}
   modalData={modalData}
   empleadoObjetivo={empleadoObjetivo}
   serieEmpleadoMes={serieEmpleadoMes}
