@@ -454,7 +454,7 @@ export function TopControls({
                   3
                 )}`
               : updatedLabel
-              ? `Actualizado ${updatedLabel}`
+              ? ` ${updatedLabel}`
               : "Dato obtenido"}
           </span>
           {usingFallback ? (
@@ -462,7 +462,7 @@ export function TopControls({
               Valor de referencia manual {`S/ ${FALLBACK_USD_PEN_RATE.toFixed(3)}`}
             </span>
           ) : (
-            <span style={miniTextStyle}>Fuente: open.er-api.com</span>
+            <span style={miniTextStyle}></span>
           )}
         </div>
       </div>

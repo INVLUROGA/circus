@@ -100,10 +100,7 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
   };
 
   return ventas.filter(v => {
-    if (inRangeLocal(v?.fecha_venta ?? v?.fecha ?? v?.createdAt)) return true;
-    const ds = (v?.detalle_ventaservicios || []).some(x => inRangeLocal(x?.createdAt));
-    const dp = (v?.detalle_ventaProductos || []).some(x => inRangeLocal(x?.createdAt));
-    return ds || dp;
+   return inRangeLocal(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
   });
 }
 
