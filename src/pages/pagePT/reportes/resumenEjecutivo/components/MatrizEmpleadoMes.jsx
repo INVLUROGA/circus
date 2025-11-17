@@ -55,10 +55,8 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay = null) {
   };
 
   return ventas.filter((v) => {
-    if (inRange(v?.fecha_venta || v?.fecha || v?.createdAt)) return true;
-    const ds = (v?.detalle_ventaservicios || []).some(x => inRange(x?.createdAt));
-    const dp = (v?.detalle_ventaProductos || v?.detalle_ventaproductos || []).some(x => inRange(x?.createdAt));
-    return ds || dp;
+    return inRange(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
+
   });
 }
 

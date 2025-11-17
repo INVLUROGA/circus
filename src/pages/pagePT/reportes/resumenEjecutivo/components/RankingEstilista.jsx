@@ -82,27 +82,50 @@ const parseIsoLocal = (iso) => {
 function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
 
-  const mapa = {enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,
-    julio:6,agosto:7,septiembre:8,setiembre:8,octubre:9,noviembre:10,diciembre:11};
+  const mapa = {
+    enero: 0,
+    febrero: 1,
+    marzo: 2,
+    abril: 3,
+    mayo: 4,
+    junio: 5,
+    julio: 6,
+    agosto: 7,
+    septiembre: 8,
+    setiembre: 8,
+    octubre: 9,
+    noviembre: 10,
+    diciembre: 11,
+  };
+
   const m = mapa[String(filtro.mes).toLowerCase()];
   if (m == null) return ventas;
 
   const y = Number(filtro.anio);
   const last = new Date(y, m + 1, 0).getDate();
-  const from = Math.max(1, Math.min(initDay, last));
-  const to   = Math.max(from, Math.min(cutDay || last, last));
+
+  const from = Math.max(1, Math.min(initDay, last));          // día inicial
+  const to   = Math.max(from, Math.min(cutDay || last, last)); // día final
 
   const inRangeLocal = (iso) => {
-    const d = parseIsoLocal(iso);
+    if (!iso) return false;
+    const d = toLimaDate(iso);
     if (!d) return false;
-    return d.getFullYear() === y && d.getMonth() === m &&
-           d.getDate() >= from && d.getDate() <= to;
+
+    return (
+      d.getFullYear() === y &&
+      d.getMonth() === m &&
+      d.getDate() >= from &&
+      d.getDate() <= to
+    );
   };
 
-  return ventas.filter(v => {
-   return inRangeLocal(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
+  return ventas.filter((v) => {
+    const fecha = v?.fecha_venta ?? v?.fecha ?? null;
+    return inRangeLocal(fecha);
   });
 }
+
 
 
 
