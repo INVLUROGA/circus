@@ -241,8 +241,8 @@ const originMap = {
             setCutDay={setCutDay}
             year={year}
               onUseLastDay={handleSetUltimoDiaMesesDinamicos}
-               tasaCambio={tasaCambio}          // 👈 valor
-        onChangeTasa={setTasaCambio} 
+               tasaCambio={tasaCambio}       
+        onChangeTasaCambio={setTasaCambio} 
           />
   </div>
 
@@ -258,7 +258,7 @@ const originMap = {
                   initialDay={initDay}
                   cutDay={cutDay}
                   originMap={originMap}  
- tasaCambio={tasaCambio}          // 👈 valor
+                  tasaCambio={tasaCambio}       
                 />
               </Col>
 

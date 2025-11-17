@@ -115,7 +115,6 @@ export function TopControls({
     error: null,
   });
 
-  // === FETCH TIPO DE CAMBIO USD->PEN ===
   useEffect(() => {
     let ignore = false;
 

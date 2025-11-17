@@ -7,6 +7,8 @@ export default function ExecutiveTable({
   initialDay = 1,
   cutDay = 27,
   originMap = {},
+  selectedMonth,
+  tasaCambio = 3.37, // Prop recibida
 }) {
   const MESES = [
     "enero","febrero","marzo","abril","mayo","junio",
@@ -23,8 +25,13 @@ export default function ExecutiveTable({
     } catch { return null; }
   };
   const clamp = (n, min, max) => Math.max(min, Math.min(max, Number(n || 0)));
+  
+  // --- SECCIÓN 1 (SIN CAMBIOS, YA LO TENÍAS) ---
+  // Funciones de formato para Soles (PEN) y Dólares (USD)
   const fmtMoney = (n) => new Intl.NumberFormat("es-PE",{style:"currency",currency:"PEN"}).format(Number(n||0));
   const fmtNum   = (n,d=0)=> new Intl.NumberFormat("es-PE",{minimumFractionDigits:d,maximumFractionDigits:d}).format(Number(n||0));
+  const fmtMoneyUSD = (n) => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD"}).format(Number(n||0));
+  // --- FIN SECCIÓN 1 ---
 
   const getDetalleServicios = (v) =>
     v?.detalle_ventaservicios ||
@@ -35,10 +42,10 @@ export default function ExecutiveTable({
     v?.detalle_ventaProductos || v?.detalle_ventaproductos || [];
 
   const ORIGIN_SYNONYMS = {
-    tiktok:    new Set(["1514","695","tiktok","tik tok","tik-tok"]),
-    facebook:  new Set(["694","facebook","fb"]),
-    instagram: new Set(["693","instagram","ig"]),
-    meta:      new Set(["1515","meta","1454"]),
+    tiktok:   new Set(["1514","695","tiktok","tik tok","tik-tok"]),
+    facebook: new Set(["694","facebook","fb"]),
+    instagram:new Set(["693","instagram","ig"]),
+    meta:     new Set(["1515","meta","1454"]),
   };
   const canonicalKeyFromRaw = (originMap, raw) => {
     const rawStr = String(raw ?? "").trim();
@@ -57,24 +64,23 @@ export default function ExecutiveTable({
     return String(key || "OTROS").replace(/_/g, " ").toUpperCase();
   };
 
+  // --- SECCIÓN 2: LÓGICA DE CÁLCULO CORREGIDA ---
   function computeMetricsForMonth(anio, mesNombre) {
     const mesAlias = aliasMes(String(mesNombre).toLowerCase());
     const monthIdx = MESES.indexOf(mesAlias);
     if (monthIdx < 0) return null;
 
+    // ... (toda tu lógica de 'for (const v of ventas)' sigue igual) ...
     let totalServ=0,cantServ=0,totalProd=0,cantProd=0;
     let totalServFull=0,cantServFull=0,totalProdFull=0,cantProdFull=0;
-
-    const byOrigin = {};      
+    const byOrigin = {};       
     const byOriginFull = {};   
-    const byOriginCliSet = {};    
+    const byOriginCliSet = {};      
     const byOriginCliSetFull = {}; 
-
     let metaServTotalCut=0,  metaServCantCut=0;
     let metaServTotalFull=0, metaServCantFull=0;
     const metaCliSetCut = new Set();
     const metaCliSetFull = new Set();
-
     const addTo = (bucket, key, label, linea, cantidad) => {
       if (!bucket[key]) bucket[key] = { label, total: 0, cant: 0 };
       bucket[key].total += Number(linea || 0);
@@ -84,15 +90,12 @@ export default function ExecutiveTable({
       if (!map[key]) map[key] = new Set();
       map[key].add(String(idCli));
     };
-
     const from = clamp(Number(initialDay || 1), 1, 31);
-
     for (const v of ventas) {
       const d = toLimaDate(v?.fecha_venta || v?.fecha || v?.createdAt);
       if (!d) continue;
       if (d.getFullYear() !== Number(anio)) continue;
       if (d.getMonth() !== monthIdx) continue;
-
       const rawOrigin =
         v?.id_origen ?? v?.parametro_origen?.id_param ??
         v?.origen ?? v?.source ?? v?.canal ?? v?.parametro_origen?.label_param;
@@ -100,7 +103,6 @@ export default function ExecutiveTable({
       const oLabel = labelFromKey(oKey);
       const servicios = getDetalleServicios(v);
       const idCli = v?.id_cli ?? `venta-${v?.id ?? Math.random()}`;
-
       if (servicios.length > 0) {
         if (oKey !== "meta") addCli(byOriginCliSetFull, oKey, idCli);
         else metaCliSetFull.add(String(idCli));
@@ -117,12 +119,10 @@ export default function ExecutiveTable({
         const linea = Number(p?.tarifa_monto || 0);
         totalProdFull += linea; cantProdFull += cant;
       }
-
       const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       const to = clamp(Number(cutDay || lastDay), from, lastDay);
       const dia = d.getDate();
       if (dia < from || dia > to) continue;
-
       if (servicios.length > 0) {
         if (oKey !== "meta") addCli(byOriginCliSet, oKey, idCli);
         else metaCliSetCut.add(String(idCli));
@@ -140,7 +140,6 @@ export default function ExecutiveTable({
         totalProd += linea; cantProd += cant;
       }
     }
-
     const keyMonth = `${anio}-${mesAlias}`;
     const mk = dataMktByMonth?.[keyMonth] || {};
     const por_red = mk?.por_red || {};
@@ -149,7 +148,6 @@ export default function ExecutiveTable({
     const rawIG = val(por_red, "instagram");
     let fbShare = 0.5, igShare = 0.5;
     if ((rawFB + rawIG) > 0) { fbShare = rawFB / (rawFB + rawIG); igShare = 1 - fbShare; }
-
     if (metaServTotalCut > 0) {
       addTo(byOrigin, "facebook",  "FACEBOOK",  metaServTotalCut * fbShare,  metaServCantCut * fbShare);
       addTo(byOrigin, "instagram", "INSTAGRAM", metaServTotalCut * igShare,  metaServCantCut * igShare);
@@ -160,11 +158,9 @@ export default function ExecutiveTable({
       const igInt = Math.max(0, tot - fbInt);
       if (!byOriginCliSet["facebook"])  byOriginCliSet["facebook"]  = new Set();
       if (!byOriginCliSet["instagram"]) byOriginCliSet["instagram"] = new Set();
-  
       for (let i=0;i<fbInt;i++) byOriginCliSet["facebook"].add(`fb-${i}`);
       for (let i=0;i<igInt;i++) byOriginCliSet["instagram"].add(`ig-${i}`);
     }
-
     if (metaServTotalFull > 0) {
       addTo(byOriginFull, "facebook",  "FACEBOOK",  metaServTotalFull * fbShare,  metaServCantFull * fbShare);
       addTo(byOriginFull, "instagram", "INSTAGRAM", metaServTotalFull * igShare,  metaServCantFull * igShare);
@@ -178,34 +174,49 @@ export default function ExecutiveTable({
       for (let i=0;i<fbInt;i++) byOriginCliSetFull["facebook"].add(`fb-${i}`);
       for (let i=0;i<igInt;i++) byOriginCliSetFull["instagram"].add(`ig-${i}`);
     }
-
     const ticketServ     = cantServ     ? totalServ     / cantServ     : 0;
     const ticketProd     = cantProd     ? totalProd     / cantProd     : 0;
     const ticketServFull = cantServFull ? totalServFull / cantServFull : 0;
     const ticketProdFull = cantProdFull ? totalProdFull / cantProdFull : 0;
-
+    
+    // --- INICIO DE LA CORRECCIÓN DE CÁLCULO ---
     const safeDiv0 = (n, d) => (Number(d||0) > 0 ? Number(n||0)/Number(d||0) : 0);
     const invVal = (kArr) => kArr.reduce((acc, k) => acc + Number(por_red?.[k] ?? 0), 0);
+    
+    // 1. Obtener valores base en Dólares (USD)
     const invMetaUSD   = invVal(["1515","meta","facebook","instagram"]);
     const invTikTokUSD = invVal(["1514","tiktok","tik tok"]);
-    const invMetaPEN   = invMetaUSD   
-    const invTikTokPEN = invTikTokUSD * 3.34;
-    const invTotalPEN  = invMetaPEN + invTikTokPEN;
+    
+    // 2. Calcular el TOTAL en Dólares (USD)
+    const invTotalUSD  = invMetaUSD + invTikTokUSD;
+
+    // 3. Preparar los valores para las filas de la tabla
+    const invMetaPEN   = invMetaUSD; // Se mostrará en $
+    const invTikTokPEN = invTikTokUSD * tasaCambio; // Se mostrará en S/
+    const invTotalPEN  = invTotalUSD;  // Se mostrará en $ (este es el total real en USD)
+
+    // 4. Calcular Leads
     const leads_por_red = mk?.leads_por_red || {};
     const leadVal = (kArr) => kArr.reduce((acc, k) => acc + Number(leads_por_red?.[k] ?? 0), 0);
     const leadsMeta   = leadVal(["1515","meta","facebook","instagram"]);
     const leadsTikTok = leadVal(["1514","tiktok","tik tok"]);
     const leadsTotal  = leadsMeta + leadsTikTok;
-    const cplMeta   = safeDiv0(invMetaPEN,   leadsMeta);
-    const cplTikTok = safeDiv0(invTikTokPEN, leadsTikTok);
-    const cplTotal  = safeDiv0(invTotalPEN,  leadsTotal);
+
+    // 5. Calcular CPL (Costo por Lead)
+    const cplMeta   = safeDiv0(invMetaPEN,   leadsMeta);   // $ / leads
+    const cplTikTok = safeDiv0(invTikTokPEN, leadsTikTok); // S/ / leads
+    const cplTotal  = safeDiv0(invTotalUSD,  leadsTotal);  // $ / leads (usa el total USD)
+
+    // 6. Calcular CAC (Costo de Adquisición de Cliente)
     const clientesMetaReal   = Number(mk?.clientes_meta   ?? 0);
     const clientesTikTokReal = Number(mk?.clientes_tiktok ?? 0);
-    const cacMeta   = safeDiv0(invMetaPEN,   clientesMetaReal);
-    const cacTikTok = safeDiv0(invTikTokPEN, clientesTikTokReal);
-    const cacTotal  = safeDiv0(invTotalPEN,  clientesMetaReal + clientesTikTokReal);
+    const clientesTotalReal  = clientesMetaReal + clientesTikTokReal; // Total clientes
 
-    // NUEVO: convertir sets -> conteos para exponer en métricas
+    const cacMeta   = safeDiv0(invMetaPEN,   clientesMetaReal);    // $ / clientes
+    const cacTikTok = safeDiv0(invTikTokPEN, clientesTikTokReal);  // S/ / clientes
+    const cacTotal  = safeDiv0(invTotalUSD,  clientesTotalReal);   // $ / clientes (usa el total USD)
+    // --- FIN DE LA CORRECCIÓN DE CÁLCULO ---
+
     const byOriginCli = Object.fromEntries(
       Object.entries(byOriginCliSet).map(([k, s]) => [k, (s?.size || 0)])
     );
@@ -216,7 +227,7 @@ export default function ExecutiveTable({
     return {
       invMetaPEN, leadsMeta, cplMeta, cacMeta,
       invTikTokPEN, leadsTikTok, cplTikTok, cacTikTok,
-      invTotalPEN, leadsTotal, cplTotal, cacTotal,
+      invTotalPEN, leadsTotal, cplTotal, cacTotal, // Retorna los valores correctos
 
       totalServ, cantServ, ticketServ,
       totalProd, cantProd, ticketProd,
@@ -227,24 +238,34 @@ export default function ExecutiveTable({
       totalMesFull: totalServFull + totalProdFull,
 
       byOrigin, byOriginFull,
-      byOriginCli,        // ← NUEVO (clientes únicos al corte)
-      byOriginCliFull,    // ← (mes completo, por si lo necesitas)
+      byOriginCli,       
+      byOriginCliFull,   
     };
   }
+  // --- FIN SECCIÓN 2 ---
 
+  // --- SECCIÓN 3: DEFINICIÓN DE FILAS CORREGIDA ---
+  // Aquí corregimos la 'key' y los 'type' para el total.
   const rows = [
-    { key: "invTotalPEN", label: "INVERSIÓN TOTAL REDES", type: "money" },
+    // --- TOTALES (en USD) ---
+    { key: "invTotalPEN", label: "INVERSIÓN TOTAL REDES", type: "money-usd" },
     { key: "leadsTotal",  label: "TOTAL LEADS DE META + TIKTOK", type: "int" },
-    { key: "cplTotal",    label: "COSTO TOTAL POR LEADS DE META + TIKTOK", type: "float2" },
-    { key: "cacTotal",    label: "COSTO ADQUISICION DE CLIENTES", type: "float2" },
-    { key: "invMetaPEN",  label: "INVERSIÓN META", type: "money"  },
+    { key: "cplTotal",    label: "COSTO TOTAL POR LEADS DE META + TIKTOK", type: "float2-usd" },
+    { key: "cacTotal",    label: "COSTO ADQUISICION DE CLIENTES", type: "float2-usd" },
+    
+    // --- META (en USD) ---
+    { key: "invMetaPEN",  label: "INVERSIÓN META", type: "money-usd"  },
     { key: "leadsMeta",   label: "CANTIDAD LEADS META", type: "int"    },
-    { key: "cplMeta",     label: "COSTO POR LEAD META", type: "float2" },
-    { key: "cacMeta",     label: "COSTO ADQUISICION DE CLIENTES META", type: "float2" },
-    { key: "invTikTokPEN",label: "INVERSIÓN TIKTOK", type: "money"  },
+    { key: "cplMeta",     label: "COSTO POR LEAD META", type: "float2-usd" },
+    { key: "cacMeta",     label: "COSTO ADQUISICION DE CLIENTES META", type: "float2-usd" },
+    
+    // --- TIKTOK (en PEN) ---
+    { key: "invTikTokPEN",label: "INVERSIÓN TIKTOK", type: "money"  }, // 'money' usará fmtMoney (Soles)
     { key: "leadsTikTok", label: "CANTIDAD LEADS TIKTOK", type: "int"    },
-    { key: "cplTikTok",   label: "COSTO POR LEAD TIKTOK", type: "float2" },
-    { key: "cacTikTok",   label: "COSTO ADQUISICION DE CLIENTES TIKTOK", type: "float2" },
+    { key: "cplTikTok",   label: "COSTO POR LEAD TIKTOK", type: "float2" }, // 'float2' usará fmtNum (Soles)
+    { key: "cacTikTok",   label: "COSTO ADQUISICION DE CLIENTES TIKTOK", type: "float2" }, // 'float2' usará fmtNum (Soles)
+    
+    // --- VENTAS (en PEN) ---
     { key: "totalServ",   label: "VENTA SERVICIOS", type: "money" },
     { key: "cantServ",    label: "CANTIDAD SERVICIOS", type: "int"   },
     { key: "ticketServ",  label: "TICKET MEDIO SERVICIOS", type: "money" },
@@ -252,6 +273,8 @@ export default function ExecutiveTable({
     { key: "cantProd",    label: "CANTIDAD PRODUCTOS", type: "int"   },
     { key: "ticketProd",  label: "TICKET MEDIO PRODUCTOS", type: "money" },
   ];
+  // --- FIN SECCIÓN 3 ---
+
   const rowsParte1 = rows.slice(0, 12);
   const rowsParte2 = rows.slice(12);
 
@@ -265,43 +288,32 @@ export default function ExecutiveTable({
   const originKeysAll = Array.from(
     new Set(perMonth.flatMap(m => Object.keys(m.metrics?.byOrigin || {})))
   ).filter(k => k !== "meta").sort();
-// Último mes (el más a la derecha)
-const lastIdx = Math.max(0, perMonth.length - 1);
 
-// helpers para ordenar
-const lastCant = (key) =>
-  Number(perMonth[lastIdx]?.metrics?.byOrigin?.[key]?.cant || 0);
+  const lastIdx = Math.max(0, perMonth.length - 1);
+  const lastCant = (key) =>
+    Number(perMonth[lastIdx]?.metrics?.byOrigin?.[key]?.cant || 0);
+  const sumCant = (key) =>
+    perMonth.reduce((acc, m) => acc + Number(m?.metrics?.byOrigin?.[key]?.cant || 0), 0);
+  const priority = (key) => (key === "wsp_organico" ? 1 : 0);
+  const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
+    const lb = lastCant(b), la = lastCant(a);
+    if (lb !== la) return lb - la;
+    const sb = sumCant(b), sa = sumCant(a);
+    if (sb !== sa) return sb - sa;
+    const pb = priority(b), pa = priority(a);
+    if (pb !== pa) return pb - pa;
+    return a.localeCompare(b);
+  });
 
-const sumCant = (key) =>
-  perMonth.reduce((acc, m) => acc + Number(m?.metrics?.byOrigin?.[key]?.cant || 0), 0);
-
-// prioridad manual para WSP ORGÁNICO si hay empate total
-const priority = (key) => (key === "wsp_organico" ? 1 : 0);
-
-// orden final: por último mes desc, luego suma desc, luego prioridad WSP, luego alfabético
-const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
-  const lb = lastCant(b), la = lastCant(a);
-  if (lb !== la) return lb - la;
-
-  const sb = sumCant(b), sa = sumCant(a);
-  if (sb !== sa) return sb - sa;
-
-  const pb = priority(b), pa = priority(a);
-  if (pb !== pa) return pb - pa;
-
-  return a.localeCompare(b);
-});
-
-  // ← NUEVO: agrego fila "CANTIDAD CLIENTES" en cada tabla por ORIGEN
   const rowsPerOrigin = (okey) => ([
     { key: `o:${okey}:total`,  label: "VENTA SERVICIOS", type: "money" },
     { key: `o:${okey}:cant`,   label: "CANTIDAD SERVICIOS", type: "int" },
-    { key: `o:${okey}:cli`,    label: "CANTIDAD CLIENTES", type: "int" }, // NUEVA FILA
+    { key: `o:${okey}:cli`,    label: "CANTIDAD CLIENTES", type: "int" }, 
     { key: `o:${okey}:ticket`, label: "TICKET MEDIO SERVICIOS", type: "money" },
     { key: `o:${okey}:pct`,    label: "% PARTICIPACIÓN", type: "float2" },
   ]);
 
-  // ======== Estilos (sin cambios de colores) ========
+  // ======== Estilos (sin cambios) ========
   const cBlack="#000", cWhite="#fff", gold="#ffc000", redStrong="#c00000";
   const border="1px solid #333";
   const sTable={ width:"100%", borderCollapse:"collapse", tableLayout:"fixed" }
@@ -324,17 +336,36 @@ const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
     </thead>
   );
 
+  // --- SECCIÓN 4: FUNCIÓN DE RENDERIZADO CORREGIDA ---
+  // Esta función ahora entiende los 'type' (money, money-usd, float2, float2-usd)
+  // y usa la función de formato correcta (fmtMoney o fmtMoneyUSD)
   const renderRows = (rowsToRender) =>
     rowsToRender.map((r) => (
       <tr key={r.key}>
         <td style={{ ...sCellBold, background: gold, color: "#000", fontWeight: 800 }}>{r.label}</td>
         {perMonth.map((m, idx) => {
           const val = m.metrics?.[r.key] ?? 0;
-          const txt = r.type==="money" ? fmtMoney(val) : r.type==="float2" ? fmtNum(val,2) : fmtNum(val,0);
+          
+          let txt = "";
+          if (r.type === "money") {
+            txt = fmtMoney(val); // S/ (PEN)
+          } else if (r.type === "money-usd") {
+            txt = fmtMoneyUSD(val); // $ (USD)
+          } else if (r.type === "float2") {
+            txt = fmtNum(val, 2); // Número (para PEN)
+          } else if (r.type === "float2-usd") {
+            const symbol = fmtMoneyUSD(0).charAt(0); // Obtiene '$'
+            txt = `${symbol}${fmtNum(val, 2)}`; // Ejemplo: $12.34
+          } else {
+            // Default para 'int'
+            txt = fmtNum(val, 0);
+          }
+
           return <td key={idx} style={cellStyle(idx === perMonth.length - 1)}>{txt}</td>;
         })}
       </tr>
     ));
+  // --- FIN SECCIÓN 4 ---
 
   const TableHeadForOrigin = () => (
     <thead>
@@ -353,11 +384,11 @@ const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
         <td style={{ ...sCellBold, background: gold, color: "#000", fontWeight: 800 }}>{r.label}</td>
         {perMonth.map((m, idx) => {
           const o = m.metrics?.byOrigin?.[okey] || { total: 0, cant: 0 };
-          const cliCount = m.metrics?.byOriginCli?.[okey] ?? 0; // ← NUEVO
+          const cliCount = m.metrics?.byOriginCli?.[okey] ?? 0; 
           let val = 0, isPct = false;
           if (r.key.endsWith(":total"))   val = o.total;
           else if (r.key.endsWith(":cant"))   val = o.cant;
-          else if (r.key.endsWith(":cli"))    val = cliCount;              // ← NUEVO
+          else if (r.key.endsWith(":cli"))    val = cliCount;                
           else if (r.key.endsWith(":ticket")) val = o.cant ? o.total/o.cant : 0;
           else if (r.key.endsWith(":pct")) { const base = Number(m.metrics?.totalServ || 0); val = base>0 ? (o.total/base)*100 : 0; isPct = true; }
 
@@ -367,6 +398,8 @@ const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
       </tr>
     ));
 
+  // ... (Resto del código: getCuotaForMonth, estilos de footer, etc.) ...
+  // (El return final tampoco cambia)
   const getCuotaForMonth = () => 50000;
   const rowBlackStyle = { background:"#000", color:"#fff", fontWeight:700, fontSize:25 };
   const rowRedFooterStyle = { background:redStrong, color:"#000", fontWeight:700, fontSize:25 };
