@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Col, Row, Modal, Button, Form, Badge } from 'react-bootstrap'; // <-- Badge agregado
 import { normalizarVentasExcel } from './desestructurarData';
 import { Dialog } from 'primereact/dialog';
+import * as XLSX from 'xlsx';
 
 dayjs.extend(isoWeek);
 
@@ -409,6 +410,44 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
 
     return Array.from(map.values());
   };
+const handleExportServiciosExcel = () => {
+  const rows = normalizarVentasExcel(ventasRangoServicios);
+
+  if (!rows || rows.length === 0) {
+    alert('No hay datos para exportar');
+    return;
+  }
+
+  const dataForExcel = rows.map((row, index) => ({
+    N: index + 1,
+    FECHA: dayjs(row.fecha).format('DD/MM/YYYY'),
+    COM: row.com,
+    '#COMP': row.comp,
+    'T-CLIENTE': row.t_cliente,
+    CLIENTE: row.cliente,
+    'TOTAL COMP': row.total_comp,
+    CLASE: row.clase,
+    'PRODUCTO / SERVICIO': row.producto_servicio,
+    EMPLEADO: row.empleado,
+    CANT: row.cant,
+    'SUB TOTAL': row.sub_total,
+    DESC: row.desc,
+    TOTAL: row.total,
+    'Efc - S/': row.efec_s,
+    'Tipo Op. Elect': row.tipo_op,
+    '#Oper': row.n_oper,
+    'Op. Elect - S/': row.op_elect_s,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(dataForExcel);
+
+  // 2) Crear libro
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Servicios');
+
+  // 3) Descargar archivo
+  XLSX.writeFile(wb, `reporte_servicios_${dayjs().format('YYYYMMDD_HHmm')}.xlsx`);
+};
 
   return (
     <>
@@ -875,7 +914,11 @@ const [ventasRangoServicios, setVentasRangoServicios] = useState([]);
                 </strong>
               </div>
             </div>
-
+             <div className="d-flex justify-content-end mb-3">
+      <Button variant="success" onClick={handleExportServiciosExcel} className="fw-bold">
+        Descargar Excel (Servicios)
+      </Button>
+    </div>
             {/* CHAT GPT, PONER LA TABLA AQUI, CON EL FILTRO NECESARIO */}
             <div className="table-responsive">
               <table className="table table-bordered table-sm">
