@@ -121,7 +121,7 @@ useEffect(() => {
       const uniques = new Set();
 
       for (const v of (ventasList || [])) {
-        const d = toDateSafe(v?.fecha_venta || v?.fecha || v?.createdAt);
+        const d = toDateSafe(v?.fecha_venta);
         if (!d) continue;
         if (d.getFullYear() !== Number(anio)) continue;
         if (d.getMonth() !== monthIdx) continue;

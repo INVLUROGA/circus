@@ -52,7 +52,7 @@ export function GraficoServicios({
     to = clamp(to, from, lastDayOfMonth);
 
     for (const v of ventas) {
-      const d = toLimaDate(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
+      const d = toLimaDate(v?.fecha_venta);
       if (!d) continue;
       if (d.getFullYear() !== lastMonth.y) continue;
       if (MESES[d.getMonth()] !== lastMonth.mName) continue;

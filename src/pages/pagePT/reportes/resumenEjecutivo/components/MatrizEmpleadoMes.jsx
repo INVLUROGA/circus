@@ -41,10 +41,8 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay = null) {
       .replace("+00:00", "Z");
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return null;
-    // llevar a hora Lima
     return new Date(d.getTime() - 5 * 60 * 60000);
   };
-
   const inRange = (iso) => {
     const d = parseIsoLima(iso);
     return d &&
@@ -53,14 +51,10 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay = null) {
       d.getDate() >= from &&
       d.getDate() <= to;
   };
-
   return ventas.filter((v) => {
-    return inRange(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
-
+    return inRange(v?.fecha_venta );
   });
 }
-
-
 function rankingPorEmpleado(
   ventas = [],
   { datoEstadistico = 'totalVentas', sortDir = 'desc', includeZero = false, normalizarNombre = true } = {}
@@ -86,11 +80,9 @@ function rankingPorEmpleado(
     }
     return accMap.get(empleado);
   };
-
   for (let i = 0; i < ventas.length; i++) {
     const v = ventas[i];
     const idVenta = v?.id ?? v?.numero_transac ?? `venta_${i}`;
-
     const productos = Array.isArray(v?.detalle_ventaProductos)
       ? v.detalle_ventaProductos
       : Array.isArray(v?.detalle_ventaproductos)
@@ -107,7 +99,6 @@ function rankingPorEmpleado(
       acc.cantidadProductos += cantidad;
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
     }
-
     const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
     for (const it of servicios) {
       const acc = getAcc(it?.empleado_servicio?.nombres_apellidos_empl);
@@ -120,14 +111,12 @@ function rankingPorEmpleado(
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
     }
   }
-
   const out = [];
   for (const [empleado, acc] of accMap.entries()) {
     acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
     acc.cantidadVentas = ventasPorEmpleado.get(empleado)?.size ?? 0;
     if (includeZero || acc.totalVentas > 0 || acc.cantidadVentas > 0) out.push(acc);
   }
-
   out.sort((a, b) => {
     const va = Number(a?.[datoEstadistico]) || 0;
     const vb = Number(b?.[datoEstadistico]) || 0;
@@ -146,8 +135,6 @@ export const MatrizEmpleadoMes = ({
 const [rateRenta, setRateRenta] = useState(0.03);
 const [rateTarjeta, setRateTarjeta] = useState(0.045);
 const RATE_COMISION = 0.10;
-
-
   const [q, setQ] = useState('');
   const normq = (s='') => s.normalize('NFKC').toLowerCase().trim().replace(/\s+/g, ' ');
   const matchIncludes = (haystack, needle) => normq(haystack).includes(normq(needle));
@@ -168,7 +155,6 @@ const METRIC_ALIASES = {
   "CANTIDAD DE VENTAS": "Cant. Ventas",
   "CANT VENTA": "Cant. Ventas",
 };
-
   const METRIC_MAP = {
     'Total Ventas': 'totalVentas',
     'Cant. Ventas': 'cantidadVentas',
@@ -182,18 +168,15 @@ const METRIC_ALIASES = {
  const metricKey = METRIC_MAP[canonicalMetric] ?? 'totalVentas';
   const isMoney = ['totalVentas','ventasProductos','ventasServicios'].includes(metricKey);
   const meses = Array.isArray(filtrarFecha) ? filtrarFecha : [filtrarFecha].filter(Boolean);
-
-
   const onRowTotalClick = (emp) => {
   if (!emp) return;
   const objetivo = normalizeName(emp);
   setEmpleadoObjetivo(objetivo);
 
-  // Trae todas las ventas de los meses visibles donde participe el colaborador
   const filas = meses.flatMap((_, colIndex) => getVentasDeCelda(emp, colIndex));
   setModalRows(filas);
 
-let totalCostoServicios = 0;
+  let totalCostoServicios = 0;
   let totalCompra = 0;
   const ventaBrutaServicios = filas.reduce((acc, v) => {
     const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
@@ -227,7 +210,6 @@ let totalCostoServicios = 0;
   resumen.netoFinal = round2(resumen.neto - totalCompra);
   setModalResumen(resumen);
 setModalCostoServicios(totalCostoServicios);
-  // Título bonito con rango de meses + nombre
   const primerMes = meses?.[0];
   const ultimoMes = meses?.[meses.length - 1];
   const nombre = (emp?.split?.(' ')?.[0] ?? emp) ?? '';

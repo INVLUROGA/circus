@@ -93,7 +93,7 @@ export default function ExecutiveTable({
     const from = clamp(Number(initialDay || 1), 1, 31);
 
     for (const v of ventas) {
-      const d = toLimaDate(v?.fecha_venta || v?.fecha || v?.createdAt);
+      const d = toLimaDate(v?.fecha_venta);
       if (!d) continue;
       if (d.getFullYear() !== Number(anio)) continue;
       if (d.getMonth() !== monthIdx) continue;

@@ -1,10 +1,18 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 import { Dialog } from "primereact/dialog";
 import { Button } from "primereact/button";
 import { NumberFormatMoney } from "@/components/CurrencyMask";
 import { InputNumber } from "primereact/inputnumber";
-const round2 = (x) =>
-  Math.round((Number(x) + Number.EPSILON) * 100) / 100;
+
+import {
+  round2,
+  pctLabel,
+  buildResumenServicios,
+  buildServicioTotals,
+  calcProducto,
+  buildTotalesProductos,
+} from "../../adapters/detalleVentasLogic";
+
 export const DetalleVentasDialog = ({
   open,
   title,
@@ -21,7 +29,7 @@ export const DetalleVentasDialog = ({
   thStyle,
   tdStyle,
   tdTotales,
-  // tasas (por si quieres moverlas aquí o hacerlas editables)
+  // tasas
   rateIgv = 0.18,
   rateRenta = 0.03,
   rateTarjeta = 0.045,
@@ -31,12 +39,40 @@ export const DetalleVentasDialog = ({
   setRateRenta,
   setRateTarjeta,
 }) => {
-    const [activeRateEditor, setActiveRateEditor] = useState(null); 
-const [rateComisionEstilista, setRateComisionEstilista] = React.useState(
-inicialRateComisionEstilista);
-const safeSetRateIgv = setRateIgv || (() => {});
-const safeSetRateRenta = setRateRenta || (() => {});
- const safeSetRateTarjeta = setRateTarjeta || (() => {});
+  const [activeRateEditor, setActiveRateEditor] = useState(null);
+  const [rateComisionEstilista, setRateComisionEstilista] = useState(
+    inicialRateComisionEstilista
+  );
+
+  const safeSetRateIgv = setRateIgv || (() => {});
+  const safeSetRateRenta = setRateRenta || (() => {});
+  const safeSetRateTarjeta = setRateTarjeta || (() => {});
+
+  const productosAgrupados = modalData?.productosAgrupados || [];
+
+  // datos para VENTAS POR SERVICIOS
+  const resumenServicios =
+    modalResumen &&
+    buildResumenServicios({
+      modalResumen,
+      totalCostoServicios,
+      rateIgv,
+      rateRenta,
+      rateTarjeta,
+      rateComisionEstilista,
+    });
+
+  // totales DETALLE SERVICIOS
+  const servicioTotals = buildServicioTotals(modalData || {});
+
+  // totales PRODUCTOS VENDIDOS
+  const totalesProductos = buildTotalesProductos(productosAgrupados, {
+    rateIgv,
+    rateTarjeta,
+    rateRenta,
+    rateComision,
+  });
+
   return (
     <Dialog
       header={
@@ -66,11 +102,11 @@ const safeSetRateRenta = setRateRenta || (() => {});
         </div>
       }
     >
-      {(!modalRows || modalRows.length === 0) ? (
+      {!modalRows || modalRows.length === 0 ? (
         <div className="py-2">Sin ventas para esta celda.</div>
       ) : (
         <>
-          {/* === Título === */}
+          {/* === TÍTULO === */}
           <div
             className="bg-primary fs-2 fw-bold text-center py-2"
             style={{
@@ -86,7 +122,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
             DETALLE DE PRODUCTOS Y SERVICIOS
           </div>
 
-          {/* === Tarjetas resumen === */}
+          {/* === TARJETAS RESUMEN === */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div
               style={{
@@ -145,7 +181,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
             </div>
           </div>
 
-          {/* === Resumen por método de pago === */}
+          {/* === RESUMEN POR MÉTODO DE PAGO === */}
           <div
             style={{
               display: "grid",
@@ -176,445 +212,267 @@ const safeSetRateRenta = setRateRenta || (() => {});
                     {label.toUpperCase()}
                   </div>
                   <div style={{ fontWeight: 800, fontSize: 25 }}>
-                    <NumberFormatMoney
-                      amount={modalData.totalPorMetodo[key] || 0}
-                    />
+                    <NumberFormatMoney amount={modalData.totalPorMetodo[key] || 0} />
                   </div>
                 </div>
               ))}
           </div>
-{modalResumen && (
-  <div style={{ marginTop: 80 }}>
-    <div
-      style={{
-        fontWeight: 700,
-        marginBottom: 8,
-        textAlign: "center",
-        fontSize: 30,
-      }}
-    >
-      VENTAS POR SERVICIOS
-    </div>
 
-    {(() => {
-      const bruto = Number(modalResumen.bruto || 0);
-      const costoTotal = Number(totalCostoServicios || 0);
-      const baseImponible=round2(bruto/1.18)
-      const igvMonto = round2(bruto -baseImponible);
-      const tarjetaMonto = round2(bruto * rateTarjeta);
-      const rentaMonto = round2(baseImponible * rateRenta);
-      const netoParaComision = round2( bruto - igvMonto - tarjetaMonto - rentaMonto);
-      
-      const netoAntesComision=round2(bruto-igvMonto-tarjetaMonto-rentaMonto-costoTotal);
-      const comisionEstilistaMonto = round2(netoParaComision * rateComisionEstilista);
-
-      const ingresoNeto = round2(netoAntesComision - comisionEstilistaMonto);
-      const pctLabel = (v) => `${(v * 100).toFixed(2)}%`;
-       return (
-
-        <table
-
-          style={{
-
-            ...baseTableStyle,
-
-            margin: "24px auto 12px",
-
-            fontSize: 22,
-
-          }}
-
-        >
-
-          <thead>
-
-            <tr style={{ fontSize: 22 }}>
-
-              {/* VENTA BRUTA */}
-
-              <th className="bg-primary" style={thStyle}>
-
-                VENTA
-
-                <br />
-
-                BRUTA
-
-              </th>
-
-
-
-              {/* IGV */}
-
-              <th className="bg-primary" style={thStyle}>
-
-                IGV{" "}
-
-                <br />
-
-                <span
-
-                  style={{
-
-                    cursor: "pointer",
-
-                    textDecoration: "underline dotted",
-
-                  }}
-
-                  onClick={(e) => {
-
-                    e.stopPropagation();
-
-                    setActiveRateEditor(
-
-                      activeRateEditor === "igv" ? null : "igv"
-
-                    );
-
-                  }}
-
-                >
-
-                  (-{pctLabel(rateIgv)})
-
-                </span>
-
-                {activeRateEditor === "igv" && (
-
-                  <div style={{ marginTop: 4 }}>
-
-                    <InputNumber
-
-                      value={rateIgv * 100}
-
-                      onValueChange={(e) =>
-
-                        safeSetRateIgv((e.value || 0) / 100)
-
-                      }
-
-                      mode="decimal"
-
-                      minFractionDigits={0}
-
-                      maxFractionDigits={2}
-
-                      suffix="%"
-
-                      inputStyle={{
-
-                        textAlign: "center",
-
-                        fontWeight: "bold",
-
-                        fontSize: 12,
-
-                      }}
-
-                      style={{ width: 70 }}
-
-                      onBlur={() => setActiveRateEditor(null)}
-
-                    />
-
-                  </div>
-
-                )}
-
-              </th>
-           {/* TARJETA */}
-          
-              {/* RENTA */}
-              <th className="bg-primary" style={thStyle}>
-                RENTA
-                <br />
-                <span
-                  style={{
-                    cursor: "pointer",
-
-                    textDecoration: "underline dotted",
-
-                  }}
-
-                  onClick={(e) => {
-
-                    e.stopPropagation();
-
-                    setActiveRateEditor(
-
-                      activeRateEditor === "renta" ? null : "renta"
-
-                    );
-
-                  }}
-
-                >
-
-                  (-{pctLabel(rateRenta)})
-
-                </span>
-
-                {activeRateEditor === "renta" && (
-
-                  <div style={{ marginTop: 4 }}>
-
-                    <InputNumber
-
-                      value={rateRenta * 100}
-
-                      onValueChange={(e) =>
-
-                        safeSetRateRenta((e.value || 0) / 100)
-
-                      }
-
-                      mode="decimal"
-
-                      minFractionDigits={0}
-
-                      maxFractionDigits={2}
-
-                      suffix="%"
-
-                      inputStyle={{
-
-                        textAlign: "center",
-
-                        fontWeight: "bold",
-
-                        fontSize: 12,
-
-                      }}
-
-                      style={{ width: 70 }}
-
-                      onBlur={() => setActiveRateEditor(null)}
-
-                    />
-
-                  </div>
-
-                )}
-
-              </th>
-
-    <th className="bg-primary" style={thStyle}>
-                TARJETA
-                <br />
-                <span
-                  style={{
-                    cursor: "pointer",
-                    textDecoration: "underline dotted",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveRateEditor(
-                      activeRateEditor === "tarjeta" ? null : "tarjeta"
-                    );
-                  }}
-                >
-                  (-{pctLabel(rateTarjeta)})
-                </span>
-                {activeRateEditor === "tarjeta" && (
-                  <div style={{ marginTop: 4 }}>
-                    <InputNumber
-                      value={rateTarjeta * 100}
-                      onValueChange={(e) =>
-                        safeSetRateTarjeta((e.value || 0) / 100)
-                      }
-                      mode="decimal"
-                      minFractionDigits={0}
-                      maxFractionDigits={2}
-                      suffix="%"
-                      inputStyle={{
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        fontSize: 12,
-                      }}
-                      style={{ width: 70 }}
-                      onBlur={() => setActiveRateEditor(null)}
-                    />
-                  </div>
-                )}
-              </th>
-
-              {/* === NUEVA COLUMNA: COSTO === */}
-
-              <th className="bg-primary" style={thStyle}>
-
-                COSTO
-
-                <br />
-
-                SERVICIOS
-
-              </th>
-
-
-
-              {/* COMISIÓN ESTILISTA */}
-
-              <th className="bg-primary" style={thStyle}>
-
-                COMISIÓN
-
-                <br />
-
-                ESTILISTA
-
-                <br />
-
-                <span
-
-                  style={{
-
-                    cursor: "pointer",
-
-                    textDecoration: "underline dotted",
-
-                  }}
-
-                  onClick={(e) => {
-
-                    e.stopPropagation();
-
-                    setActiveRateEditor(
-
-                      activeRateEditor === "comision"
-
-                        ? null
-
-                        : "comision"
-
-                    );
-
-                  }}
-
-                >
-
-                  (-{pctLabel(rateComisionEstilista)})
-
-                </span>
-
-                {activeRateEditor === "comision" && (
-
-                  <div style={{ marginTop: 4 }}>
-
-                    <InputNumber
-
-                      value={rateComisionEstilista * 100}
-
-                      onValueChange={(e) =>
-
-                        setRateComisionEstilista(
-
-                          (e.value || 0) / 100
-
-                        )
-
-                      }
-
-                      mode="decimal"
-
-                      minFractionDigits={0}
-
-                      maxFractionDigits={2}
-
-                      suffix="%"
-
-                      inputStyle={{
-
-                        textAlign: "center",
-
-                        fontWeight: "bold",
-
-                        fontSize: 12,
-
-                      }}
-
-                      style={{ width: 70 }}
-
-                      onBlur={() => setActiveRateEditor(null)}
-
-                    />
-
-                  </div>
-
-                )}
-
-              </th>
-
-
-
-              {/* INGRESO NETO (última col) */}
-
-              <th className="bg-primary" style={thStyle}>
-
-                INGRESO
-
-                <br />
-
-                NETO
-
-              </th>
-
-            </tr>
-
-          </thead>
-
-
-
-          <tbody>
-
-            <tr>
-
-              <td style={tdTotales}>
-
-                <NumberFormatMoney amount={bruto} />
-
-              </td>
-
-              <td style={{ ...tdTotales, color: "red" }}>
-
-                - <NumberFormatMoney amount={igvMonto} />
-
-              </td>
-
-             
-
-              <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={rentaMonto} />
-              </td>
-               <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={tarjetaMonto} />
-              </td>
-              {/* === NUEVA CELDA: COSTO === */}
-              <td style={{ ...tdTotales, color: "red" }}>
-                - <NumberFormatMoney amount={costoTotal} />
-              </td>
-              <td style={{ ...tdTotales, color: "red" }}>
-                -{" "}
-                <NumberFormatMoney
-                  amount={comisionEstilistaMonto}
-                />
-              </td>
-              <td
+          {/* === VENTAS POR SERVICIOS (tabla resumen) === */}
+          {modalResumen && resumenServicios && (
+            <div style={{ marginTop: 80 }}>
+              <div
                 style={{
-                  ...tdTotales,
                   fontWeight: 700,
-                  color: "#007b00",
+                  marginBottom: 8,
+                  textAlign: "center",
+                  fontSize: 30,
                 }}
               >
-                <NumberFormatMoney amount={ingresoNeto} />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      );
-    })()}
-  </div>
-)}
+                VENTAS POR SERVICIOS
+              </div>
+
+              <table
+                style={{
+                  ...baseTableStyle,
+                  margin: "24px auto 12px",
+                  fontSize: 22,
+                }}
+              >
+                <thead>
+                  <tr style={{ fontSize: 22 }}>
+                    {/* VENTA BRUTA */}
+                    <th className="bg-primary" style={thStyle}>
+                      VENTA
+                      <br />
+                      BRUTA
+                    </th>
+
+                    {/* IGV */}
+                    <th className="bg-primary" style={thStyle}>
+                      IGV
+                      <br />
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          textDecoration: "underline dotted",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveRateEditor(
+                            activeRateEditor === "igv" ? null : "igv"
+                          );
+                        }}
+                      >
+                        (-{pctLabel(rateIgv)})
+                      </span>
+                      {activeRateEditor === "igv" && (
+                        <div style={{ marginTop: 4 }}>
+                          <InputNumber
+                            value={rateIgv * 100}
+                            onValueChange={(e) =>
+                              safeSetRateIgv((e.value || 0) / 100)
+                            }
+                            mode="decimal"
+                            minFractionDigits={0}
+                            maxFractionDigits={2}
+                            suffix="%"
+                            inputStyle={{
+                              textAlign: "center",
+                              fontWeight: "bold",
+                              fontSize: 12,
+                            }}
+                            style={{ width: 70 }}
+                            onBlur={() => setActiveRateEditor(null)}
+                          />
+                        </div>
+                      )}
+                    </th>
+
+                    {/* RENTA */}
+                    <th className="bg-primary" style={thStyle}>
+                      RENTA
+                      <br />
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          textDecoration: "underline dotted",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveRateEditor(
+                            activeRateEditor === "renta" ? null : "renta"
+                          );
+                        }}
+                      >
+                        (-{pctLabel(rateRenta)})
+                      </span>
+                      {activeRateEditor === "renta" && (
+                        <div style={{ marginTop: 4 }}>
+                          <InputNumber
+                            value={rateRenta * 100}
+                            onValueChange={(e) =>
+                              safeSetRateRenta((e.value || 0) / 100)
+                            }
+                            mode="decimal"
+                            minFractionDigits={0}
+                            maxFractionDigits={2}
+                            suffix="%"
+                            inputStyle={{
+                              textAlign: "center",
+                              fontWeight: "bold",
+                              fontSize: 12,
+                            }}
+                            style={{ width: 70 }}
+                            onBlur={() => setActiveRateEditor(null)}
+                          />
+                        </div>
+                      )}
+                    </th>
+
+                    {/* TARJETA */}
+                    <th className="bg-primary" style={thStyle}>
+                      TARJETA
+                      <br />
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          textDecoration: "underline dotted",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveRateEditor(
+                            activeRateEditor === "tarjeta" ? null : "tarjeta"
+                          );
+                        }}
+                      >
+                        (-{pctLabel(rateTarjeta)})
+                      </span>
+                      {activeRateEditor === "tarjeta" && (
+                        <div style={{ marginTop: 4 }}>
+                          <InputNumber
+                            value={rateTarjeta * 100}
+                            onValueChange={(e) =>
+                              safeSetRateTarjeta((e.value || 0) / 100)
+                            }
+                            mode="decimal"
+                            minFractionDigits={0}
+                            maxFractionDigits={2}
+                            suffix="%"
+                            inputStyle={{
+                              textAlign: "center",
+                              fontWeight: "bold",
+                              fontSize: 12,
+                            }}
+                            style={{ width: 70 }}
+                            onBlur={() => setActiveRateEditor(null)}
+                          />
+                        </div>
+                      )}
+                    </th>
+
+                    {/* COSTO SERVICIOS */}
+                    <th className="bg-primary" style={thStyle}>
+                      COSTO
+                      <br />
+                      SERVICIOS
+                    </th>
+
+                    {/* COMISIÓN ESTILISTA */}
+                    <th className="bg-primary" style={thStyle}>
+                      COMISIÓN
+                      <br />
+                      ESTILISTA
+                      <br />
+                      <span
+                        style={{
+                          cursor: "pointer",
+                          textDecoration: "underline dotted",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveRateEditor(
+                            activeRateEditor === "comision" ? null : "comision"
+                          );
+                        }}
+                      >
+                        (-{pctLabel(rateComisionEstilista)})
+                      </span>
+                      {activeRateEditor === "comision" && (
+                        <div style={{ marginTop: 4 }}>
+                          <InputNumber
+                            value={rateComisionEstilista * 100}
+                            onValueChange={(e) =>
+                              setRateComisionEstilista((e.value || 0) / 100)
+                            }
+                            mode="decimal"
+                            minFractionDigits={0}
+                            maxFractionDigits={2}
+                            suffix="%"
+                            inputStyle={{
+                              textAlign: "center",
+                              fontWeight: "bold",
+                              fontSize: 12,
+                            }}
+                            style={{ width: 70 }}
+                            onBlur={() => setActiveRateEditor(null)}
+                          />
+                        </div>
+                      )}
+                    </th>
+
+                    {/* INGRESO NETO */}
+                    <th className="bg-primary" style={thStyle}>
+                      INGRESO
+                      <br />
+                      NETO
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={tdTotales}>
+                      <NumberFormatMoney amount={resumenServicios.bruto} />
+                    </td>
+                    <td style={{ ...tdTotales, color: "red" }}>
+                      -{" "}
+                      <NumberFormatMoney amount={resumenServicios.igvMonto} />
+                    </td>
+                    <td style={{ ...tdTotales, color: "red" }}>
+                      -{" "}
+                      <NumberFormatMoney amount={resumenServicios.rentaMonto} />
+                    </td>
+                    <td style={{ ...tdTotales, color: "red" }}>
+                      -{" "}
+                      <NumberFormatMoney amount={resumenServicios.tarjetaMonto} />
+                    </td>
+                    <td style={{ ...tdTotales, color: "red" }}>
+                      -{" "}
+                      <NumberFormatMoney amount={resumenServicios.costoTotal} />
+                    </td>
+                    <td style={{ ...tdTotales, color: "red" }}>
+                      -{" "}
+                      <NumberFormatMoney
+                        amount={resumenServicios.comisionEstilistaMonto}
+                      />
+                    </td>
+                    <td
+                      style={{
+                        ...tdTotales,
+                        fontWeight: 700,
+                        color: "#007b00",
+                      }}
+                    >
+                      <NumberFormatMoney
+                        amount={resumenServicios.ingresoNeto}
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {/* === DETALLE DE SERVICIOS === */}
           <div
             style={{
@@ -695,6 +553,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                     const totalLinea =
                       (Number(s.pVenta) || 0) *
                       (Number(s.cantidad) || 0);
+
                     const vals = Object.fromEntries(
                       modalData.methodsToShow.map((m) => [
                         m,
@@ -712,11 +571,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                     return (
                       <tr
                         key={i}
-                        style={
-                          i % 2
-                            ? { background: "#fcfcfc" }
-                            : null
-                        }
+                        style={i % 2 ? { background: "#fcfcfc" } : null}
                       >
                         <td
                           className="bg-primary"
@@ -750,9 +605,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                           }}
                         >
                           {s.pVenta ? (
-                            <NumberFormatMoney
-                              amount={s.pVenta}
-                            />
+                            <NumberFormatMoney amount={s.pVenta} />
                           ) : (
                             "—"
                           )}
@@ -763,24 +616,17 @@ const safeSetRateRenta = setRateRenta || (() => {});
                             fontWeight: 600,
                           }}
                         >
-                          <NumberFormatMoney
-                            amount={totalLinea}
-                          />
+                          <NumberFormatMoney amount={totalLinea} />
                         </td>
                         {modalData.methodsToShow.map((m, idx) => {
                           let val = vals[m] || 0;
-                          if (
-                            idx === 0 &&
-                            Math.abs(delta) >= 0.01
-                          ) {
+                          if (idx === 0 && Math.abs(delta) >= 0.01) {
                             val = round2(val + delta);
                             delta = 0;
                           }
                           return (
                             <td key={m} style={tdStyle}>
-                              <NumberFormatMoney
-                                amount={val || 0}
-                              />
+                              <NumberFormatMoney amount={val || 0} />
                             </td>
                           );
                         })}
@@ -809,9 +655,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                         }}
                       >
                         {modalData.serviciosOrdenados.reduce(
-                          (a, b) =>
-                            a +
-                            (Number(b.cantidad) || 0),
+                          (a, b) => a + (Number(b.cantidad) || 0),
                           0
                         )}
                       </td>
@@ -822,80 +666,23 @@ const safeSetRateRenta = setRateRenta || (() => {});
                         }}
                       />
                       {(() => {
-                        const totalPVentaServs = round2(
-                          modalData.serviciosOrdenados.reduce(
-                            (acc, s) =>
-                              acc +
-                              (Number(s.pVenta) || 0) *
-                                (Number(s.cantidad) ||
-                                  0),
-                            0
-                          )
-                        );
-                        const totalsByMethod =
-                          modalData.methodsToShow.reduce(
-                            (acc, m) => {
-                              acc[m] = round2(
-                                modalData.serviciosOrdenados.reduce(
-                                  (sum, s) =>
-                                    sum +
-                                    (Number(s[m]) ||
-                                      0),
-                                  0
-                                )
-                              );
-                              return acc;
-                            },
-                            {}
-                          );
-                        let sumMethods = round2(
-                          modalData.methodsToShow.reduce(
-                            (a, m) =>
-                              a +
-                              (totalsByMethod[m] ||
-                                0),
-                            0
-                          )
-                        );
-                        let delta = round2(
-                          totalPVentaServs -
-                            sumMethods
-                        );
-                        if (
-                          Math.abs(delta) >=
-                            0.01 &&
-                          modalData.methodsToShow[0]
-                        ) {
-                          const first =
-                            modalData
-                              .methodsToShow[0];
-                          totalsByMethod[first] =
-                            round2(
-                              (totalsByMethod[first] ||
-                                0) + delta
-                            );
-                        }
+                        const { totalPVentaServs, totalsByMethod } =
+                          servicioTotals;
+
                         return (
                           <>
-                            {modalData.methodsToShow.map(
-                              (m) => (
-                                <td
-                                  key={m}
-                                  style={{
-                                    ...tdTotales,
-                                    fontWeight: 800,
-                                    WebkitTextFillColor:
-                                      "white",
-                                  }}
-                                >
-                                  <NumberFormatMoney
-                                    amount={
-                                      totalsByMethod[m]
-                                    }
-                                  />
-                                </td>
-                              )
-                            )}
+                            {modalData.methodsToShow.map((m) => (
+                              <td
+                                key={m}
+                                style={{
+                                  ...tdTotales,
+                                  fontWeight: 800,
+                                  WebkitTextFillColor: "white",
+                                }}
+                              >
+                                <NumberFormatMoney amount={totalsByMethod[m]} />
+                              </td>
+                            ))}
                             <td
                               style={{
                                 ...tdTotales,
@@ -903,11 +690,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                                 color: "white",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  totalPVentaServs
-                                }
-                              />
+                              <NumberFormatMoney amount={totalPVentaServs} />
                             </td>
                           </>
                         );
@@ -919,146 +702,120 @@ const safeSetRateRenta = setRateRenta || (() => {});
             </div>
           </div>
 
-          {/* === COMPARATIVA MENSUAL DEL COLABORADOR === */}
-          {empleadoObjetivo &&
-            serieEmpleadoMes.length > 0 && (
-              <div style={{ marginTop: 28 }}>
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 24,
-                    textAlign: "center",
-                    marginBottom: 10,
-                    letterSpacing: 0.3,
-                  }}
-                >
-                  RESUMEN POR MES –{" "}
-                  {empleadoObjetivo.toUpperCase()}
-                </div>
+          {/* === COMPARATIVA MENSUAL COLABORADOR === */}
+          {empleadoObjetivo && serieEmpleadoMes.length > 0 && (
+            <div style={{ marginTop: 28 }}>
+              <div
+                style={{
+                  fontWeight: 800,
+                  fontSize: 24,
+                  textAlign: "center",
+                  marginBottom: 10,
+                  letterSpacing: 0.3,
+                }}
+              >
+                RESUMEN POR MES – {empleadoObjetivo.toUpperCase()}
+              </div>
 
-                <table
-                  style={{
-                    ...baseTableStyle,
-                    width: "100%",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <thead>
-                    <tr>
+              <table
+                style={{
+                  ...baseTableStyle,
+                  width: "100%",
+                  tableLayout: "fixed",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th className="bg-primary" style={thStyle}>
+                      Concepto
+                    </th>
+                    {serieEmpleadoMes.map((pt) => (
                       <th
+                        key={pt.label}
                         className="bg-primary"
                         style={thStyle}
                       >
-                        Concepto
+                        {pt.label}
                       </th>
-                      {serieEmpleadoMes.map((pt) => (
-                        <th
-                          key={pt.label}
-                          className="bg-primary"
-                          style={thStyle}
-                        >
-                          {pt.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td
+                      className="bg-primary"
+                      style={{
+                        ...tdStyle,
+                        fontWeight: 800,
+                      }}
+                    >
+                      TOTAL MES
+                    </td>
+                    {serieEmpleadoMes.map((pt, i) => (
                       <td
-                        className="bg-primary"
+                        key={`t-${i}`}
                         style={{
                           ...tdStyle,
-                          fontWeight: 800,
+                          fontSize: 22,
+                          fontWeight:
+                            i === serieEmpleadoMes.length - 1 ? 800 : 600,
                         }}
+                        title={`Total ${pt.label}`}
                       >
-                        TOTAL MES
+                        <NumberFormatMoney amount={pt.total} />
                       </td>
-                      {serieEmpleadoMes.map(
-                        (pt, i) => (
+                    ))}
+                  </tr>
+
+                  <tr>
+                    <td
+                      className="bg-primary"
+                      style={{
+                        ...tdStyle,
+                        fontWeight: 800,
+                      }}
+                    >
+                      VS MES SIGUIENTE
+                    </td>
+                    {deltasEmpleadoMes.map((delta, i) => {
+                      const pt = serieEmpleadoMes[i];
+                      if (delta == null) {
+                        return (
                           <td
-                            key={`t-${i}`}
+                            key={`d-${i}`}
                             style={{
                               ...tdStyle,
                               fontSize: 22,
-                              fontWeight:
-                                i ===
-                                serieEmpleadoMes.length -
-                                  1
-                                  ? 800
-                                  : 600,
+                              fontWeight: 800,
                             }}
                             title={`Total ${pt.label}`}
                           >
-                            <NumberFormatMoney
-                              amount={pt.total}
-                            />
+                            <NumberFormatMoney amount={pt.total} />
                           </td>
-                        )
-                      )}
-                    </tr>
-
-                    <tr>
-                      <td
-                        className="bg-primary"
-                        style={{
-                          ...tdStyle,
-                          fontWeight: 800,
-                        }}
-                      >
-                        VS MES SIGUIENTE
-                      </td>
-                      {deltasEmpleadoMes.map(
-                        (delta, i) => {
-                          const pt =
-                            serieEmpleadoMes[i];
-                          if (delta == null) {
-                            return (
-                              <td
-                                key={`d-${i}`}
-                                style={{
-                                  ...tdStyle,
-                                  fontSize: 22,
-                                  fontWeight: 800,
-                                }}
-                                title={`Total ${pt.label}`}
-                              >
-                                <NumberFormatMoney
-                                  amount={
-                                    pt.total
-                                  }
-                                />
-                              </td>
-                            );
-                          }
-                          const color =
-                            delta > 0
-                              ? "#007b00"
-                              : delta < 0
-                              ? "red"
-                              : "#000";
-                          return (
-                            <td
-                              key={`d-${i}`}
-                              style={{
-                                ...tdStyle,
-                                fontSize: 22,
-                                color,
-                                fontWeight: 700,
-                              }}
-                              title={`${serieEmpleadoMes[i + 1].label} – ${pt.label}`}
-                            >
-                              <NumberFormatMoney
-                                amount={delta}
-                              />
-                            </td>
-                          );
-                        }
-                      )}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        );
+                      }
+                      const color =
+                        delta > 0 ? "#007b00" : delta < 0 ? "red" : "#000";
+                      return (
+                        <td
+                          key={`d-${i}`}
+                          style={{
+                            ...tdStyle,
+                            fontSize: 22,
+                            color,
+                            fontWeight: 700,
+                          }}
+                          title={`${serieEmpleadoMes[i + 1].label} – ${pt.label}`}
+                        >
+                          <NumberFormatMoney amount={delta} />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* === PRODUCTOS VENDIDOS === */}
           <div
@@ -1101,92 +858,56 @@ const safeSetRateRenta = setRateRenta || (() => {});
                   >
                     Item
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Producto
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Cantidad
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Precio
                     <br />
                     Unitario
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Precio
                     <br />
                     Venta
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     IGV
                     <br />
                     (-{(rateIgv * 100).toFixed(2)}%)
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Tarjeta
                     <br />
                     (-{(rateTarjeta * 100).toFixed(2)}%)
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Renta
                     <br />
                     (-{(rateRenta * 100).toFixed(2)}%)
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Costo
                     <br />
                     Compra
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Utilidad
                     <br />
                     Bruta
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Comisión
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Utilidad
                     <br />
                     Neta
                   </th>
-                  <th
-                    className="bg-primary"
-                    style={thStyle}
-                  >
+                  <th className="bg-primary" style={thStyle}>
                     Utilidad
                     <br />
                     por producto
@@ -1194,77 +915,37 @@ const safeSetRateRenta = setRateRenta || (() => {});
                 </tr>
               </thead>
               <tbody>
-                {modalData.productosAgrupados.length ===
-                0 ? (
+                {productosAgrupados.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={13}
-                      style={tdStyle}
-                    >
+                    <td colSpan={13} style={tdStyle}>
                       No se vendieron productos.
                     </td>
                   </tr>
                 ) : (
                   <>
-                    {modalData.productosAgrupados
+                    {productosAgrupados
                       .slice()
                       .sort((a, b) => {
-                        const cantDiff =
-                          (b.cantidad || 0) -
-                          (a.cantidad || 0);
-                        if (cantDiff !== 0)
-                          return cantDiff;
+                        const cantDiff = (b.cantidad || 0) - (a.cantidad || 0);
+                        if (cantDiff !== 0) return cantDiff;
                         return (
-                          (b.precioVentaU ||
-                            0) -
+                          (b.precioVentaU || 0) -
                           (a.precioVentaU || 0)
                         );
                       })
                       .map((p, i) => {
-                        const cantidad =
-                          p.cantidad || 0;
-                        const venta =
-                          (p.precioVentaU || 0) *
-                          cantidad;
-                        const compra =
-                          (p.precioCompraU || 0) *
-                          cantidad;
-                        const igv =
-                          venta * rateIgv;
-                        const tarjeta =
-                          venta *
-                          rateTarjeta;
-                        const renta =
-                          venta *
-                          rateRenta;
-                        const utilBase =
-                          venta -
-                          igv -
-                          tarjeta -
-                          renta -
-                          compra;
-                        const comision =
-                          utilBase *
-                          rateComision;
-                        const utilFinal =
-                          utilBase -
-                          comision;
-                        const utilPorProducto =
-                          cantidad > 0
-                            ? utilFinal /
-                              cantidad
-                            : 0;
+                        const calc = calcProducto(p, {
+                          rateIgv,
+                          rateTarjeta,
+                          rateRenta,
+                          rateComision,
+                        });
 
                         return (
                           <tr
                             key={i}
                             style={
-                              i % 2
-                                ? {
-                                    background:
-                                      "#fcfcfc",
-                                  }
-                                : null
+                              i % 2 ? { background: "#fcfcfc" } : null
                             }
                           >
                             <td
@@ -1272,12 +953,9 @@ const safeSetRateRenta = setRateRenta || (() => {});
                               style={{
                                 ...tdStyle,
                                 width: "60px",
-                                minWidth:
-                                  "60px",
-                                maxWidth:
-                                  "60px",
-                                textAlign:
-                                  "center",
+                                minWidth: "60px",
+                                maxWidth: "60px",
+                                textAlign: "center",
                               }}
                             >
                               {i + 1}
@@ -1286,23 +964,16 @@ const safeSetRateRenta = setRateRenta || (() => {});
                               className="bg-primary text-dark"
                               style={{
                                 ...tdStyle,
-                                textAlign:
-                                  "left",
+                                textAlign: "left",
                                 fontWeight: 700,
-                                whiteSpace:
-                                  "normal",
-                                wordWrap:
-                                  "break-word",
+                                whiteSpace: "normal",
+                                wordWrap: "break-word",
                                 maxWidth: 750,
                               }}
                             >
                               {p.nombre}
                             </td>
-                            <td
-                              style={tdStyle}
-                            >
-                              {cantidad}
-                            </td>
+                            <td style={tdStyle}>{calc.cantidad}</td>
                             <td
                               style={{
                                 ...tdStyle,
@@ -1310,133 +981,89 @@ const safeSetRateRenta = setRateRenta || (() => {});
                               }}
                             >
                               <NumberFormatMoney
-                                amount={
-                                  p.precioVentaU ||
-                                  0
-                                }
+                                amount={p.precioVentaU || 0}
                               />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
                                 fontWeight: 600,
-                                color:
-                                  "#007b00",
+                                color: "#007b00",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={venta}
-                              />
+                              <NumberFormatMoney amount={calc.venta} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
-                                color:
-                                  "red",
+                                color: "red",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={igv}
-                              />
+                              <NumberFormatMoney amount={calc.igv} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
-                                color:
-                                  "red",
+                                color: "red",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  tarjeta
-                                }
-                              />
+                              <NumberFormatMoney amount={calc.tarjeta} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
-                                color:
-                                  "red",
+                                color: "red",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  renta
-                                }
-                              />
+                              <NumberFormatMoney amount={calc.renta} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
-                                color:
-                                  "red",
+                                color: "red",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  compra
-                                }
-                              />
+                              <NumberFormatMoney amount={calc.compra} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
                                 fontWeight: 600,
-                                color:
-                                  "green",
+                                color: "green",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  utilBase
-                                }
-                              />
+                              <NumberFormatMoney amount={calc.utilBase} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
-                                color:
-                                  "red",
+                                color: "red",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  comision
-                                }
-                              />
+                              <NumberFormatMoney amount={calc.comision} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
                                 fontWeight: 700,
                                 color:
-                                  utilFinal >=
-                                  0
-                                    ? "#007b00"
-                                    : "red",
+                                  calc.utilFinal >= 0 ? "#007b00" : "red",
                               }}
                             >
-                              <NumberFormatMoney
-                                amount={
-                                  utilFinal
-                                }
-                              />
+                              <NumberFormatMoney amount={calc.utilFinal} />
                             </td>
                             <td
                               style={{
                                 ...tdStyle,
                                 fontWeight: 700,
                                 color:
-                                  utilPorProducto >=
-                                  0
+                                  calc.utilPorProducto >= 0
                                     ? "#007b00"
                                     : "red",
                               }}
                             >
                               <NumberFormatMoney
-                                amount={
-                                  utilPorProducto
-                                }
+                                amount={calc.utilPorProducto}
                               />
                             </td>
                           </tr>
@@ -1445,72 +1072,12 @@ const safeSetRateRenta = setRateRenta || (() => {});
 
                     {/* Totales productos */}
                     {(() => {
-                      let totalCantidad = 0;
-                      let totalVenta = 0;
-                      let totalIGV = 0;
-                      let totalTarjeta = 0;
-                      let totalRenta = 0;
-                      let totalCompra = 0;
-                      let totalUtilBase = 0;
-                      let totalComision = 0;
-                      let totalUtilFinal = 0;
-
-                      modalData.productosAgrupados.forEach(
-                        (p) => {
-                          const cant =
-                            p.cantidad ||
-                            0;
-                          const venta =
-                            (p.precioVentaU ||
-                              0) * cant;
-                          const compra =
-                            (p.precioCompraU ||
-                              0) * cant;
-                          const igv =
-                            venta *
-                            rateIgv;
-                          const tarjeta =
-                            venta *
-                            rateTarjeta;
-                          const renta =
-                            venta *
-                            rateRenta;
-                          const utilBase =
-                            venta -
-                            igv -
-                            tarjeta -
-                            renta -
-                            compra;
-                          const comision =
-                            utilBase *
-                            rateComision;
-                          const utilFinal =
-                            utilBase -
-                            comision;
-
-                          totalCantidad += cant;
-                          totalVenta += venta;
-                          totalIGV += igv;
-                          totalTarjeta += tarjeta;
-                          totalRenta += renta;
-                          totalCompra += compra;
-                          totalUtilBase += utilBase;
-                          totalComision += comision;
-                          totalUtilFinal += utilFinal;
-                        }
-                      );
-
-                      const utilPromedioProducto =
-                        totalCantidad > 0
-                          ? totalUtilFinal /
-                            totalCantidad
-                          : 0;
+                      const t = totalesProductos;
 
                       return (
                         <tr
                           style={{
-                            backgroundColor:
-                              "var(--primary-color)",
+                            backgroundColor: "var(--primary-color)",
                           }}
                         >
                           <td
@@ -1525,8 +1092,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
                             TOTALES
@@ -1536,88 +1102,61 @@ const safeSetRateRenta = setRateRenta || (() => {});
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
-                            {totalCantidad}
+                            {t.totalCantidad}
                           </td>
-                          <td
-                            className="bg-primary"
-                            style={{
-                              ...tdTotales,
-                            }}
-                          />
+                          <td className="bg-primary" style={{ ...tdTotales }} />
                           <td
                             className="bg-primary"
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={totalVenta}
-                            />
+                            <NumberFormatMoney amount={t.totalVenta} />
                           </td>
                           <td
                             className="bg-primary"
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={totalIGV}
-                            />
+                            <NumberFormatMoney amount={t.totalIGV} />
                           </td>
                           <td
                             className="bg-primary"
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={
-                                totalTarjeta
-                              }
-                            />
+                            <NumberFormatMoney amount={t.totalTarjeta} />
                           </td>
                           <td
                             className="bg-primary"
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={
-                                totalRenta
-                              }
-                            />
+                            <NumberFormatMoney amount={t.totalRenta} />
                           </td>
                           <td
                             className="bg-primary"
                             style={{
                               ...tdTotales,
                               fontWeight: 1000,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={
-                                totalCompra
-                              }
-                            />
+                            <NumberFormatMoney amount={t.totalCompra} />
                           </td>
                           <td
                             className="bg-primary"
@@ -1627,11 +1166,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                               color: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={
-                                totalUtilBase
-                              }
-                            />
+                            <NumberFormatMoney amount={t.totalUtilBase} />
                           </td>
                           <td
                             className="bg-primary"
@@ -1641,11 +1176,7 @@ const safeSetRateRenta = setRateRenta || (() => {});
                               color: "white",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={
-                                totalComision
-                              }
-                            />
+                            <NumberFormatMoney amount={t.totalComision} />
                           </td>
                           <td
                             className="bg-primary"
@@ -1653,31 +1184,21 @@ const safeSetRateRenta = setRateRenta || (() => {});
                               ...tdTotales,
                               fontWeight: 800,
                               color:
-                                totalUtilFinal >=
-                                0
-                                  ? "white"
-                                  : "red",
+                                t.totalUtilFinal >= 0 ? "white" : "red",
                             }}
                           >
-                            <NumberFormatMoney
-                              amount={
-                                totalUtilFinal
-                              }
-                            />
+                            <NumberFormatMoney amount={t.totalUtilFinal} />
                           </td>
                           <td
                             className="bg-primary"
                             style={{
                               ...tdTotales,
                               fontWeight: 800,
-                              WebkitTextFillColor:
-                                "white",
+                              WebkitTextFillColor: "white",
                             }}
                           >
                             <NumberFormatMoney
-                              amount={
-                                utilPromedioProducto
-                              }
+                              amount={t.utilPromedioProducto}
                             />
                           </td>
                         </tr>

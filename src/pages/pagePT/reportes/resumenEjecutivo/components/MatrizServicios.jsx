@@ -92,7 +92,6 @@ export default function MatrizServicios({
     return pc != null && pc > 0;
   };
 
-  // ====== Cálculo puro (depende de cutDay, initialDay, ventas, etc.) ======
   const { sinCostoData, conCostoData } = useMemo(() => {
     const mkBucket = () => ({ empSet: new Set(), srvSet: new Set(), matrix: new Map() });
     const noCosto  = mkBucket();
@@ -123,7 +122,7 @@ export default function MatrizServicios({
     };
 
     for (const v of ventas) {
-      const d = toLimaDate(v?.fecha_venta ?? v?.fecha ?? v?.createdAt);
+      const d = toLimaDate(v?.fecha_venta);
       if (!d) continue;
       if (d.getFullYear() !== lastMonth.y) continue;
       if (MESES[d.getMonth()] !== lastMonth.mName) continue;
@@ -246,7 +245,6 @@ export default function MatrizServicios({
   const getQty = (emp, srv) => data.matrix.get(emp)?.get(srv) || 0;
   const columnasEnChunks = chunk(data.services, Math.max(1, maxColsPorTabla));
 
-  // === NUEVO: filtrar empleados ===
   const employeesFiltered = q
     ? data.employees.filter((e) => normFilter(e).includes(normFilter(q)))
     : data.employees;
