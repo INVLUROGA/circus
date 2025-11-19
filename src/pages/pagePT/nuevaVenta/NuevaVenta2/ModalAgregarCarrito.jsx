@@ -5,7 +5,9 @@ import { useForm } from '@/hooks/useForm';
 import { onAddItemsCarrito } from '@/store';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
-import React, { useEffect, useMemo, useState } from 'react';
+// 1. Importar useRef y Toast
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { Toast } from 'primereact/toast';
 import { useDispatch } from 'react-redux';
 import Select from 'react-select';
 
@@ -23,6 +25,7 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
     obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosxEstilistas,
     DataVendedores: dataEstilistas
   } = useTerminoStore();
+  // ... (resto de tus imports del store) ...
   const {
     obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosxAsistentesEstilistas,
     DataVendedores: dataAsistentesEstilistas
@@ -41,6 +44,9 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   } = useTerminoStore();
 
   const dispatch = useDispatch();
+  
+  // 2. Crear referencia para el Toast
+  const toast = useRef(null);
 
   const {
     formState,
@@ -76,7 +82,6 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
       obtenerEmpleadosxAsistentesManicuristas(62, 5, 599);
       obtenerEmpleadosJefesDeSalon(29, 5, 599);
       obtenerRecepcionistas(63, 5, 599);
-      // reset y set defaults por si cambias de servicio
       onResetForm();
       if (servSelect?.id_empl) onInputChangeFunction('id_empl', servSelect.id_empl);
       onInputChangeFunction('cantidad', 1);
@@ -96,7 +101,7 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
 
     let unit = base - descSoles;
     unit = unit - (unit * pct) / 100;
-    const total = Math.max(0, unit * cant); // nunca negativo
+    const total = Math.max(0, unit * cant); 
     setMontoTotal(total);
   }, [monto_descuento, porcentaje_descuento, cantidad, servSelect?.monto_default]);
 
@@ -110,7 +115,6 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
     onInputChangeFunction('cantidad', next);
   };
   const setCantidad = (n) => onInputChangeFunction('cantidad', Math.min(4, Math.max(1, n)));
-
   const setPorcentaje = (p) => onInputChangeFunction('porcentaje_descuento', p);
 
   const onCloseAgregarCarrito = () => {
@@ -119,6 +123,17 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
   };
 
   const onClickAgregarItemsAlCarrito = () => {
+    // 3. VALIDACIÓN: Si no hay colaborador seleccionado (id_empl es 0 o null)
+    if (!id_empl || id_empl === 0) {
+        toast.current.show({
+            severity: 'error', 
+            summary: 'Campo requerido', 
+            detail: 'Debes seleccionar un colaborador para continuar.', 
+            life: 3000
+        });
+        return; // Detenemos la ejecución
+    }
+
     const labelEmpleado = dataCargos.find((o) => o.value === id_empl)?.label || '';
     dispatch(
       onAddItemsCarrito({
@@ -147,12 +162,15 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
 
   const headerTemplate = (
     <>
-    {/* {JSON.stringify(servSelect, 2, null)} */}
       {servSelect?.labelServ}
     </>
   );
 
   return (
+    <>
+    {/* 4. Agregar Toast */}
+    <Toast ref={toast} />
+    
     <Dialog
       footer={footerTemplate}
       style={{ width: '40rem', height: 'auto' }}
@@ -161,7 +179,6 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
       onHide={onCloseAgregarCarrito}
       modal
     >
-      
       {/* Colaborador */}
       <div className="m-2">
         <Select
@@ -178,23 +195,11 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
       {/* Cantidad con onClick */}
       <div className="m-2">
         <div className="flex gap-2 align-items-center">
-          <Button
-            type="button"
-            icon="pi pi-minus"
-            onClick={decCantidad}
-            rounded
-            outlined
-          />
+          <Button type="button" icon="pi pi-minus" onClick={decCantidad} rounded outlined />
           <span className="px-3 py-2 border-round border-2 border-primary font-bold">
             {cantidad || 1}
           </span>
-          <Button
-            type="button"
-            icon="pi pi-plus"
-            onClick={incCantidad}
-            rounded
-            outlined
-          />
+          <Button type="button" icon="pi pi-plus" onClick={incCantidad} rounded outlined />
           <div className="flex gap-2 ml-3">
             {[1, 2, 3, 4].map((n) => (
               <Button
@@ -253,5 +258,6 @@ export const ModalAgregarCarrito = ({ show, onHide, servSelect }) => {
         </small>
       </div>
     </Dialog>
+    </>
   );
 };
