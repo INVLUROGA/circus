@@ -110,18 +110,32 @@ export default function ExecutiveTable({
         if (oKey !== "meta") addCli(byOriginCliSetFull, oKey, idCli);
         else metaCliSetFull.add(String(idCli));
       }
-      for (const s of servicios) {
-        const cant = Number(s?.cantidad || 1);
-        const linea = Number(s?.tarifa_monto || s?.precio_unitario || 0);
-        totalServFull += linea; cantServFull += cant;
-        if (oKey !== "meta") addTo(byOriginFull, oKey, oLabel, linea, cant);
-        else { metaServTotalFull += linea; metaServCantFull += cant; }
-      }
-      for (const p of getDetalleProductos(v)) {
-        const cant = Number(p?.cantidad || 1);
-        const linea = Number(p?.tarifa_monto || 0);
-        totalProdFull += linea; cantProdFull += cant;
-      }
+   for (const s of servicios) {
+  const cant       = Number(s?.cantidad || 1);
+  const precioUnit = Number(s?.tarifa_monto || s?.precio_unitario || 0);
+  const lineaTotal = precioUnit * cant;
+
+  // FULL (mes completo)
+  totalServFull += lineaTotal;
+  cantServFull  += cant;
+
+  if (oKey !== "meta") {
+    addTo(byOriginFull, oKey, oLabel, lineaTotal, cant);
+  } else {
+    metaServTotalFull += lineaTotal;
+    metaServCantFull  += cant;
+  }
+}
+
+for (const p of getDetalleProductos(v)) {
+  const cant       = Number(p?.cantidad || 1);
+  const precioUnit = Number(p?.tarifa_monto || p?.precio_unitario || 0);
+  const lineaTotal = precioUnit * cant;
+
+  totalProdFull += lineaTotal;
+  cantProdFull  += cant;
+}
+
 
       const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       const to = clamp(Number(cutDay || lastDay), from, lastDay);
@@ -132,18 +146,31 @@ export default function ExecutiveTable({
         if (oKey !== "meta") addCli(byOriginCliSet, oKey, idCli);
         else metaCliSetCut.add(String(idCli));
       }
-      for (const s of servicios) {
-        const cant = Number(s?.cantidad || 1);
-        const linea = Number(s?.tarifa_monto || s?.precio_unitario || 0);
-        totalServ += linea; cantServ += cant;
-        if (oKey !== "meta") addTo(byOrigin, oKey, oLabel, linea, cant);
-        else { metaServTotalCut += linea; metaServCantCut += cant; }
-      }
-      for (const p of getDetalleProductos(v)) {
-        const cant = Number(p?.cantidad || 1);
-        const linea = Number(p?.tarifa_monto || p?.precio_unitario || 0);
-        totalProd += linea; cantProd += cant;
-      }
+     for (const s of servicios) {
+  const cant       = Number(s?.cantidad || 1);
+  const precioUnit = Number(s?.tarifa_monto || s?.precio_unitario || 0);
+  const lineaTotal = precioUnit * cant;
+
+  totalServ += lineaTotal;
+  cantServ  += cant;
+
+  if (oKey !== "meta") {
+    addTo(byOrigin, oKey, oLabel, lineaTotal, cant);
+  } else {
+    metaServTotalCut += lineaTotal;
+    metaServCantCut  += cant;
+  }
+}
+
+for (const p of getDetalleProductos(v)) {
+  const cant       = Number(p?.cantidad || 1);
+  const precioUnit = Number(p?.tarifa_monto || p?.precio_unitario || 0);
+  const lineaTotal = precioUnit * cant;
+
+  totalProd += lineaTotal;
+  cantProd  += cant;
+}
+
     }
 
     const keyMonth = `${anio}-${mesAlias}`;
