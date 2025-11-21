@@ -226,32 +226,28 @@ for (const p of getDetalleProductos(v)) {
     const invMetaDisplayed   = invMetaUSD; 
     const invTikTokDisplayed = invTikTokUSD * 1.18; 
     
-    
     const invTotalDisplayed  = (invMetaUSD * tasaCambio) + invTikTokDisplayed;
 
     const invMetaPEN   = invMetaDisplayed;   
     const invTikTokPEN = invTikTokDisplayed;
     const invTotalPEN  = invTotalDisplayed;  
-
     const leads_por_red = mk?.leads_por_red || {};
     const leadVal = (kArr) => kArr.reduce((acc, k) => acc + Number(leads_por_red?.[k] ?? 0), 0);
     const leadsMeta   = leadVal(["1515","meta","facebook","instagram"]);
     const leadsTikTok = leadVal(["1514","tiktok","tik tok"]);
     const leadsTotal  = leadsMeta + leadsTikTok;
 
-    // CPL (Costo por Lead) - Respetando la moneda de la inversión
-    const cplMeta   = safeDiv0(invMetaPEN,   leadsMeta);    // $ por lead
-    const cplTikTok = safeDiv0(invTikTokPEN, leadsTikTok);  // S/ por lead
-    const cplTotal  = safeDiv0(invTotalPEN,  leadsTotal);   // S/ por lead (Total)
+    const cplMeta   = safeDiv0(invMetaPEN,   leadsMeta);   
+    const cplTikTok = safeDiv0(invTikTokPEN, leadsTikTok);  
+    const cplTotal  = safeDiv0(invTotalPEN,  leadsTotal); 
 
-    // CAC (Costo por Cliente)
     const clientesMetaReal   = Number(mk?.clientes_meta   ?? 0);
     const clientesTikTokReal = Number(mk?.clientes_tiktok ?? 0);
     const clientesTotalReal  = clientesMetaReal + clientesTikTokReal;
 
-    const cacMeta   = safeDiv0(invMetaPEN,   clientesMetaReal);    // $ por cliente
-    const cacTikTok = safeDiv0(invTikTokPEN, clientesTikTokReal);  // S/ por cliente
-    const cacTotal  = safeDiv0(invTotalPEN,  clientesTotalReal);   // S/ por cliente (Total)
+    const cacMeta   = safeDiv0(invMetaPEN,   clientesMetaReal);    
+    const cacTikTok = safeDiv0(invTikTokPEN, clientesTikTokReal);  
+    const cacTotal  = safeDiv0(invTotalPEN,  clientesTotalReal);   
     // === FIN LÓGICA ===
 
     const byOriginCli = Object.fromEntries(

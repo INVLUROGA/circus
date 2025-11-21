@@ -1,5 +1,5 @@
 import { Row, Col } from 'react-bootstrap';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react'; // Agregamos useMemo
 import { arrayFacturas } from '@/types/type';
 import { useForm } from '@/hooks/useForm';
 import { useTerminoStore } from '@/hooks/hookApi/useTerminoStore';
@@ -15,14 +15,38 @@ function formatoNumero(num) {
 
 const DatosCliente = ({dataCliente, setNombreCliente}) => {
     const dispatch = useDispatch();
-    const { obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerRecepcionistas, DataVendedores: dataRecepcionista } = useTerminoStore();
-    const { obtenerParametrosClientes, DataClientes, obtenerParametrosVendedores } = useTerminoStore();
+
+
+    const {
+        obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosxEstilistas,
+        DataVendedores: dataEstilistas
+    } = useTerminoStore();
+    
+    const {
+        obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosxAsistentesEstilistas,
+        DataVendedores: dataAsistentesEstilistas
+    } = useTerminoStore();
+    
+    const {
+        obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosxAsistentesManicuristas,
+        DataVendedores: dataManicuristas
+    } = useTerminoStore();
+    
+    const {
+        obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerEmpleadosJefesDeSalon,
+        DataVendedores: dataJefesDeSalon
+    } = useTerminoStore();
+    
+    const {
+        obtenerEmpleadosxCargoxDepartamentoxEmpresa: obtenerRecepcionistas,
+        DataVendedores: dataRecepcionista
+    } = useTerminoStore();
+
+    const { obtenerParametrosClientes, DataClientes } = useTerminoStore();
     const { obtenerParametroPorEntidadyGrupo: obtenerDataOrigenCircus, DataGeneral: dataOrigenCircus } = useTerminoStore();
     const { dataComprobante, obtenerVentasxComprobantes } = useVentasStore();
     
-    // Estado para manejar errores de validación
     const [errors, setErrors] = useState({});
-
     const [clienteSelect, setClienteSelect] = useState({});
     const [EmpleadoSelect, setEmpleadoSelect] = useState({});
     const [TipoTransacSelect, setTipoTransacSelect] = useState({});
@@ -42,20 +66,31 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
 
     useEffect(() => {
         obtenerParametrosClientes();
-        obtenerRecepcionistas(63, 5, 599);
-        obtenerParametrosVendedores();
         obtenerDataOrigenCircus('nueva-venta-circus', 'origen');
+
+        obtenerEmpleadosxEstilistas(26, 5, 599);
+        obtenerEmpleadosxAsistentesEstilistas(27, 5, 599);
+        obtenerEmpleadosxAsistentesManicuristas(62, 5, 599);
+        obtenerEmpleadosJefesDeSalon(29, 5, 599);
+        obtenerRecepcionistas(63, 5, 599);
     }, []);
-    
+
+    const dataCargos = useMemo(
+        () => [
+            ...(dataEstilistas || []),
+            ...(dataAsistentesEstilistas || []),
+            ...(dataManicuristas || []),
+            ...(dataJefesDeSalon || []),
+            ...(dataRecepcionista || [])
+        ],
+        [dataEstilistas, dataAsistentesEstilistas, dataManicuristas, dataJefesDeSalon, dataRecepcionista]
+    );
+
+
     useEffect(() => {
         dispatch(onSetDetalleCli({
             ...formStateCliente, 
-            id_cli: id_cli,
-            id_empl: id_empl, 
-            id_tipo_transaccion: id_tipo_transaccion, 
-            numero_transac: numero_transac, 
-            id_origen: id_origen, 
-            observacion: observacion,
+            id_cli, id_empl, id_tipo_transaccion, numero_transac, id_origen, observacion,
         }));
     }, [id_cli, id_empl, id_tipo_transaccion, numero_transac, id_origen, observacion, fecha_venta]);
     
@@ -65,9 +100,9 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
     }, [id_cli]);
 
     useEffect(() => {
-        const dataEmpl = dataRecepcionista.find((option) => option.value === id_empl);
+        const dataEmpl = dataCargos.find((option) => option.value === id_empl);
         setEmpleadoSelect(dataEmpl);
-    }, [id_empl]);
+    }, [id_empl, dataCargos]);
 
     useEffect(() => {
         const dataTipoTransac = arrayFacturas.find((option) => option.value === id_tipo_transaccion);
@@ -78,12 +113,10 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
         if (dataComprobante?.numero_transac) {
             const nuevoNumero = `${dataComprobante?.numero_transac.split('-')[0]}-${formatoNumero(Number(dataComprobante?.numero_transac.split('-')[1])+1)}`;
             onInputChangeFunction('numero_transac', nuevoNumero);
-            // Validar automáticamente si se llena solo
             validateField('numero_transac', nuevoNumero);
         }
     }, [dataComprobante]);
 
-    // --- FUNCIONES DE VALIDACIÓN ---
     const validateField = (field, value) => {
         let error = '';
         if (!value || value === 0 || (typeof value === 'string' && value.trim() === '')) {
@@ -92,7 +125,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
         setErrors(prev => ({ ...prev, [field]: error }));
     };
 
-    // Handlers modificados con validación
     const inputChangeClientes = (e) => {
         setNombreCliente(`${e?.label.split('|')[1]}`);
         onInputChangeFunction('id_cli', e.value);
@@ -120,36 +152,18 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
         validateField(e.target.name, e.target.value);
     };
 
-    // Helper para estilos de error en Select
     const getSelectStyles = (hasError) => ({
-        input: (provided) => ({
-            ...provided,
-            color: hasError ? "#dc3545" : "#EEBE00",
-            fontWeight: "bold",
-        }),
-        dropdownIndicator: (provided) => ({
-            ...provided,
-            color: hasError ? "#dc3545" : "#EEBE00",
-        }),
-        indicatorSeparator: (provided) => ({
-            ...provided,
-            backgroundColor: hasError ? "#dc3545" : "#EEBE00",
-        }),
+        input: (provided) => ({ ...provided, color: hasError ? "#dc3545" : "#EEBE00", fontWeight: "bold" }),
+        dropdownIndicator: (provided) => ({ ...provided, color: hasError ? "#dc3545" : "#EEBE00" }),
+        indicatorSeparator: (provided) => ({ ...provided, backgroundColor: hasError ? "#dc3545" : "#EEBE00" }),
         control: (provided) => ({
             ...provided,
             borderColor: hasError ? "#dc3545" : "#EEBE00",
             color: hasError ? "#dc3545" : "#EEBE00",
             boxShadow: hasError ? "0 0 0 1px #dc3545" : provided.boxShadow,
         }),
-        singleValue: (provided) => ({
-            ...provided,
-            color: hasError ? "#dc3545" : "#EEBE00",
-            fontWeight: "bold",
-        }),
-        placeholder: (provided) => ({
-            ...provided,
-            color: hasError ? "#dc3545" : "#EEBE00",
-        })
+        singleValue: (provided) => ({ ...provided, color: hasError ? "#dc3545" : "#EEBE00", fontWeight: "bold" }),
+        placeholder: (provided) => ({ ...provided, color: hasError ? "#dc3545" : "#EEBE00" })
     });
 
     return (
@@ -160,7 +174,7 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
                     <Row>
                         <Col xl={12}>
                             <Row>
-                                {/* SELECT COLABORADOR */}
+                                {/* SELECT COLABORADOR - USANDO LA LÓGICA DEL MODAL */}
                                 <Col xl={12} sm={12}>
                                     <div className='mb-2'>
                                         <Select
@@ -169,15 +183,15 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
                                             placeholder={'Seleccionar COLABORADOR'}
                                             styles={getSelectStyles(!!errors.id_empl)}
                                             className="border-2 rounded-3 outline-none"
-                                            options={dataRecepcionista}
-                                            value={dataRecepcionista.find((option) => option.value === id_empl) || null}
+                                            // 4. USAMOS LA LISTA FUSIONADA
+                                            options={dataCargos} 
+                                            value={dataCargos.find((option) => option.value === id_empl) || null}
                                             required
                                         />
                                         {errors.id_empl && <small className="text-danger fw-bold ms-1">{errors.id_empl}</small>}
                                     </div>
                                 </Col>
 
-                                {/* SELECT CLIENTE */}
                                 <Col xl={12} sm={12}>
                                     <div className='mb-2'>
                                         <Select
@@ -194,7 +208,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
                                     </div>
                                 </Col>
 
-                                {/* SELECT ORIGEN */}
                                 <Col xl={12} sm={12}>
                                     <div className='mb-2'>
                                         <Select
@@ -211,7 +224,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
                                     </div>
                                 </Col>
 
-                                {/* SELECT TIPO COMPROBANTE */}
                                 <Col xl={12} sm={12}>
                                     <div className='mb-2'>
                                         <Select
@@ -228,7 +240,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
                                     </div>
                                 </Col>
 
-                                {/* INPUT NUMERO COMPROBANTE */}
                                 <Col xl={12} sm={12}>
                                     <div className='mb-2'>
                                         <input
@@ -245,7 +256,6 @@ const DatosCliente = ({dataCliente, setNombreCliente}) => {
                                     </div>
                                 </Col>
 
-                                {/* TEXTAREA OBSERVACION */}
                                 <Col xl={12} sm={12}>
                                     <div className='mb-2'>
                                         <textarea
