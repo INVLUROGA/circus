@@ -273,13 +273,11 @@ export const ModalCustomComanda2 = ({
                         <Select placeholder={r.clase ? `Seleccionar ${r.clase}` : 'Primero elige clase'} options={itemsOptions} value={itemsOptions.find(o => o.value === r.item?.value) || null} onChange={(v) => onChangeItem(idx, v)} isDisabled={!r.clase} />
                       </td>
 
-                      {/* INPUT DE COMISIÓN Y MONTO CALCULADO DEBAJO */}
                       <td className="fs-3 text-center align-middle" style={{ width: "100px" }}>
                         <input type="number" min={0} max={100} className="form-control text-center fw-bold text-primary" 
                             style={{border: '2px solid #0d6efd', fontSize:49}}
                             value={r.comisionPct ?? 30} onChange={(e) => onChangeComisionPct(idx, e.target.value)} 
                         />
-                        {/* AQUI SE MUESTRA EL MONTO CALCULADO DEBAJO DEL INPUT */}
                         <div className='mt-1 text-muted' style={{fontSize: '24px'}}>
                             S/ {comisionRow.toFixed(2)}
                         </div>
