@@ -224,7 +224,7 @@ for (const p of getDetalleProductos(v)) {
 
   
     const invMetaDisplayed   = invMetaUSD; 
-    const invTikTokDisplayed = invTikTokUSD * tasaCambio; 
+    const invTikTokDisplayed = invTikTokUSD * 1.18; 
     
     
     const invTotalDisplayed  = (invMetaUSD * tasaCambio) + invTikTokDisplayed;

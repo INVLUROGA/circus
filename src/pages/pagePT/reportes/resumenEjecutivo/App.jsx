@@ -154,7 +154,7 @@ const countClientsForMonthByOrigin = (ventasList, anio, mesNombre, fromDay, cut,
 
   const uniques = new Set();
   for (const v of (ventasList || [])) {
-    const d = toDateSafe(v?.fecha_venta || v?.fecha || v?.createdAt);
+    const d = toDateSafe(v?.fecha_venta || v?.fecha );
     if (!d || d.getFullYear() !== Number(anio) || d.getMonth() !== monthIdx) continue;
 
     const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();

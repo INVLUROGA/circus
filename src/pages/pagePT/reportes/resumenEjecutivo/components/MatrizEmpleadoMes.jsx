@@ -94,7 +94,7 @@ function rankingPorEmpleado(
       if (!acc) continue;
       const cantidad = it?.cantidad == null ? 1 : (Number(it?.cantidad) || 0);
       const precio = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
-      const importe = precio * cantidad;
+      const importe = precio ;
       acc.ventasProductos += importe;
       acc.cantidadProductos += cantidad;
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
@@ -128,7 +128,7 @@ export const MatrizEmpleadoMes = ({
   dataVenta = [],
   filtrarFecha = [],
   datoEstadistico = 'Total Ventas',
-  excluirNombres = ['LUIS', 'JESUS', 'FATIMA', 'MIA', 'KATIA', 'TIBISAY'],
+  excluirNombres = [''],
   cutDay=null,
 }) => {
  const [rateIgv, setRateIgv] = useState(0.18);
@@ -877,15 +877,12 @@ const totalPCompraProd = productosAgrupados.reduce(
   0
 );
 
-// 1) Tarjeta sobre venta bruta de productos
 const totalTarjeta = round2(totalPVentaProd * rateTarjeta);
 const baseProd = round2(totalPVentaProd - totalTarjeta);
 
-// 2) IGV y Renta sobre el neto después de tarjeta
 const totalIGV = round2(baseProd * rateIgv);
 const totalRenta = round2(baseProd * rateRenta);
 
-// 3) Utilidad base y final (después de costo compra y comisión)
 const totalUtilBase = round2(baseProd - totalIGV - totalRenta - totalPCompraProd);
 const totalComision = round2(totalUtilBase * RATE_COMISION);
 const totalUtilFinal = round2(totalUtilBase - totalComision);
