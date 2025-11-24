@@ -80,37 +80,83 @@ function rankingPorEmpleado(
     }
     return accMap.get(empleado);
   };
+
   for (let i = 0; i < ventas.length; i++) {
     const v = ventas[i];
     const idVenta = v?.id ?? v?.numero_transac ?? `venta_${i}`;
-    const productos = Array.isArray(v?.detalle_ventaProductos)
-      ? v.detalle_ventaProductos
-      : Array.isArray(v?.detalle_ventaproductos)
-      ? v.detalle_ventaproductos
-      : [];
 
-    for (const it of productos) {
+    // 1. CALCULAR TOTALES DE LA VENTA (TARIFA VS PAGADO)
+    const pagos = Array.isArray(v?.detalleVenta_pagoVenta) 
+        ? v.detalleVenta_pagoVenta 
+        : (Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : []);
+        
+    const totalPagado = pagos.reduce((acc, p) => acc + (Number(p.monto || p.parcial_monto || 0)), 0);
+
+    // Sumar todas las tarifas teóricas de la venta para sacar el ratio
+    const productosRaw = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : (Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : []);
+    const serviciosRaw = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+
+    let totalTarifaTeorica = 0;
+    
+    // Sumar tarifas productos
+    productosRaw.forEach(p => {
+        const cant = Number(p.cantidad) || 0;
+        const precio = Number(p.tarifa_monto) || Number(p.tb_producto?.prec_venta) || 0;
+        totalTarifaTeorica += (cant * precio);
+    });
+    // Sumar tarifas servicios
+    serviciosRaw.forEach(s => {
+        const cant = Number(s.cantidad) || 0;
+        const precio = Number(s.tarifa_monto) || 0;
+        totalTarifaTeorica += (cant * precio);
+    });
+
+    // 2. CALCULAR FACTOR DE REALIDAD (0 a 1)
+    // Si la venta es 100 tarifa y pagaron 80, el factor es 0.8
+    // Si es canje total (pagaron 0), el factor es 0.
+    let factor = 1;
+    if (totalTarifaTeorica > 0) {
+        factor = totalPagado / totalTarifaTeorica;
+    } else {
+        factor = 0; // Evitar división por cero
+    }
+    
+    // Opcional: Si pagaron de más (propina?), lo limitamos a 1 o lo dejamos pasar? 
+    // Lo usual es dejarlo pasar o topar en 1. Dejémoslo pasar para cuadrar caja.
+
+    // --- PROCESAR PRODUCTOS CON EL FACTOR ---
+    for (const it of productosRaw) {
       const acc = getAcc(it?.empleado_producto?.nombres_apellidos_empl);
       if (!acc) continue;
+      
       const cantidad = it?.cantidad == null ? 1 : (Number(it?.cantidad) || 0);
-      const precio = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
-      const importe = precio ;
-      acc.ventasProductos += importe;
+      const precioTeorico = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
+      
+      // AQUI LA MAGIA: Precio Real = Precio Teorico * Factor
+      const importeReal = (precioTeorico * cantidad) * factor;
+
+      acc.ventasProductos += importeReal;
       acc.cantidadProductos += cantidad;
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
     }
-    const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
-    for (const it of servicios) {
+
+    // --- PROCESAR SERVICIOS CON EL FACTOR ---
+    for (const it of serviciosRaw) {
       const acc = getAcc(it?.empleado_servicio?.nombres_apellidos_empl);
       if (!acc) continue;
-      const cantidad = Number(it?.cantidad) || 0;
-      const precio = Number(it?.tarifa_monto) || 0;
-      const importe = precio * cantidad;
-      acc.ventasServicios += importe;
+
+      const cantidad = it?.cantidad == null ? 1 : Number(it?.cantidad) || 0;
+      const precioTeorico = Number(it?.tarifa_monto) || 0;
+      
+      // AQUI LA MAGIA: Precio Real = Precio Teorico * Factor
+      const importeReal = (precioTeorico * cantidad) * factor;
+
+      acc.ventasServicios += importeReal;
       acc.cantidadServicios += cantidad;
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
     }
   }
+
   const out = [];
   for (const [empleado, acc] of accMap.entries()) {
     acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
