@@ -33,23 +33,35 @@ function RankingDialogContent({ modalData, totalCostoServiciosProp }) {
   const [rateComisionProducto, setRateComisionProducto] = useState(0.10);   
   const [activeRateEditor, setActiveRateEditor] = useState(null);
 
-  // 1. Resumen de Servicios (Aquí inyectamos el costo que viene del padre)
-  const resumenServicios = useMemo(() => {
-    const brutoBase = modalData.modalResumen?.bruto || 0;
-    // Usamos la prop que viene del padre (calculada en buildModalData u onCellClick)
-    const costoTotal = Number(totalCostoServiciosProp || 0);
+const resumenServicios = useMemo(() => {
+  const brutoServicios = Number(modalData.totalPVentaServs || 0);
+  const brutoProductos = Number(modalData.totalPVentaProd || 0);
 
-    return buildResumenServicios({
-      modalResumen: { bruto: brutoBase }, 
-      totalCostoServicios: costoTotal, 
-      rateIgv,
-      rateRenta,
-      rateTarjeta,
-      rateComisionEstilista,
-    });
-  }, [modalData, totalCostoServiciosProp, rateIgv, rateRenta, rateTarjeta, rateComisionEstilista]);
+  // 👉 VENTA BRUTA TOTAL = servicios + productos (8185)
+  const brutoTotal = brutoServicios + brutoProductos;
 
-  // 2. Totales Detalle Servicios
+  const costoTotal = Number(totalCostoServiciosProp || 0);
+
+  return buildResumenServicios({
+    modalResumen: { bruto: brutoTotal },
+    totalCostoServicios: costoTotal,
+    rateIgv,
+    rateRenta,
+    rateTarjeta,
+    rateComisionEstilista,
+  });
+}, [
+  modalData.totalPVentaServs,
+  modalData.totalPVentaProd,
+  totalCostoServiciosProp,
+  rateIgv,
+  rateRenta,
+  rateTarjeta,
+  rateComisionEstilista,
+]);
+
+
+  // 2. Totales Detalle Serviciosa
   const servicioTotals = useMemo(() => buildServicioTotals(modalData), [modalData]);
 
   // 3. Totales Productos
@@ -150,7 +162,7 @@ function RankingDialogContent({ modalData, totalCostoServiciosProp }) {
             </thead>
             <tbody>
               <tr>
-                <td style={tdCell}><NumberFormatMoney amount={resumenServicios.bruto} /></td>
+                <td style={tdCell}><NumberFormatMoney amount={resumenServicios.bruto }/></td>
                 <td style={{ ...tdCell, color: "red" }}>- <NumberFormatMoney amount={resumenServicios.igvMonto} /></td>
                 <td style={{ ...tdCell, color: "red" }}>- <NumberFormatMoney amount={resumenServicios.rentaMonto} /></td>
                 <td style={{ ...tdCell, color: "red" }}>- <NumberFormatMoney amount={resumenServicios.tarjetaMonto} /></td>
