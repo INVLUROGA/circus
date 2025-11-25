@@ -11,8 +11,7 @@
   import { RankingEstilista } from "./components/RankingEstilista";
   import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
   import { TopControls } from "./components/TopControls";
-      import PTApi from '@/common/api/PTApi';
-
+  import PTApi from '@/common/api/PTApi';
   import MatrizServicios from "./components/MatrizServicios";
   const generarMesesDinamicos = (cantidad = 5, baseMonth1to12, baseYear) => {
     const meses = [
@@ -20,10 +19,8 @@
       "julio","agosto","septiembre","octubre","noviembre","diciembre"
     ];
     const mesesLabel = meses.map(m => m.toUpperCase());
-
     const baseMonthIdx = (baseMonth1to12 ?? (new Date().getMonth() + 1)) - 1;
     const y = baseYear ?? new Date().getFullYear();
-
     const out = [];
     for (let i = cantidad - 1; i >= 0; i--) {
       const d = new Date(y, baseMonthIdx - i, 1);
@@ -242,7 +239,7 @@ const originMap = {
                     1451: "YOHANDRY",
                     1450: "CANJE",
                     1449: "Preferencial",
-                    1526: "TIKTOK,",
+                    1526: "TIKTOK",
   0: "OTROS",                   
   "": "OTROS",               
   null: "OTROS", undefined: "OTROS" 
@@ -301,7 +298,7 @@ const originMap = {
                     1451: "YOHANDRY",
                     1450: "CANJE",
                     1449: "Preferencial",
-                    1526: "TIKTOK,"
+                    1526: "TIKTOK"
                   }}
                 />
               </Col>

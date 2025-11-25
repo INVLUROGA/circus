@@ -98,48 +98,35 @@ function computeMetricsForMonth(anio, mesNombre) {
       if (d.getFullYear() !== Number(anio)) continue;
       if (d.getMonth() !== monthIdx) continue;
 
-      // ===========================================================================
-      // 🟢 INICIO LÓGICA DE FACTOR REAL (IGUAL QUE EN MATRIZ)
-      // ===========================================================================
-      
-      // 1. Calcular cuánto pagaron realmente
-      const pagos = Array.isArray(v?.detalleVenta_pagoVenta) 
+          const pagos = Array.isArray(v?.detalleVenta_pagoVenta) 
           ? v.detalleVenta_pagoVenta 
           : (Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : []);
       
       const totalPagado = pagos.reduce((acc, p) => acc + (Number(p.monto || p.parcial_monto || 0)), 0);
 
-      // 2. Calcular cuánto valía teóricamente todo (Servicios + Productos)
       const rawServs = getDetalleServicios(v);
       const rawProds = getDetalleProductos(v);
       let totalTeorico = 0;
 
-      // Sumar teóricos servicios
+      
       for(const s of rawServs) {
          const c = Number(s?.cantidad || 1);
          const p = Number(s?.tarifa_monto || s?.precio_unitario || 0);
          totalTeorico += (c * p);
       }
-      // Sumar teóricos productos
       for(const p of rawProds) {
          const c = Number(p?.cantidad || 1);
          const pr = Number(p?.tarifa_monto || p?.precio_unitario || 0);
          totalTeorico += (c * pr);
       }
 
-      // 3. Calcular Factor (0 si es canje total, 1 si pagó full, 0.5 si pagó la mitad)
       let factor = 1;
       if (totalTeorico > 0) {
           factor = totalPagado / totalTeorico;
       } else {
-          // Si el teórico es 0 pero pagaron algo (raro), o ambos 0
           factor = 0; 
       }
-      // ===========================================================================
-      // 🔴 FIN LÓGICA DE FACTOR
-      // ===========================================================================
-
-      const rawOrigin =
+        const rawOrigin =
         v?.id_origen ?? v?.parametro_origen?.id_param ??
         v?.origen ?? v?.source ?? v?.canal ?? v?.parametro_origen?.label_param;
       const oKey   = canonicalKeyFromRaw(originMap, rawOrigin);
@@ -301,7 +288,6 @@ function computeMetricsForMonth(anio, mesNombre) {
     const cacMeta   = safeDiv0(invMetaPEN,   clientesMetaReal);    
     const cacTikTok = safeDiv0(invTikTokPEN, clientesTikTokReal);  
     const cacTotal  = safeDiv0(invTotalPEN,  clientesTotalReal);   
-    // === FIN LÓGICA ===
 
     const byOriginCli = Object.fromEntries(
       Object.entries(byOriginCliSet).map(([k, s]) => [k, (s?.size || 0)])
@@ -479,7 +465,7 @@ function computeMetricsForMonth(anio, mesNombre) {
   const rowRedFooterStyle = { background:redStrong, color:"#000", fontWeight:700, fontSize:25 };
   const cellBlack = { ...sCellBold, background:"transparent", color:"#fff", fontWeight:700, fontSize:25, border };
   const cellWhite = { ...sCellBold, background:"#fff", color:"#000", fontWeight:700, fontSize:25, border };
-  const cellFooterRed = { ...sCellBold, background:"gold", color:"#fff", fontWeight:700, fontSize:25, border };
+  const cellFooterRed = { ...sCellBold, background:"#ffc000", color:"#fff", fontWeight:700, fontSize:25, border };
   const pctCellStyle = (pct) => ({ ...sCellBold, background:"#fff", color: pct>=100 ? "#00a100" : redStrong, fontWeight:700, fontSize:25, border });
 
   const cuotaPorMes = perMonth.map((m,i)=>getCuotaForMonth(m,i));
@@ -547,9 +533,9 @@ function computeMetricsForMonth(anio, mesNombre) {
           </tr>
         </thead>
         <tbody>
-          <tr><td style={{ ...cellWhite, backgroundColor:"gold" }}>CUOTA DEL MES</td>{cuotaPorMes.map((q,i)=><td key={i} style={cellWhite}>{fmtMoney(q)}</td>)}</tr>
-          <tr><td style={{ ...cellWhite, backgroundColor:"gold" }}>% ALCANCE DE CUOTA</td>{alcancePctPorMes.map((p,i)=><td key={i} style={pctCellStyle(p)}>{`${fmtNum(p,2)} %`}</td>)}</tr>
-          <tr><td style={{ ...cellWhite, backgroundColor:"gold" }}>% RESTANTE PARA CUOTA</td>{restantePctPorMes.map((p,i)=><td key={i} style={pctCellStyle(100-p===100?100:0+(100-p))}>{`${fmtNum(p,2)} %`}</td>)}</tr>
+          <tr><td style={{ ...cellWhite, backgroundColor:"#ffc000" }}>CUOTA DEL MES</td>{cuotaPorMes.map((q,i)=><td key={i} style={cellWhite}>{fmtMoney(q)}</td>)}</tr>
+          <tr><td style={{ ...cellWhite, backgroundColor:"#ffc000" }}>% ALCANCE DE CUOTA</td>{alcancePctPorMes.map((p,i)=><td key={i} style={pctCellStyle(p)}>{`${fmtNum(p,2)} %`}</td>)}</tr>
+          <tr><td style={{ ...cellWhite, backgroundColor:"#ffc000" }}>% RESTANTE PARA CUOTA</td>{restantePctPorMes.map((p,i)=><td key={i} style={pctCellStyle(100-p===100?100:0+(100-p))}>{`${fmtNum(p,2)} %`}</td>)}</tr>
         </tbody>
         <tfoot>
           <tr style={rowRedFooterStyle}>
