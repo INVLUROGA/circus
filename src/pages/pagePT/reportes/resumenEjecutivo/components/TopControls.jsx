@@ -434,7 +434,7 @@ export function TopControls({
               gap: 12,
             }}
           >
-            <span style={{ fontSize: "1rem", fontWeight: 700 }}>USD → PEN</span>
+            <span style={{ fontSize: "1.35rem", fontWeight: 700 }}>TC:</span>
             <span
               style={{
                 fontVariantNumeric: "tabular-nums",
@@ -446,23 +446,10 @@ export function TopControls({
             </span>
           </div>
           <span style={miniTextStyle}>
-            {usdPenRate.loading && !usdPenRate.error
-              ? "Actualizando tipo de cambio…"
-              : usdPenRate.error
-              ? `Sin conexión, usando referencia S/ ${FALLBACK_USD_PEN_RATE.toFixed(
-                  3
-                )}`
-              : updatedLabel
-              ? ` ${updatedLabel}`
-              : "Dato obtenido"}
+          
+           
           </span>
-          {usingFallback ? (
-            <span style={miniTextStyle}>
-              Valor de referencia manual {`S/ ${FALLBACK_USD_PEN_RATE.toFixed(3)}`}
-            </span>
-          ) : (
-            <span style={miniTextStyle}></span>
-          )}
+         
         </div>
       </div>
     </div>

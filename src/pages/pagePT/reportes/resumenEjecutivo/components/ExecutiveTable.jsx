@@ -8,7 +8,7 @@ export default function ExecutiveTable({
   cutDay = 27,
   originMap = {},
   selectedMonth,
-  tasaCambio = 3.37, // Recibimos la tasa para hacer la conversión de Meta al sumar el total
+  tasaCambio = 3.37,
 }) {
   const MESES = [
     "enero","febrero","marzo","abril","mayo","junio",
@@ -62,21 +62,21 @@ export default function ExecutiveTable({
     return String(key || "OTROS").replace(/_/g, " ").toUpperCase();
   };
 
-  function computeMetricsForMonth(anio, mesNombre) {
+function computeMetricsForMonth(anio, mesNombre) {
     const mesAlias = aliasMes(String(mesNombre).toLowerCase());
     const monthIdx = MESES.indexOf(mesAlias);
     if (monthIdx < 0) return null;
 
-    let totalServ=0,cantServ=0,totalProd=0,cantProd=0;
-    let totalServFull=0,cantServFull=0,totalProdFull=0,cantProdFull=0;
+    let totalServ = 0, cantServ = 0, totalProd = 0, cantProd = 0;
+    let totalServFull = 0, cantServFull = 0, totalProdFull = 0, cantProdFull = 0;
 
     const byOrigin = {};       
     const byOriginFull = {};   
     const byOriginCliSet = {};      
     const byOriginCliSetFull = {}; 
 
-    let metaServTotalCut=0,  metaServCantCut=0;
-    let metaServTotalFull=0, metaServCantFull=0;
+    let metaServTotalCut = 0,  metaServCantCut = 0;
+    let metaServTotalFull = 0, metaServCantFull = 0;
     const metaCliSetCut = new Set();
     const metaCliSetFull = new Set();
 
@@ -98,79 +98,132 @@ export default function ExecutiveTable({
       if (d.getFullYear() !== Number(anio)) continue;
       if (d.getMonth() !== monthIdx) continue;
 
+      // ===========================================================================
+      // 🟢 INICIO LÓGICA DE FACTOR REAL (IGUAL QUE EN MATRIZ)
+      // ===========================================================================
+      
+      // 1. Calcular cuánto pagaron realmente
+      const pagos = Array.isArray(v?.detalleVenta_pagoVenta) 
+          ? v.detalleVenta_pagoVenta 
+          : (Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : []);
+      
+      const totalPagado = pagos.reduce((acc, p) => acc + (Number(p.monto || p.parcial_monto || 0)), 0);
+
+      // 2. Calcular cuánto valía teóricamente todo (Servicios + Productos)
+      const rawServs = getDetalleServicios(v);
+      const rawProds = getDetalleProductos(v);
+      let totalTeorico = 0;
+
+      // Sumar teóricos servicios
+      for(const s of rawServs) {
+         const c = Number(s?.cantidad || 1);
+         const p = Number(s?.tarifa_monto || s?.precio_unitario || 0);
+         totalTeorico += (c * p);
+      }
+      // Sumar teóricos productos
+      for(const p of rawProds) {
+         const c = Number(p?.cantidad || 1);
+         const pr = Number(p?.tarifa_monto || p?.precio_unitario || 0);
+         totalTeorico += (c * pr);
+      }
+
+      // 3. Calcular Factor (0 si es canje total, 1 si pagó full, 0.5 si pagó la mitad)
+      let factor = 1;
+      if (totalTeorico > 0) {
+          factor = totalPagado / totalTeorico;
+      } else {
+          // Si el teórico es 0 pero pagaron algo (raro), o ambos 0
+          factor = 0; 
+      }
+      // ===========================================================================
+      // 🔴 FIN LÓGICA DE FACTOR
+      // ===========================================================================
+
       const rawOrigin =
         v?.id_origen ?? v?.parametro_origen?.id_param ??
         v?.origen ?? v?.source ?? v?.canal ?? v?.parametro_origen?.label_param;
       const oKey   = canonicalKeyFromRaw(originMap, rawOrigin);
       const oLabel = labelFromKey(oKey);
-      const servicios = getDetalleServicios(v);
+      
       const idCli = v?.id_cli ?? `venta-${v?.id ?? Math.random()}`;
 
-      if (servicios.length > 0) {
+      // --- PROCESAR SERVICIOS (FULL MES) ---
+      if (rawServs.length > 0) {
         if (oKey !== "meta") addCli(byOriginCliSetFull, oKey, idCli);
         else metaCliSetFull.add(String(idCli));
       }
-   for (const s of servicios) {
-  const cant       = Number(s?.cantidad || 1);
-  const precioUnit = Number(s?.tarifa_monto || s?.precio_unitario || 0);
-  const lineaTotal = precioUnit * cant;
 
-  // FULL (mes completo)
-  totalServFull += lineaTotal;
-  cantServFull  += cant;
+      for (const s of rawServs) {
+        const cant      = Number(s?.cantidad || 1);
+        const precioUnit = Number(s?.tarifa_monto || s?.precio_unitario || 0);
+        
+        // APLICAMOS EL FACTOR AQUÍ
+        const lineaTotal = (precioUnit * cant) * factor; 
 
-  if (oKey !== "meta") {
-    addTo(byOriginFull, oKey, oLabel, lineaTotal, cant);
-  } else {
-    metaServTotalFull += lineaTotal;
-    metaServCantFull  += cant;
-  }
-}
+        // FULL (mes completo)
+        totalServFull += lineaTotal;
+        cantServFull  += cant;
 
-for (const p of getDetalleProductos(v)) {
-  const cant       = Number(p?.cantidad || 1);
-  const precioUnit = Number(p?.tarifa_monto || p?.precio_unitario || 0);
-  const lineaTotal = precioUnit * cant;
+        if (oKey !== "meta") {
+          addTo(byOriginFull, oKey, oLabel, lineaTotal, cant);
+        } else {
+          metaServTotalFull += lineaTotal;
+          metaServCantFull  += cant;
+        }
+      }
 
-  totalProdFull += lineaTotal;
-  cantProdFull  += cant;
-}
+      // --- PROCESAR PRODUCTOS (FULL MES) ---
+      for (const p of rawProds) {
+        const cant      = Number(p?.cantidad || 1);
+        const precioUnit = Number(p?.tarifa_monto || p?.precio_unitario || 0);
+        
+        // APLICAMOS EL FACTOR AQUÍ
+        const lineaTotal = (precioUnit * cant) * factor;
 
+        totalProdFull += lineaTotal;
+        cantProdFull  += cant;
+      }
 
+      // --- LÓGICA DE CORTE (DIA X) ---
       const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
       const to = clamp(Number(cutDay || lastDay), from, lastDay);
       const dia = d.getDate();
-      if (dia < from || dia > to) continue;
+      if (dia < from || dia > to) continue; // Si está fuera del corte, saltamos
 
-      if (servicios.length > 0) {
+      // --- PROCESAR SERVICIOS (AL CORTE) ---
+      if (rawServs.length > 0) {
         if (oKey !== "meta") addCli(byOriginCliSet, oKey, idCli);
         else metaCliSetCut.add(String(idCli));
       }
-     for (const s of servicios) {
-  const cant       = Number(s?.cantidad || 1);
-  const precioUnit = Number(s?.tarifa_monto || s?.precio_unitario || 0);
-  const lineaTotal = precioUnit * cant;
+      for (const s of rawServs) {
+        const cant      = Number(s?.cantidad || 1);
+        const precioUnit = Number(s?.tarifa_monto || s?.precio_unitario || 0);
+        
+        // APLICAMOS EL FACTOR AQUÍ
+        const lineaTotal = (precioUnit * cant) * factor;
 
-  totalServ += lineaTotal;
-  cantServ  += cant;
+        totalServ += lineaTotal;
+        cantServ  += cant;
 
-  if (oKey !== "meta") {
-    addTo(byOrigin, oKey, oLabel, lineaTotal, cant);
-  } else {
-    metaServTotalCut += lineaTotal;
-    metaServCantCut  += cant;
-  }
-}
+        if (oKey !== "meta") {
+          addTo(byOrigin, oKey, oLabel, lineaTotal, cant);
+        } else {
+          metaServTotalCut += lineaTotal;
+          metaServCantCut  += cant;
+        }
+      }
 
-for (const p of getDetalleProductos(v)) {
-  const cant       = Number(p?.cantidad || 1);
-  const precioUnit = Number(p?.tarifa_monto || p?.precio_unitario || 0);
-  const lineaTotal = precioUnit * cant;
+      // --- PROCESAR PRODUCTOS (AL CORTE) ---
+      for (const p of rawProds) {
+        const cant      = Number(p?.cantidad || 1);
+        const precioUnit = Number(p?.tarifa_monto || p?.precio_unitario || 0);
+        
+        // APLICAMOS EL FACTOR AQUÍ
+        const lineaTotal = (precioUnit * cant) * factor;
 
-  totalProd += lineaTotal;
-  cantProd  += cant;
-}
-
+        totalProd += lineaTotal;
+        cantProd  += cant;
+      }
     }
 
     const keyMonth = `${anio}-${mesAlias}`;
