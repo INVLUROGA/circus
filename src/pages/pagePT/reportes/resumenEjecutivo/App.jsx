@@ -276,7 +276,8 @@ const originMap = {
                   initialDay={initDay}
                   cutDay={cutDay}
                   originMap={originMap}  
-                  tasaCambio={tasaCambio}       
+                  tasaCambio={tasaCambio}
+                  selectedMonth={selectedMonth}
                 />
               </Col>
 
