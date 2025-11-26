@@ -267,8 +267,8 @@ export function TopControls({
     alignItems: "flex-start",
     justifyContent: "flex-start",
     height: "auto",
-    minWidth: 200,
-    padding: "8px 12px",
+    minWidth: 150,
+    padding: "6px 10px",
     gap: 4,
   };
 
@@ -401,29 +401,8 @@ export function TopControls({
 
         {/* Reloj + Cierre */}
         <RealTimeClock />
-        <button
-          onClick={handleClickUseLastDay}
-          className="btn btn-outline-warning"
-          style={{
-            fontWeight: 700,
-            borderWidth: 2,
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Cierre
-        </button>
-        
-      </div>
-
-      <div style={dividerStyle} />
-
-      {/* FILA INFERIOR */}
-      <div style={bottomRowStyle}>
-        {(vigentesBreakdown || []).map((it, idx) => (
-          <AvatarMiniBox key={idx} item={it} />
-        ))}
-        {/* TIPO DE CAMBIO */}
+     
+ {/* TIPO DE CAMBIO */}
         <div style={rateBoxStyle} title="Tipo de cambio USD a PEN">
           <div
             style={{
@@ -444,14 +423,22 @@ export function TopControls({
             >
               {formattedRate}
             </span>
-          </div>
-          <span style={miniTextStyle}>
+          </div>     
           
-           
-          </span>
-         
-        </div>
-      </div>
+        </div>        
+           <button
+          onClick={handleClickUseLastDay}
+          className="btn btn-outline-warning"
+          style={{
+            fontWeight: 700,
+            borderWidth: 2,
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Cierre
+        </button>
+      </div>    
     </div>
   );
 }
