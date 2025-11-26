@@ -25,6 +25,7 @@ export const STYLES = {
   wrap: {
     ...baseText,
   },
+
   // --- Títulos y Chips ---
   chipContainer: {
     textAlign: "center",
@@ -41,15 +42,6 @@ export const STYLES = {
     letterSpacing: 0.3,
     fontSize: 25,
   },
-  headerRed: {
-    background: COLORS.black, // En tu ejemplo era negro el fondo del título grande
-    color: COLORS.white,
-    textAlign: "center",
-    padding: "25px 12px",
-    fontWeight: 700,
-    letterSpacing: 0.3,
-    fontSize: 25,
-  },
 
   // --- Tablas ---
   table: {
@@ -57,8 +49,7 @@ export const STYLES = {
     borderCollapse: "collapse",
     tableLayout: "fixed",
   },
-  
-  // Cabeceras Generales (Rojas)
+
   thMes: {
     color: COLORS.white,
     background: COLORS.red,
@@ -77,14 +68,14 @@ export const STYLES = {
     width: 260,
   },
 
-  // Cabeceras para Tablas de Origen (Doradas)
-  thOriginCorner: { // <--- PARA LA ESQUINA VACÍA DORADA
+  // Cabeceras para tablas de origen (si las usas)
+  thOriginCorner: {
     background: COLORS.gold,
     color: COLORS.black,
     textAlign: "center",
     width: 260,
   },
-  thOriginMonth: { // <--- PARA LOS MESES DORADOS
+  thOriginMonth: {
     background: COLORS.gold,
     color: COLORS.black,
     textAlign: "center",
@@ -103,23 +94,16 @@ export const STYLES = {
     background: COLORS.white,
     fontWeight: 700,
   },
-  cellFirstGold: { // Primera columna dorada
+  cellFirstGold: {
     ...baseCell,
     background: COLORS.gold,
     color: COLORS.black,
     fontWeight: 800,
   },
-  
-  // Footers y Totales
+
+  // Filas y celdas especiales
   rowBlack: {
     background: COLORS.black,
-    color: COLORS.white,
-    fontWeight: 700,
-    fontSize: 25,
-  },
-  cellBlackTransparent: {
-    ...baseCell,
-    background: "transparent",
     color: COLORS.white,
     fontWeight: 700,
     fontSize: 25,
@@ -130,30 +114,33 @@ export const STYLES = {
     fontWeight: 700,
     fontSize: 25,
   },
-  cellFooterRed: {
+
+  // 👉 esto es tu cellBlack
+  cellBlack: {
     ...baseCell,
-    background: COLORS.gold, // En tu imagen el footer rojo tiene celdas doradas? o al revés? Ajustado a tu código.
+    background: "transparent",
     color: COLORS.white,
     fontWeight: 700,
     fontSize: 25,
   },
-  cellFooterGold: {
-     ...baseCell,
-     background: COLORS.gold,
-     color: COLORS.black,
-     fontWeight: 800,
+
+  cellWhite: {
+    ...baseCell,
+    background: COLORS.white,
+    color: COLORS.black,
+    fontWeight: 700,
+    fontSize: 25,
   },
-  
-  // Celdas de Alcance
-  cellAlcanceTitle: {
+
+  cellFooterRed: {
     ...baseCell,
     background: COLORS.gold,
-    color: COLORS.white, // O black según diseño exacto
+    color: COLORS.white,
     fontWeight: 700,
+    fontSize: 25,
   },
 };
 
-// Helpers de estilo dinámico
 export const getPctCellStyle = (pct) => ({
   ...baseCell,
   background: COLORS.white,
@@ -167,12 +154,40 @@ export const getCellStyle = (isLast) => ({
   background: isLast ? COLORS.gold : COLORS.white,
   color: isLast ? COLORS.white : COLORS.black,
   fontWeight: isLast ? 700 : "normal",
-  fontSize: isLast ? 25 : 25,
+  fontSize: 25,
 });
 
 export const getThStyle = (isLast) => ({
   ...STYLES.thMes,
-  background: COLORS.gold, // En tu código original forzabas gold aquí
+  background: COLORS.gold,
   color: COLORS.black,
   fontSize: 25,
 });
+
+// === Mapeos para que coincidan con tus imports ===
+export const gold = COLORS.gold;
+
+export const sWrap = STYLES.wrap;
+export const sTable = STYLES.table;
+export const sThMes = STYLES.thMes;
+export const sThLeft = STYLES.thLeft;
+
+export const sCell = STYLES.cell;
+export const sCellBold = STYLES.cellBold;
+
+export const sRowBlack = STYLES.rowBlack;
+export const sRowRed = STYLES.rowRedFooter;
+
+export const chipContainer = STYLES.chipContainer;
+export const chipTitle = STYLES.chipTitle;
+
+export const rowBlackStyle = STYLES.rowBlack;
+export const rowRedFooterStyle = STYLES.rowRedFooter;
+
+export const cellBlack = STYLES.cellBlack;
+export const cellWhite = STYLES.cellWhite;
+export const cellFooterRed = STYLES.cellFooterRed;
+
+export const cellStyle = getCellStyle;
+export const thStyle = getThStyle;
+export const pctCellStyle = getPctCellStyle;

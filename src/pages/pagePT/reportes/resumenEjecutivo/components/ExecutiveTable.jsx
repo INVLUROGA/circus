@@ -329,24 +329,34 @@ export default function ExecutiveTable({
     mes: String(f?.mes || "").toLowerCase(),
     metrics: computeMetricsForMonth(f?.anio, f?.mes),
   }));
+  const getPerMonthSortedByOrigin = (okey) => {
+    return [...perMonth].sort((a, b) => {
+      const totalA = Number(a.metrics?.byOrigin?.[okey]?.total || 0);
+      const totalB = Number(b.metrics?.byOrigin?.[okey]?.total || 0);
+      return  totalA-totalB; // descendente (mayor venta primero)
+    });
+  };
+const originKeysAll = Array.from(
+  new Set(perMonth.flatMap(m => Object.keys(m.metrics?.byOrigin || {})))
+).filter((k) => k !== "meta");
 
-  const originKeysAll = Array.from(
-    new Set(perMonth.flatMap(m => Object.keys(m.metrics?.byOrigin || {})))
-  ).filter(k => k !== "meta").sort();
+// VENTA SERVICIOS acumulada en todo el periodo
+const sumTotalServ = (key) =>
+  perMonth.reduce(
+    (acc, m) => acc + Number(m?.metrics?.byOrigin?.[key]?.total || 0),
+    0
+  );
 
-  const lastIdx = Math.max(0, perMonth.length - 1);
-  const lastCant = (key) => Number(perMonth[lastIdx]?.metrics?.byOrigin?.[key]?.cant || 0);
-  const sumCant = (key) => perMonth.reduce((acc, m) => acc + Number(m?.metrics?.byOrigin?.[key]?.cant || 0), 0);
-  const priority = (key) => (key === "wsp_organico" ? 1 : 0);
-  const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
-    const lb = lastCant(b), la = lastCant(a);
-    if (lb !== la) return lb - la;
-    const sb = sumCant(b), sa = sumCant(a);
-    if (sb !== sa) return sb - sa;
-    const pb = priority(b), pa = priority(a);
-    if (pb !== pa) return pb - pa;
-    return a.localeCompare(b);
-  });
+const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
+  const sb = sumTotalServ(b);
+  const sa = sumTotalServ(a);
+
+  // orden descendente por VENTA SERVICIOS total
+  if (sb !== sa) return sb - sa;
+
+  // si empatan, alfabético
+  return a.localeCompare(b);
+});
 
   const rowsPerOrigin = (okey) => ([
     { key: `o:${okey}:total`, label: "VENTA SERVICIOS", type: "money" },
@@ -387,47 +397,86 @@ export default function ExecutiveTable({
       </tr>
     ));
 
-  const TableHeadForOrigin = () => (
-    <thead>
-      <tr>
-        <th style={{ ...sThLeft, background: gold, color: "#000" }} />
-        {perMonth.map((m, idx) => (
-          <th key={idx} style={thStyle(idx === perMonth.length - 1)}>{m.label}</th>
-        ))}
-      </tr>
-    </thead>
-  );
+    const TableHeadForOrigin = ({ okey }) => {
+    const months = getPerMonthSortedByOrigin(okey);
 
-  const renderRowsForOrigin = (okey, rowsToRender) =>
-    rowsToRender.map((r) => (
+    return (
+      <thead>
+        <tr>
+          <th style={{ ...sThLeft, background: gold, color: "#000" }} />
+          {months.map((m, idx) => (
+            <th
+              key={idx}
+              style={thStyle(idx === months.length - 1)}
+            >
+              {m.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+    );
+  };
+
+
+    const renderRowsForOrigin = (okey, rowsToRender) => {
+    const months = getPerMonthSortedByOrigin(okey);
+
+    return rowsToRender.map((r) => (
       <tr key={r.key}>
-        <td style={{ ...sCellBold, background: gold, color: "#000", fontWeight: 800 }}>{r.label}</td>
-        {perMonth.map((m, idx) => {
+        <td
+          style={{
+            ...sCellBold,
+            background: gold,
+            color: "#000",
+            fontWeight: 800,
+          }}
+        >
+          {r.label}
+        </td>
+        {months.map((m, idx) => {
           const o = m.metrics?.byOrigin?.[okey] || { total: 0, cant: 0 };
           const cliCount = m.metrics?.byOriginCli?.[okey] ?? 0;
-          let val = 0, isPct = false;
+
+          let val = 0;
+          let isPct = false;
+
           if (r.key.endsWith(":total")) val = o.total;
           else if (r.key.endsWith(":cant")) val = o.cant;
           else if (r.key.endsWith(":cli")) val = cliCount;
-          else if (r.key.endsWith(":ticket")) val = o.cant ? o.total / o.cant : 0;
-          else if (r.key.endsWith(":pct")) { const base = Number(m.metrics?.totalServ || 0); val = base > 0 ? (o.total / base) * 100 : 0; isPct = true; }
+          else if (r.key.endsWith(":ticket"))
+            val = o.cant ? o.total / o.cant : 0;
+          else if (r.key.endsWith(":pct")) {
+            const base = Number(m.metrics?.totalServ || 0);
+            val = base > 0 ? (o.total / base) * 100 : 0;
+            isPct = true;
+          }
 
-          const txt = isPct ? `${fmtNum(val, 2)} %` : (r.type === "money" ? fmtMoney(val) : r.type === "float2" ? fmtNum(val, 2) : fmtNum(val, 0));
-          return <td key={idx} style={cellStyle(idx === perMonth.length - 1)}>{txt}</td>;
+          const txt = isPct
+            ? `${fmtNum(val, 2)} %`
+            : r.type === "money"
+            ? fmtMoney(val)
+            : r.type === "float2"
+            ? fmtNum(val, 2)
+            : fmtNum(val, 0);
+
+          return (
+            <td
+              key={idx}
+              style={cellStyle(idx === months.length - 1)}
+            >
+              {txt}
+            </td>
+          );
         })}
       </tr>
-    ));
-
+    ));};
   const getCuotaForMonth = () => 50000;
   const cuotaPorMes = perMonth.map((m, i) => getCuotaForMonth(m, i));
   const ventaAlCortePorMes = perMonth.map(m => m.metrics?.totalMes ?? 0);
   const ventaMesCompletoPorMes = perMonth.map(m => m.metrics?.totalMesFull ?? 0);
   const alcancePctPorMes = perMonth.map((_, i) => (cuotaPorMes[i] || 0) > 0 ? (ventaAlCortePorMes[i] / cuotaPorMes[i]) * 100 : 0);
   const restantePctPorMes = alcancePctPorMes.map((alc) => alc >= 100 ? 0 : 100 - alc);
-
   return (
-
-    
     <div style={sWrap}>
       {/* === TÍTULO 1 === */}
       <div style={chipContainer}>
@@ -436,10 +485,11 @@ export default function ExecutiveTable({
           <div style={chipContainer}>
             <span style={chipTitle}>{labelFromKey(okey)}</span>
           </div>
-          <table style={sTable}>
-            <TableHeadForOrigin />
-            <tbody>{renderRowsForOrigin(okey, rowsPerOrigin(okey))}</tbody>
-          </table>
+         <table style={sTable}>
+  <TableHeadForOrigin okey={okey} />
+  <tbody>{renderRowsForOrigin(okey, rowsPerOrigin(okey))}</tbody>
+</table>
+
         </div>
       ))}
         <span style={chipTitle}>DETALLE DE INVERSIÓN EN REDES VS RESULTADOS EN LEADS</span>
