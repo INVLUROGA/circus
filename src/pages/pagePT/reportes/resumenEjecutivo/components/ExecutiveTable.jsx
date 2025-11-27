@@ -1,5 +1,4 @@
 import React from "react";
-// Importamos todos los estilos desde el archivo nuevo
 import {
   sWrap,
   sTable,
@@ -40,8 +39,9 @@ export default function ExecutiveTable({
   const aliasMes = (m) => (m === "septiembre" ? "setiembre" : m);
 
   // ==== Mes seleccionado (TopControls) ====
+  // Normalizamos el mes seleccionado para compararlo con la data
   const selectedMonthAlias = selectedMonth
-    ? aliasMes(MESES[selectedMonth - 1])
+    ? aliasMes((MESES[selectedMonth - 1] || "").toLowerCase())
     : null;
 
   const isSelectedMonth = (m) => {
@@ -97,7 +97,7 @@ export default function ExecutiveTable({
     tiktok: new Set(["1514", "695", "tiktok", "tik tok", "tik-tok"]),
     facebook: new Set(["694", "facebook", "fb"]),
     instagram: new Set(["693", "instagram", "ig"]),
-    meta: new Set(["1515", "meta", "1454"]),
+    meta: new Set(["1515", "meta"]),
   };
 
   const canonicalKeyFromRaw = (originMap, raw) => {
@@ -386,7 +386,6 @@ export default function ExecutiveTable({
         (acc, k) => acc + Number(por_red?.[k] ?? 0),
         0
       );
-
     const invMetaUSD = invVal(["1515", "meta", "facebook", "instagram"]);
     const invTikTokUSD = invVal(["1514", "tiktok", "tik tok"]);
 
@@ -473,57 +472,29 @@ export default function ExecutiveTable({
       byOriginCliFull,
     };
   }
-
-  // ================== DEFINICIÓN DE FILAS ==================
   const rows = [
-    { key: "invTotalPEN", label: "INVERSIÓN TOTAL REDES", type: "money" },
-    { key: "leadsTotal", label: "TOTAL LEADS DE META + TIKTOK", type: "int" },
-    {
-      key: "cplTotal",
-      label: "COSTO TOTAL POR LEADS DE META + TIKTOK",
-      type: "float2",
-    },
-    {
-      key: "cacTotal",
-      label: "COSTO ADQUISICION DE CLIENTES",
-      type: "float2",
-    },
+   
     { key: "invMetaPEN", label: "INVERSIÓN META", type: "money-usd" },
     { key: "leadsMeta", label: "CANTIDAD LEADS META", type: "int" },
     { key: "cplMeta", label: "COSTO POR LEAD META", type: "float2-usd" },
-    {
-      key: "cacMeta",
-      label: "COSTO ADQUISICION DE CLIENTES META",
-      type: "float2-usd",
-    },
+    {  key: "cacMeta", label: "COSTO ADQUISICION DE CLIENTES META",type: "float2-usd",},
     { key: "invTikTokPEN", label: "INVERSIÓN TIKTOK", type: "money" },
     { key: "leadsTikTok", label: "CANTIDAD LEADS TIKTOK", type: "int" },
     { key: "cplTikTok", label: "COSTO POR LEAD TIKTOK", type: "float2" },
-    {
-      key: "cacTikTok",
-      label: "COSTO ADQUISICION DE CLIENTES TIKTOK",
-      type: "float2",
-    },
+    {key: "cacTikTok", label: "COSTO ADQUISICION DE CLIENTES TIKTOK",type: "float2",},
+     { key: "invTotalPEN", label: "INVERSIÓN TOTAL REDES", type: "money" },
+    { key: "leadsTotal", label: "TOTAL LEADS DE META + TIKTOK", type: "int" },
+    {     key: "cplTotal", label: "COSTO TOTAL POR LEADS DE META + TIKTOK",type: "float2",},
+    { key: "cacTotal", label: "COSTO ADQUISICION DE CLIENTES",type: "float2",},
     { key: "totalServ", label: "VENTA SERVICIOS", type: "money" },
     { key: "cantServ", label: "CANTIDAD SERVICIOS", type: "int" },
-    {
-      key: "ticketServ",
-      label: "TICKET MEDIO SERVICIOS",
-      type: "money",
-    },
+    {key: "ticketServ", label: "TICKET MEDIO SERVICIOS",type: "money",},
     { key: "totalProd", label: "VENTA PRODUCTOS", type: "money" },
     { key: "cantProd", label: "CANTIDAD PRODUCTOS", type: "int" },
-    {
-      key: "ticketProd",
-      label: "TICKET MEDIO PRODUCTOS",
-      type: "money",
-    },
+    {key: "ticketProd",label: "TICKET MEDIO PRODUCTOS",type: "money",},
   ];
-
   const rowsParte1 = rows.slice(0, 12);
   const rowsParte2 = rows.slice(12);
-
-  // ================== perMonth BASE (orden original) ==================
   const perMonth = (fechas || []).map((f) => ({
     label: String(f?.label || "").toUpperCase(),
     anio: f?.anio,
@@ -539,23 +510,46 @@ export default function ExecutiveTable({
       return totalA - totalB; // ascendente -> menor venta primero
     });
 
-  // Orígenes ordenados globalmente por venta total (para el orden de las secciones)
+  // Orígenes ordenados globalmente (para el orden de las secciones)
   const originKeysAll = Array.from(
     new Set(
       perMonth.flatMap((m) => Object.keys(m.metrics?.byOrigin || {}))
     )
   ).filter((k) => k !== "meta");
 
+  // Suma total histórica
   const sumTotalServ = (key) =>
     perMonth.reduce(
       (acc, m) => acc + Number(m?.metrics?.byOrigin?.[key]?.total || 0),
       0
     );
 
+  // Valor del mes seleccionado para ordenamiento
+  const getValForSelectedMonth = (key) => {
+    // Si no hay mes seleccionado, devolvemos 0 para usar solo el histórico
+    if (!selectedMonthAlias) return 0;
+    
+    // Buscamos el mes en la data procesada
+    const mData = perMonth.find(m => aliasMes(m.mes) === selectedMonthAlias);
+    return Number(mData?.metrics?.byOrigin?.[key]?.total || 0);
+  };
+
+  // === AQUÍ ESTÁ LA NUEVA LÓGICA DE ORDENAMIENTO DE TABLAS ===
   const sortedOriginKeys = [...originKeysAll].sort((a, b) => {
-    const sb = sumTotalServ(b);
+    const valA = getValForSelectedMonth(a);
+    const valB = getValForSelectedMonth(b);
+
+    // CRITERIO 1: Ordenar descendente por la venta del mes seleccionado
+    if (valA !== valB) {
+        return valB - valA; // Descendente (mayor a menor)
+    }
+
+    // CRITERIO 2: Si ambos son 0 (o iguales) en ese mes, ordenar por la suma total histórica
     const sa = sumTotalServ(a);
-    if (sb !== sa) return sb - sa; // descendente por venta total
+    const sb = sumTotalServ(b);
+    if (sb !== sa) return sb - sa; // Descendente por venta total acumulada
+
+    // CRITERIO 3: Alfabético como último recurso
     return a.localeCompare(b);
   });
 
@@ -563,15 +557,9 @@ export default function ExecutiveTable({
     { key: `o:${okey}:total`, label: "VENTA SERVICIOS", type: "money" },
     { key: `o:${okey}:cant`, label: "CANTIDAD SERVICIOS", type: "int" },
     { key: `o:${okey}:cli`, label: "CANTIDAD CLIENTES", type: "int" },
-    {
-      key: `o:${okey}:ticket`,
-      label: "TICKET MEDIO SERVICIOS",
-      type: "money",
-    },
+    { key: `o:${okey}:ticket`, label: "TICKET MEDIO SERVICIOS",type: "money",},
     { key: `o:${okey}:pct`, label: "% PARTICIPACIÓN", type: "float2" },
   ];
-
-  // ================== CABECERAS TABLAS GENERALES ==================
   const TableHead = () => (
     <thead>
       <tr>
@@ -622,8 +610,6 @@ export default function ExecutiveTable({
         })}
       </tr>
     ));
-
-  // ================== CABECERAS TABLAS POR ORIGEN ==================
   const TableHeadForOrigin = ({ okey }) => {
     const perMonthSorted = getPerMonthSortedByOrigin(okey);
     return (
@@ -697,7 +683,6 @@ export default function ExecutiveTable({
     ));
   };
 
-  // ================== CUOTAS / ALCANCE ==================
   const getCuotaForMonth = () => 50000;
 
   const cuotaPorMes = perMonth.map((m, i) => getCuotaForMonth(m, i));

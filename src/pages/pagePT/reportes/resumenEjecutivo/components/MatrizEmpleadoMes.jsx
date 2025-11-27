@@ -6,12 +6,9 @@ import utc from 'dayjs/plugin/utc';
 import 'dayjs/locale/es';
 import { PTApi } from '@/common/api/';
 import { DetalleVentasDialog } from "./dialogs/DetalleVentasDialog";
-
 import { useTerminoMetodoPagoStore } from "@/hooks/hookApi/FormaPagoStore/useTerminoMetodoPagoStore";
-
 dayjs.extend(utc);
 dayjs.locale('es');
-
 
 const toKey = (s='') =>
   s.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
@@ -19,7 +16,6 @@ const firstWord = (s='') => toKey(s).split(' ')[0] || '';
 const normalizeName = (s) => (!s ? '' : s.normalize('NFKC').trim().replace(/\s+/g, ' '));
 const round2 = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
 
-// MatrizEmpleadoMes.jsx
 function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay = null) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
 
@@ -510,7 +506,7 @@ const deltasEmpleadoMes = useMemo(() => {
 };
 
 
-  const onCellClick = (emp, colIndex) => {
+ const onCellClick = (emp, colIndex) => {
     if (!emp || !meses[colIndex]) return;
     const objetivo = normalizeName(emp);
     setEmpleadoObjetivo(objetivo);
@@ -520,39 +516,65 @@ const deltasEmpleadoMes = useMemo(() => {
     let totalCompra = 0;
     let totalCostoServicios = 0;
 
-    const ventaBrutaServicios = filas.reduce((acc, v) => {
-      const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
-      const sumaServ = servicios.reduce((a, s) => {
+    // === LÓGICA CORREGIDA CON FACTOR ===
+    const { ventaBrutaServicios, ventaBrutaProductos } = filas.reduce((acc, v) => {
+      // 1. Calcular Factor de la Venta (Igual que en modalData)
+      const pagos = Array.isArray(v?.detalleVenta_pagoVenta) ? v.detalleVenta_pagoVenta
+                  : Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : [];
+      const totalPagado = pagos.reduce((a, p) => a + (Number(p.monto || p.parcial_monto || 0)), 0);
+
+      const allProds = v.detalle_ventaProductos || v.detalle_ventaproductos || [];
+      const allServs = v.detalle_ventaservicios || [];
+      
+      let totalTeorico = 0;
+      allProds.forEach(p => totalTeorico += (Number(p.cantidad)||1) * (Number(p.tarifa_monto)||Number(p.precio_unitario)||Number(p.tb_producto?.prec_venta)||0));
+      allServs.forEach(s => totalTeorico += (Number(s.cantidad)||1) * (Number(s.tarifa_monto)||0));
+
+      let factor = 1;
+      if (totalTeorico > 0) factor = totalPagado / totalTeorico;
+      else factor = 0;
+
+      // 2. Sumar Servicios (Aplicando Factor)
+      const sumServs = allServs.reduce((a, s) => {
         const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
-        if (empServ !== objetivo) return a;
+        if (empServ !== objetivo) return a; // Solo del empleado seleccionado
+        
         const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
         const pUnit = Number(s?.tarifa_monto) || 0;
+        
+        // Costo no lleva factor (es fijo)
         totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
-        return a + cant * pUnit;
+        
+        // Venta sí lleva factor
+        return a + (cant * pUnit * factor);
       }, 0);
-      return acc + sumaServ;
-    }, 0);
 
-    const ventaBrutaProductos = filas.reduce((acc, v) => {
-      const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                        : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-      const sumaProd = productos.reduce((a, p) => {
+      // 3. Sumar Productos (Aplicando Factor)
+      const sumProds = allProds.reduce((a, p) => {
         const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
-        if (empProd !== objetivo) return a;
+        if (empProd !== objetivo) return a; // Solo del empleado seleccionado
+
         const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
         const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+        
         totalCompra += cant * (Number(p?.tb_producto?.prec_compra) || 0);
-        return a + cant * pUnit;
+        
+        return a + (cant * pUnit * factor);
       }, 0);
-      return acc + sumaProd;
-    }, 0);
 
+      return {
+        ventaBrutaServicios: acc.ventaBrutaServicios + sumServs,
+        ventaBrutaProductos: acc.ventaBrutaProductos + sumProds
+      };
+    }, { ventaBrutaServicios: 0, ventaBrutaProductos: 0 });
+    // ===================================
 
     const resumen = buildBreakdown(ventaBrutaServicios + ventaBrutaProductos);
     resumen.costoCompra = totalCompra;
     resumen.netoFinal = round2(resumen.neto - totalCompra);
     setModalResumen(resumen);
     setModalCostoServicios(totalCostoServicios);
+    
     const mes = columnas[colIndex]?.label || '';
     const nombre = (emp?.split?.(' ')?.[0] ?? emp) ?? '';
     setModalTitle(`${mes.toUpperCase?.() || mes} – ${nombre.toUpperCase?.() || nombre}`);
@@ -581,145 +603,141 @@ const deltasEmpleadoMes = useMemo(() => {
     return totals;
   }, [normalizePagoMethod]);
 const onTotalClick = (colIndex) => {
-  if (!meses[colIndex]) return;
+    if (!meses[colIndex]) return;
 
-  const filas = filtrarVentasPorMes(dataVenta, meses[colIndex]).map((v, i) => ({
-    id: v?.id ?? v?.numero_transac ?? `venta_total_${i}_${colIndex}`,
-    fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
-    ...v,
-  }));
-   
-  setEmpleadoObjetivo(''); 
-  setModalRows(filas);
+    const filas = filtrarVentasPorMes(dataVenta, meses[colIndex]).map((v, i) => ({
+      id: v?.id ?? v?.numero_transac ?? `venta_total_${i}_${colIndex}`,
+      fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
+      ...v,
+    }));
+      
+    setEmpleadoObjetivo(''); 
+    setModalRows(filas);
 
-  // --- AÑADIDO ---
-  let totalCostoServicios = 0; // 1. Inicializar costo de servicios
-const sumServs = servs.reduce((a, s) => {
-    // Se obtiene la cantidad
-    const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0; 
-    const pUnit = Number(s?.tarifa_monto) || 0;
-
-    // 2. ¡AQUÍ SE MULTIPLICA! (Cantidad * precio_compra)
-    totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0); 
+    let totalCostoServicios = 0;
     
-    return a + cant * pUnit; // Se suma la venta bruta
-}, 0);
-  const bruto = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+    // === LÓGICA CORREGIDA CON FACTOR ===
+    const { ventaBrutaTotal, totalCompra } = filas.reduce((acc, v) => {
+        // 1. Calcular Factor
+        const pagos = Array.isArray(v?.detalleVenta_pagoVenta) ? v.detalleVenta_pagoVenta
+                    : Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : [];
+        const totalPagado = pagos.reduce((a, p) => a + (Number(p.monto || p.parcial_monto || 0)), 0);
 
-    const sumProds = prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
-      return a + cant * pUnit;
-    }, 0);
+        const allProds = v.detalle_ventaProductos || v.detalle_ventaproductos || [];
+        const allServs = v.detalle_ventaservicios || [];
+        
+        let totalTeorico = 0;
+        allProds.forEach(p => totalTeorico += (Number(p.cantidad)||1) * (Number(p.tarifa_monto)||Number(p.precio_unitario)||Number(p.tb_producto?.prec_venta)||0));
+        allServs.forEach(s => totalTeorico += (Number(s.cantidad)||1) * (Number(s.tarifa_monto)||0));
 
-    const sumServs = servs.reduce((a, s) => {
-      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
-      const pUnit = Number(s?.tarifa_monto) || 0;
+        let factor = 1;
+        if (totalTeorico > 0) factor = totalPagado / totalTeorico;
+        else factor = 0;
 
-      // --- AÑADIDO ---
-      // 2. Calcular costo de servicio
-      totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0); 
-      // -----------------
+        // 2. Sumar Todo (Productos + Servicios) con Factor
+        const sumProds = allProds.reduce((a, p) => {
+          const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+          const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+          const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
+          
+          acc.totalCompra += cant * cUnit; // Acumular compra globalmente
+          return a + (cant * pUnit * factor);
+        }, 0);
 
-      return a + cant * pUnit;
-    }, 0);
+        const sumServs = allServs.reduce((a, s) => {
+          const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+          const pUnit = Number(s?.tarifa_monto) || 0;
+          
+          totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
+          return a + (cant * pUnit * factor);
+        }, 0);
 
-    return acc + sumProds + sumServs;
-  }, 0);
+        acc.ventaBrutaTotal += sumProds + sumServs;
+        return acc;
+    }, { ventaBrutaTotal: 0, totalCompra: 0 });
+    // ===================================
 
-  const res = buildBreakdown(bruto);
-  const costoCompra = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    return acc + prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
-      return a + cant * cUnit;
-    }, 0);
-  }, 0);
-  res.costoCompra = costoCompra;
-  res.netoFinal = round2(res.neto - costoCompra);
-  setModalResumen(res);
+    const res = buildBreakdown(ventaBrutaTotal);
+    res.costoCompra = totalCompra;
+    res.netoFinal = round2(res.neto - totalCompra);
+    setModalResumen(res);
+    setModalCostoServicios(totalCostoServicios);
 
-  // --- AÑADIDO ---
-  setModalCostoServicios(totalCostoServicios); // 3. Setear el estado
-  // -----------------
-
-  const mes = columnas[colIndex]?.label || '';
-  setModalTitle(`${mes.toUpperCase?.() || mes} – TOTAL`);
-  setModalOpen(true);
-};
+    const mes = columnas[colIndex]?.label || '';
+    setModalTitle(`${mes.toUpperCase?.() || mes} – TOTAL`);
+    setModalOpen(true);
+  };
 const onGrandTotalClick = () => {
-  const filas = meses.flatMap((f, colIndex) =>
-    filtrarVentasPorMes(dataVenta, f).map((v, i) => ({
-      id: v?.id ?? v?.numero_transac ?? `venta_total_all_${colIndex}_${i}`,
-      fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
-      ...v,
-    }))
-  );
-  setModalTitle('TODOS LOS MESES – TOTAL');  
-  setEmpleadoObjetivo('');
-  setModalRows(filas);
-  setModalOpen(true);
+    const filas = meses.flatMap((f, colIndex) =>
+      filtrarVentasPorMes(dataVenta, f).map((v, i) => ({
+        id: v?.id ?? v?.numero_transac ?? `venta_total_all_${colIndex}_${i}`,
+        fecha_venta: v?.fecha_venta ? dayjs(v.fecha_venta).toISOString() : '',
+        ...v,
+      }))
+    );
+    setModalTitle('TODOS LOS MESES – TOTAL');  
+    setEmpleadoObjetivo('');
+    setModalRows(filas);
 
-  // --- AÑADIDO ---
-  let totalCostoServicios = 0; // 1. Inicializar costo de servicios
-  // -----------------
+    let totalCostoServicios = 0;
 
-  const bruto = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
-    const sumProds = prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
-      return a + cant * pUnit;
-    }, 0);
-    const sumServs = servs.reduce((a, s) => {
-      const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
-      const pUnit = Number(s?.tarifa_monto) || 0;
+    // === LÓGICA CORREGIDA CON FACTOR ===
+    const { ventaBrutaTotal, totalCompra } = filas.reduce((acc, v) => {
+        // 1. Calcular Factor
+        const pagos = Array.isArray(v?.detalleVenta_pagoVenta) ? v.detalleVenta_pagoVenta
+                    : Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : [];
+        const totalPagado = pagos.reduce((a, p) => a + (Number(p.monto || p.parcial_monto || 0)), 0);
 
-      // --- AÑADIDO ---
-      // 2. Calcular costo de servicio
-      totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
-      // -----------------
+        const allProds = v.detalle_ventaProductos || v.detalle_ventaproductos || [];
+        const allServs = v.detalle_ventaservicios || [];
+        
+        let totalTeorico = 0;
+        allProds.forEach(p => totalTeorico += (Number(p.cantidad)||1) * (Number(p.tarifa_monto)||Number(p.precio_unitario)||Number(p.tb_producto?.prec_venta)||0));
+        allServs.forEach(s => totalTeorico += (Number(s.cantidad)||1) * (Number(s.tarifa_monto)||0));
 
-      return a + cant * pUnit;
-    }, 0);
-    return acc + sumProds + sumServs;
-  }, 0);
+        let factor = 1;
+        if (totalTeorico > 0) factor = totalPagado / totalTeorico;
+        else factor = 0;
 
-  const res = buildBreakdown(bruto);
-  const costoCompra = filas.reduce((acc, v) => {
-    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos
-                 : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
-    return acc + prods.reduce((a, p) => {
-      const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
-      const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
-      return a + cant * cUnit;
-    }, 0);
-  }, 0);
-  res.costoCompra = costoCompra;
-  res.netoFinal = round2(res.neto - costoCompra);
- const primerMes = meses?.[0];
-  const ultimoMes = meses?.[meses.length - 1];
+        // 2. Sumar Todo con Factor
+        const sumProds = allProds.reduce((a, p) => {
+          const cant = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
+          const pUnit = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+          const cUnit = Number(p?.tb_producto?.prec_compra) || 0;
+          
+          acc.totalCompra += cant * cUnit;
+          return a + (cant * pUnit * factor);
+        }, 0);
 
-  let titulo = 'TODOS LOS MESES – TOTAL';
-  if (primerMes && ultimoMes) {
-    titulo = `${primerMes.label.toUpperCase()} ${primerMes.anio} – ${ultimoMes.label.toUpperCase()} ${ultimoMes.anio}`;
-    if (cutDay) titulo += ` (hasta el día ${cutDay})`;
-  }
-  setModalResumen(res);
+        const sumServs = allServs.reduce((a, s) => {
+          const cant = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
+          const pUnit = Number(s?.tarifa_monto) || 0;
+          
+          totalCostoServicios += cant * (Number(s?.circus_servicio?.precio_compra) || 0);
+          return a + (cant * pUnit * factor);
+        }, 0);
 
-  // --- AÑADIDO ---
-  setModalCostoServicios(totalCostoServicios); // 3. Setear el estado
-  // -----------------
+        acc.ventaBrutaTotal += sumProds + sumServs;
+        return acc;
+    }, { ventaBrutaTotal: 0, totalCompra: 0 });
+    // ===================================
 
- setModalTitle(titulo);
-};
+    const res = buildBreakdown(ventaBrutaTotal);
+    res.costoCompra = totalCompra;
+    res.netoFinal = round2(res.neto - totalCompra);
+    
+    const primerMes = meses?.[0];
+    const ultimoMes = meses?.[meses.length - 1];
+
+    let titulo = 'TODOS LOS MESES – TOTAL';
+    if (primerMes && ultimoMes) {
+      titulo = `${primerMes.label.toUpperCase()} ${primerMes.anio} – ${ultimoMes.label.toUpperCase()} ${ultimoMes.anio}`;
+      if (cutDay) titulo += ` (hasta el día ${cutDay})`;
+    }
+    setModalResumen(res);
+    setModalCostoServicios(totalCostoServicios); 
+    setModalTitle(titulo);
+  };
   useEffect(() => {
     if (modalOpen) {
       const nuevosTotales = modalRows.length > 0 ? calcularTotales(modalRows) : {};
@@ -739,7 +757,7 @@ useEffect(() => {
   setModalResumen(nuevo);
 }, [rateIgv, rateRenta, rateTarjeta, modalOpen]);
 
-  const modalData = useMemo(() => {
+ const modalData = useMemo(() => {
     if (!modalOpen || modalRows.length === 0) {
       return {
         flatProductos: [], flatServicios: [],
@@ -751,6 +769,7 @@ useEffect(() => {
     }
 
     const getPagoMonto = (p) => Number(p?.parcial_monto ?? p?.monto ?? p?.monto_pago ?? p?.importe ?? 0) || 0;
+    
     const fixDelta = (obj, total) => {
       const suma = round2(Object.values(obj).reduce((a,b)=>a+Number(b||0),0));
       const delta = round2(total - suma);
@@ -764,6 +783,7 @@ useEffect(() => {
     const flatProductos = [];
     const flatServicios = [];
     const totalesMetodo = {};
+    // Inicializar totalesMetodo con las keys conocidas
     for (const k of Object.keys(headerLabel)) totalesMetodo[k] = 0;
 
     for (const row of modalRows) {
@@ -772,6 +792,8 @@ useEffect(() => {
 
       const pagosArr = Array.isArray(row.detalleVenta_pagoVenta) ? row.detalleVenta_pagoVenta
                       : Array.isArray(row.detalle_pagoVenta) ? row.detalle_pagoVenta : [];
+
+      // 1. Obtener Mapa de Pagos Real (Objeto)
       const pagosByMethod = pagosArr.reduce((acc, p) => {
         const raw = p?.parametro_forma_pago?.label_param ?? p?.id_forma_pago ?? p?.forma ?? '';
         const key = normalizePagoMethod(raw);
@@ -780,66 +802,107 @@ useEffect(() => {
         return acc;
       }, {});
 
-      let totalLineasVenta = 0;
+      // 2. Calcular Total Pagado Real (Suma de los métodos)
+      const totalPagadoRow = Object.values(pagosByMethod).reduce((a, b) => a + b, 0);
+
+      // 3. Calcular Total Teórico (Tarifa de lista) para sacar el Factor
+      let totalLineasVentaTeorica = 0;
+      
       for (const it of productos) {
         const cant = it?.cantidad == null ? 1 : Number(it.cantidad) || 0;
         const pUnit = Number(it?.tarifa_monto) || Number(it?.precio_unitario) || Number(it?.tb_producto?.prec_venta) || 0;
-        totalLineasVenta += cant * pUnit;
+        totalLineasVentaTeorica += cant * pUnit;
       }
       for (const it of servicios) {
         const cant = it?.cantidad == null ? 1 : Number(it.cantidad) || 0;
         const pUnit = Number(it?.tarifa_monto) || 0;
-        totalLineasVenta += cant * pUnit;
+        totalLineasVentaTeorica += cant * pUnit;
       }
 
+      // 4. Calcular FACTOR (Realidad vs Tarifa)
+      // Si la tarifa dice 100 pero pagaron 80, el factor es 0.8
+      let factor = 1;
+      if (totalLineasVentaTeorica > 0) {
+        factor = totalPagadoRow / totalLineasVentaTeorica;
+      } else {
+        // Si la tarifa es 0, pero hay pago (ej. propina pura), factor es 0 para evitar Infinity,
+        // o se maneja caso especial. Aquí asumimos 0 tarifa = 0 venta.
+        factor = 0; 
+      }
+
+      // --- PROCESAR PRODUCTOS ---
       for (const p of productos) {
         const empProd = normalizeName(p?.empleado_producto?.nombres_apellidos_empl);
-       if (empleadoObjetivo && empProd !== empleadoObjetivo) continue;
+        if (empleadoObjetivo && empProd !== empleadoObjetivo) continue;
 
         const cantidad = p?.cantidad == null ? 1 : Number(p.cantidad) || 0;
         const precioCompra = Number(p?.tb_producto?.prec_compra) || 0;
-        const precioVenta  = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+        
+        // Precio Tarifa (Sticker)
+        const precioVentaTeorico = Number(p?.tarifa_monto) || Number(p?.precio_unitario) || Number(p?.tb_producto?.prec_venta) || 0;
+        
+        // APLICAR FACTOR: Precio Real
+        const precioVentaReal = precioVentaTeorico * factor;
 
-        const lineaTotal = cantidad * precioVenta;
-        const share = totalLineasVenta > 0 ? (lineaTotal / totalLineasVenta) : 0;
+        const lineaTotalReal = cantidad * precioVentaReal;
+
+        // El share se calcula sobre el teórico (proporción) o real, da lo mismo matemáticamente
+        const share = totalLineasVentaTeorica > 0 ? ((cantidad * precioVentaTeorico) / totalLineasVentaTeorica) : 0;
 
         const allPaymentKeys = [...new Set([...Object.keys(headerLabel), ...Object.keys(pagosByMethod)])];
         const lineaMetodosRaw = allPaymentKeys.reduce((acc, k)=> (acc[toKey(k).replace(/\s+/g,'_')] = 0, acc), {});
-        for (const [k,v] of Object.entries(pagosByMethod)) {
+        
+        for (const [k, v] of Object.entries(pagosByMethod)) {
           const key = toKey(k).replace(/\s+/g,'_');
+          // Distribuir el pago real según el share del item
           lineaMetodosRaw[key] = (lineaMetodosRaw[key] || 0) + (v * share);
         }
-        const lineaMetodos = fixDelta(lineaMetodosRaw, round2(lineaTotal));
+        
+        const lineaMetodos = fixDelta(lineaMetodosRaw, round2(lineaTotalReal));
         for (const [mKey, val] of Object.entries(lineaMetodos)) {
           totalesMetodo[mKey] = (totalesMetodo[mKey] || 0) + Number(val || 0);
         }
 
-        flatProductos.push({ nombre: p?.tb_producto?.nombre_producto || "—", cantidad, precioCompra, precioVenta });
+        flatProductos.push({ 
+          nombre: p?.tb_producto?.nombre_producto || "—", 
+          cantidad, 
+          precioCompra, 
+          precioVenta: precioVentaReal // Usamos el precio real
+        });
       }
 
+      // --- PROCESAR SERVICIOS ---
       for (const s of servicios) {
         const empServ = normalizeName(s?.empleado_servicio?.nombres_apellidos_empl);
-       if (empleadoObjetivo && empServ !== empleadoObjetivo) continue;
+        if (empleadoObjetivo && empServ !== empleadoObjetivo) continue;
 
         const cantidad = s?.cantidad == null ? 1 : Number(s.cantidad) || 0;
-        const pUnit = Number(s?.tarifa_monto) || 0;
-        const lineaTotal = cantidad * pUnit;
+        
+        // Precio Tarifa
+        const pUnitTeorico = Number(s?.tarifa_monto) || 0;
+        
+        // APLICAR FACTOR: Precio Real
+        const pUnitReal = pUnitTeorico * factor;
+        
+        const lineaTotalReal = cantidad * pUnitReal;
 
         const lineaMetodosRaw = Object.fromEntries(Object.keys(headerLabel).map(k => [k, 0]));
-        const totalPagos = Object.values(pagosByMethod).reduce((a,b)=>a+Number(b||0),0);
-
-        if (totalPagos > 0) {
-          for (const [raw, v] of Object.entries(pagosByMethod)) {
-            const keyNorm = normalizePagoMethod(raw);
-            if (!keyNorm || !headerLabel[keyNorm]) continue;
-            lineaMetodosRaw[keyNorm] = round2(lineaTotal * (Number(v) / totalPagos));
+        
+        if (totalPagadoRow > 0) {
+          for (const [rawKey, v] of Object.entries(pagosByMethod)) {
+            // Ya vienen normalizadas las keys de pagosByMethod arriba
+            // pero nos aseguramos que existan en headerLabel
+            if (!headerLabel[rawKey]) continue;
+            // Prorrateo: (PagoMetodo / TotalPagado) * ValorLineaReal
+            lineaMetodosRaw[rawKey] = round2(lineaTotalReal * (Number(v) / totalPagadoRow));
           }
         } else {
-          const fallback = headerLabel.efectivo ? "efectivo" : Object.keys(headerLabel)[0];
-          if (fallback) lineaMetodosRaw[fallback] = round2(lineaTotal);
+          // Si pago es 0 (canje total), asignamos a 'efectivo' u otro por defecto si se desea mostrar la venta teórica como 0
+          // Pero como pUnitReal ya tiene el factor (que sería 0), lineaTotalReal es 0.
+          // El fixDelta se encargará de ajustar decimales si quedaron.
         }
 
-        const lineaMetodos = fixDelta(lineaMetodosRaw, round2(lineaTotal));
+        const lineaMetodos = fixDelta(lineaMetodosRaw, round2(lineaTotalReal));
         for (const [mKey, val] of Object.entries(lineaMetodos)) {
           totalesMetodo[mKey] = (totalesMetodo[mKey] || 0) + Number(val || 0);
         }
@@ -848,13 +911,15 @@ useEffect(() => {
           nombre: s?.circus_servicio?.nombre_servicio || "—",
           cantidad,
           duracion: s?.circus_servicio?.duracion ?? "—",
-          pVenta: pUnit,
-          tarifa: pUnit,
+          pVenta: pUnitReal, // Usamos el precio real
+          tarifa: pUnitReal,
           id_servicio: s?.id_servicio ?? s?.circus_servicio?.id_servicio ?? null,
           ...lineaMetodos,
         });
       }
     }
+
+    // --- AGRUPACIÓN (Lógica igual, pero usando los valores ya ajustados) ---
 
     const agruparServicios = (items=[]) => {
       const m = new Map();
@@ -908,36 +973,36 @@ useEffect(() => {
       }
       return Array.from(m.values());
     };
-const totalServCantidad = serviciosAgrupados.reduce(
-  (a, b) => a + (Number(b.cantidad) || 0),
-  0
-);
 
-const productosAgrupados = agruparProductos(flatProductos);
-const totalPVentaProd = productosAgrupados.reduce(
-  (a, b) => a + b.precioVentaU * b.cantidad,
-  0
-);
-const totalPCompraProd = productosAgrupados.reduce(
-  (a, b) => a + b.precioCompraU * b.cantidad,
-  0
-);
+    const totalServCantidad = serviciosAgrupados.reduce(
+      (a, b) => a + (Number(b.cantidad) || 0),
+      0
+    );
 
-const totalTarjeta = round2(totalPVentaProd * rateTarjeta);
-const baseProd = round2(totalPVentaProd - totalTarjeta);
+    const productosAgrupados = agruparProductos(flatProductos);
+    const totalPVentaProd = productosAgrupados.reduce(
+      (a, b) => a + b.precioVentaU * b.cantidad,
+      0
+    );
+    const totalPCompraProd = productosAgrupados.reduce(
+      (a, b) => a + b.precioCompraU * b.cantidad,
+      0
+    );
 
-const totalIGV = round2(baseProd * rateIgv);
-const totalRenta = round2(baseProd * rateRenta);
+    const totalTarjeta = round2(totalPVentaProd * rateTarjeta);
+    const baseProd = round2(totalPVentaProd - totalTarjeta);
 
-const totalUtilBase = round2(baseProd - totalIGV - totalRenta - totalPCompraProd);
-const totalComision = round2(totalUtilBase * RATE_COMISION);
-const totalUtilFinal = round2(totalUtilBase - totalComision);
+    const totalIGV = round2(baseProd * rateIgv);
+    const totalRenta = round2(baseProd * rateRenta);
 
-const totalCantidad = productosAgrupados.reduce(
-  (a, b) => a + b.cantidad,
-  0
-);
+    const totalUtilBase = round2(baseProd - totalIGV - totalRenta - totalPCompraProd);
+    const totalComision = round2(totalUtilBase * RATE_COMISION);
+    const totalUtilFinal = round2(totalUtilBase - totalComision);
 
+    const totalCantidad = productosAgrupados.reduce(
+      (a, b) => a + b.cantidad,
+      0
+    );
 
     const METHOD_META_KEYS = new Set(["nombre","cantidad","duracion","pVenta","tarifa","id_servicio"]);
     const allMethodsInLines = [...new Set(
@@ -952,20 +1017,20 @@ const totalCantidad = productosAgrupados.reduce(
       totalPVentaProd, totalPCompraProd, totalPVentaServs,
       totalTarjeta, totalIGV, totalRenta, totalUtilBase, totalComision, totalUtilFinal,
       totalCantidad,
-       totalServCantidad, 
+      totalServCantidad, 
       totalPorMetodo: totalesMetodo,
       methodsToShow
     };
-}, [
-  modalOpen,
-  modalRows,
-  empleadoObjetivo,
-  headerLabel,
-  normalizePagoMethod,
-  rateIgv,
-  rateRenta,
-  rateTarjeta
-]);
+  }, [
+    modalOpen,
+    modalRows,
+    empleadoObjetivo,
+    headerLabel,
+    normalizePagoMethod,
+    rateIgv,
+    rateRenta,
+    rateTarjeta
+  ]);
 
   const thStyle = { border: '1px solid #ccc', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '20px' };
   const tdStyle = { border: '1px solid #ccc', padding: '6px 8px', textAlign: 'center', fontSize: '24px', verticalAlign: 'middle' };
