@@ -43,6 +43,27 @@ export const STYLES = {
     fontSize: 25,
   },
 
+  // --- Selectores (NUEVO) ---
+  selectorContainer: {
+    marginBottom: 4,
+    textAlign: "center",
+  },
+  monthSelect: {
+    background: COLORS.gold, // Fondo Gold solicitado
+    border: `1px solid ${COLORS.black}`, // Borde negro para contraste
+    borderRadius: 4,
+    padding: "4px 8px",
+    fontSize: "16px",
+    fontWeight: 800,
+    color: COLORS.black,
+    maxWidth: "100%",
+    cursor: "pointer",
+    outline: "none",
+    textAlign: "center",
+    textTransform: "uppercase",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+  },
+
   // --- Tablas ---
   table: {
     width: "100%",
@@ -68,22 +89,6 @@ export const STYLES = {
     width: 260,
   },
 
-  // Cabeceras para tablas de origen (si las usas)
-  thOriginCorner: {
-    background: COLORS.gold,
-    color: COLORS.black,
-    textAlign: "center",
-    width: 260,
-  },
-  thOriginMonth: {
-    background: COLORS.gold,
-    color: COLORS.black,
-    textAlign: "center",
-    fontWeight: 700,
-    fontSize: 23,
-    padding: "10px",
-  },
-
   // Celdas
   cell: {
     ...baseCell,
@@ -93,12 +98,6 @@ export const STYLES = {
     ...baseCell,
     background: COLORS.white,
     fontWeight: 700,
-  },
-  cellFirstGold: {
-    ...baseCell,
-    background: COLORS.gold,
-    color: COLORS.black,
-    fontWeight: 800,
   },
 
   // Filas y celdas especiales
@@ -115,7 +114,6 @@ export const STYLES = {
     fontSize: 25,
   },
 
-  // 👉 esto es tu cellBlack
   cellBlack: {
     ...baseCell,
     background: "transparent",
@@ -164,7 +162,7 @@ export const getThStyle = (isLast) => ({
   fontSize: 25,
 });
 
-// === Mapeos para que coincidan con tus imports ===
+// === EXPORTS ===
 export const gold = COLORS.gold;
 
 export const sWrap = STYLES.wrap;
@@ -187,6 +185,10 @@ export const rowRedFooterStyle = STYLES.rowRedFooter;
 export const cellBlack = STYLES.cellBlack;
 export const cellWhite = STYLES.cellWhite;
 export const cellFooterRed = STYLES.cellFooterRed;
+
+// Nuevos exports para el selector
+export const sSelectorContainer = STYLES.selectorContainer;
+export const sMonthSelect = STYLES.monthSelect;
 
 export const cellStyle = getCellStyle;
 export const thStyle = getThStyle;
