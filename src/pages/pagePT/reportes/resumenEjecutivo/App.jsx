@@ -89,11 +89,8 @@ useEffect(() => {
     useEffect(() => {
     if (!id_empresa) return;
 
-    // Calcular fecha Inicio y Fin basado en lo que se ve en pantalla
-    // Fecha Fin: Hoy (o fin del mes seleccionado)
     const fechaFin = new Date(); 
     
-    // Fecha Inicio: Retrocedemos 9 meses para asegurar que cubrimos los 8 meses dinámicos
     const fechaInicio = new Date();
     fechaInicio.setMonth(fechaFin.getMonth() - 9);
     fechaInicio.setDate(1);
