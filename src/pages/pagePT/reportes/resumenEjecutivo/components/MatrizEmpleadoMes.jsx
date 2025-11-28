@@ -51,6 +51,7 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay = null) {
     return inRange(v?.fecha_venta );
   });
 }
+// Busca esta función en tu código y reemplázala con esta versión mejorada
 function rankingPorEmpleado(
   ventas = [],
   { datoEstadistico = 'totalVentas', sortDir = 'desc', includeZero = false, normalizarNombre = true } = {}
@@ -60,8 +61,10 @@ function rankingPorEmpleado(
   const norm = (s) => (!normalizarNombre ? s : normalizeName(s));
 
   const getAcc = (empleadoRaw) => {
-    const empleado = norm(empleadoRaw);
-    if (!empleado) return null;
+    // CAMBIO CLAVE: Si no hay nombre, asignamos "SIN ASIGNAR" en vez de devolver null
+    let empleado = norm(empleadoRaw);
+    if (!empleado) empleado = "OTROS"; 
+
     if (!accMap.has(empleado)) {
       accMap.set(empleado, {
         empleado,
@@ -81,54 +84,32 @@ function rankingPorEmpleado(
     const v = ventas[i];
     const idVenta = v?.id ?? v?.numero_transac ?? `venta_${i}`;
 
-    // 1. CALCULAR TOTALES DE LA VENTA (TARIFA VS PAGADO)
+    // ... (Tu lógica de cálculo de factor se mantiene igual) ...
     const pagos = Array.isArray(v?.detalleVenta_pagoVenta) 
         ? v.detalleVenta_pagoVenta 
         : (Array.isArray(v?.detalle_pagoVenta) ? v.detalle_pagoVenta : []);
-        
     const totalPagado = pagos.reduce((acc, p) => acc + (Number(p.monto || p.parcial_monto || 0)), 0);
 
-    // Sumar todas las tarifas teóricas de la venta para sacar el ratio
     const productosRaw = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : (Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : []);
     const serviciosRaw = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
 
     let totalTarifaTeorica = 0;
-    
-    // Sumar tarifas productos
     productosRaw.forEach(p => {
-        const cant = Number(p.cantidad) || 0;
-        const precio = Number(p.tarifa_monto) || Number(p.tb_producto?.prec_venta) || 0;
-        totalTarifaTeorica += (cant * precio);
+       totalTarifaTeorica += (Number(p.cantidad)||0) * (Number(p.tarifa_monto) || Number(p.tb_producto?.prec_venta) || 0);
     });
-    // Sumar tarifas servicios
     serviciosRaw.forEach(s => {
-        const cant = Number(s.cantidad) || 0;
-        const precio = Number(s.tarifa_monto) || 0;
-        totalTarifaTeorica += (cant * precio);
+       totalTarifaTeorica += (Number(s.cantidad)||0) * (Number(s.tarifa_monto) || 0);
     });
 
-    // 2. CALCULAR FACTOR DE REALIDAD (0 a 1)
-    // Si la venta es 100 tarifa y pagaron 80, el factor es 0.8
-    // Si es canje total (pagaron 0), el factor es 0.
-    let factor = 1;
-    if (totalTarifaTeorica > 0) {
-        factor = totalPagado / totalTarifaTeorica;
-    } else {
-        factor = 0; // Evitar división por cero
-    }
+    let factor = totalTarifaTeorica > 0 ? totalPagado / totalTarifaTeorica : 0;
     
-    // Opcional: Si pagaron de más (propina?), lo limitamos a 1 o lo dejamos pasar? 
-    // Lo usual es dejarlo pasar o topar en 1. Dejémoslo pasar para cuadrar caja.
-
-    // --- PROCESAR PRODUCTOS CON EL FACTOR ---
+    // --- PROCESAR PRODUCTOS ---
     for (const it of productosRaw) {
+      // AQUÍ EL CAMBIO: Ya no hacemos 'if (!acc) continue' ciegamente
       const acc = getAcc(it?.empleado_producto?.nombres_apellidos_empl);
-      if (!acc) continue;
       
       const cantidad = it?.cantidad == null ? 1 : (Number(it?.cantidad) || 0);
       const precioTeorico = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
-      
-      // AQUI LA MAGIA: Precio Real = Precio Teorico * Factor
       const importeReal = (precioTeorico * cantidad) * factor;
 
       acc.ventasProductos += importeReal;
@@ -136,15 +117,12 @@ function rankingPorEmpleado(
       ventasPorEmpleado.get(acc.empleado).add(idVenta);
     }
 
-    // --- PROCESAR SERVICIOS CON EL FACTOR ---
+    // --- PROCESAR SERVICIOS ---
     for (const it of serviciosRaw) {
       const acc = getAcc(it?.empleado_servicio?.nombres_apellidos_empl);
-      if (!acc) continue;
 
       const cantidad = it?.cantidad == null ? 1 : Number(it?.cantidad) || 0;
       const precioTeorico = Number(it?.tarifa_monto) || 0;
-      
-      // AQUI LA MAGIA: Precio Real = Precio Teorico * Factor
       const importeReal = (precioTeorico * cantidad) * factor;
 
       acc.ventasServicios += importeReal;
@@ -153,18 +131,18 @@ function rankingPorEmpleado(
     }
   }
 
+  // Resto de la función igual...
   const out = [];
   for (const [empleado, acc] of accMap.entries()) {
     acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
     acc.cantidadVentas = ventasPorEmpleado.get(empleado)?.size ?? 0;
     if (includeZero || acc.totalVentas > 0 || acc.cantidadVentas > 0) out.push(acc);
   }
-  out.sort((a, b) => {
+  return out.sort((a, b) => {
     const va = Number(a?.[datoEstadistico]) || 0;
     const vb = Number(b?.[datoEstadistico]) || 0;
     return sortDir === 'asc' ? va - vb : vb - va;
   });
-  return out;
 }
 export const MatrizEmpleadoMes = ({
   dataVenta = [],
