@@ -30,6 +30,9 @@ const MESES = [
 
 const aliasMes = (m) => (m === "septiembre" ? "setiembre" : m);
 
+const normalizeName = (s) => 
+  String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+
 const toLimaDate = (iso) => {
   if (!iso) return null;
   try {
@@ -69,19 +72,19 @@ export default function ExecutiveTable({
   tasaCambio = 3.37,
 }) {
   
-  // === ESTADO Y LÓGICA DEL SELECTOR ===
   const [monthOverride, setMonthOverride] = useState(null);
   const allMonthOptions = useMemo(() => getAvailableMonthsFromVentas(ventas), [ventas]);
 
-  // Modificación 1: El mes seleccionado (Override) reemplaza al ÚLTIMO elemento, no al primero.
+  // LISTA DE COLABORADORES A MOSTRAR
+  const TARGET_EMPLOYEES = [ "MIGUEL", "FELIX", "ANDREA", "KATIA"]; //"YOHANDRI",AGREGAR SI EN UN FUTURO ES NECESARIO
+
   const finalFechas = useMemo(() => {
     if (!fechas || fechas.length === 0) return [];
     const newFechas = [...fechas];
     if (monthOverride) {
       const foundOption = allMonthOptions.find(o => o.key === monthOverride);
       if (foundOption) {
-        // Asignamos al último índice
-        newFechas[newFechas.length - 1] = {
+        newFechas[0] = {
           label: foundOption.label,
           anio: foundOption.anio,
           mes: foundOption.mes
@@ -91,7 +94,6 @@ export default function ExecutiveTable({
     return newFechas;
   }, [fechas, monthOverride, allMonthOptions]);
 
-  // === LÓGICA DE NEGOCIO ===
   const selectedMonthAlias = selectedMonth
     ? aliasMes((MESES[selectedMonth - 1] || "").toLowerCase())
     : null;
@@ -148,6 +150,9 @@ export default function ExecutiveTable({
     const byOriginCliSet = {};
     const byOriginCliSetFull = {};
 
+    // Acumulador por Empleado
+    const byEmployee = {}; 
+
     let metaServTotalCut = 0, metaServCantCut = 0;
     let metaServTotalFull = 0, metaServCantFull = 0;
     const metaCliSetCut = new Set();
@@ -158,6 +163,21 @@ export default function ExecutiveTable({
       bucket[key].total += Number(linea || 0);
       bucket[key].cant += Number(cantidad || 0);
     };
+    
+    // === CORRECCIÓN: AHORA RECIBE idCli PARA CONTAR CLIENTES ===
+    const addToEmployee = (empNameRaw, linea, cantidad, idCli) => {
+        const nameNorm = normalizeName(empNameRaw);
+        // Busca coincidencia parcial (ej: "MIGUEL" en "MIGUEL ANGEL")
+        const target = TARGET_EMPLOYEES.find(t => nameNorm.includes(t));
+        
+        if (target) {
+            if (!byEmployee[target]) byEmployee[target] = { label: target, total: 0, cant: 0, clients: new Set() };
+            byEmployee[target].total += Number(linea || 0);
+            byEmployee[target].cant += Number(cantidad || 0);
+            if (idCli) byEmployee[target].clients.add(String(idCli)); // Agrega al set de clientes únicos
+        }
+    };
+
     const addCli = (map, key, idCli) => {
       if (!map[key]) map[key] = new Set();
       map[key].add(String(idCli));
@@ -187,7 +207,7 @@ export default function ExecutiveTable({
       const oLabel = labelFromKey(oKey);
       const idCli = v?.id_cli ?? `venta-${v?.id}`;
 
-      // FULL
+      // FULL MES
       if (rawServs.length > 0) {
         if (oKey !== "meta") addCli(byOriginCliSetFull, oKey, idCli);
         else metaCliSetFull.add(String(idCli));
@@ -205,26 +225,40 @@ export default function ExecutiveTable({
         totalProdFull += linea; cantProdFull += cant;
       }
 
-      // CORTE
+      // === CORTE ===
       const lastDay = new Date(Number(anio), monthIdx + 1, 0).getDate();
       const to = clamp(Number(cutDay || lastDay), from, lastDay);
+      
       if (d.getDate() < from || d.getDate() > to) continue;
 
       if (rawServs.length > 0) {
         if (oKey !== "meta") addCli(byOriginCliSet, oKey, idCli);
         else metaCliSetCut.add(String(idCli));
       }
+
+      // --- PROCESAR SERVICIOS ---
       for (const s of rawServs) {
         const cant = Number(s.cantidad || 1);
         const linea = Number(s.tarifa_monto || 0) * cant * factor;
         totalServ += linea; cantServ += cant;
+        
         if (oKey !== "meta") addTo(byOrigin, oKey, oLabel, linea, cant);
         else { metaServTotalCut += linea; metaServCantCut += cant; }
+
+        // ACUMULAR EMPLEADO + CLIENTE
+        const empName = s?.empleado_servicio?.nombres_apellidos_empl || "";
+        addToEmployee(empName, linea, cant, idCli); // Pasamos idCli
       }
+
+      // --- PROCESAR PRODUCTOS ---
       for (const p of rawProds) {
         const cant = Number(p.cantidad || 1);
         const linea = Number(p.tarifa_monto || p.precio_unitario || 0) * cant * factor;
         totalProd += linea; cantProd += cant;
+
+        // ACUMULAR EMPLEADO + CLIENTE
+        const empName = p?.empleado_producto?.nombres_apellidos_empl || "";
+        addToEmployee(empName, linea, cant, idCli); // Pasamos idCli
       }
     }
 
@@ -241,32 +275,7 @@ export default function ExecutiveTable({
       addTo(byOrigin, "facebook", "FACEBOOK", metaServTotalCut * fbShare, metaServCantCut * fbShare);
       addTo(byOrigin, "instagram", "INSTAGRAM", metaServTotalCut * igShare, metaServCantCut * igShare);
     }
-    if (metaServTotalFull > 0) {
-      addTo(byOriginFull, "facebook", "FACEBOOK", metaServTotalFull * fbShare, metaServCantFull * fbShare);
-      addTo(byOriginFull, "instagram", "INSTAGRAM", metaServTotalFull * igShare, metaServCantFull * igShare);
-    }
-    if (metaCliSetCut.size > 0) {
-      const tot = metaCliSetCut.size;
-      const fbInt = Math.round(tot * fbShare);
-      if (!byOriginCliSet["facebook"]) byOriginCliSet["facebook"] = new Set();
-      if (!byOriginCliSet["instagram"]) byOriginCliSet["instagram"] = new Set();
-      for(let i=0; i<fbInt; i++) byOriginCliSet["facebook"].add(`fb-${i}`);
-      for(let i=0; i<(tot-fbInt); i++) byOriginCliSet["instagram"].add(`ig-${i}`);
-    }
-    if (metaCliSetFull.size > 0) {
-      const tot = metaCliSetFull.size;
-      const fbInt = Math.round(tot * fbShare);
-      if (!byOriginCliSetFull["facebook"]) byOriginCliSetFull["facebook"] = new Set();
-      if (!byOriginCliSetFull["instagram"]) byOriginCliSetFull["instagram"] = new Set();
-      for(let i=0; i<fbInt; i++) byOriginCliSetFull["facebook"].add(`fb-${i}`);
-      for(let i=0; i<(tot-fbInt); i++) byOriginCliSetFull["instagram"].add(`ig-${i}`);
-    }
-
-    const ticketServ = cantServ ? totalServ / cantServ : 0;
-    const ticketProd = cantProd ? totalProd / cantProd : 0;
-    const ticketServFull = cantServFull ? totalServFull / cantServFull : 0;
-    const ticketProdFull = cantProdFull ? totalProdFull / cantProdFull : 0;
-
+    
     const invVal = (kArr) => kArr.reduce((a, k) => a + Number(por_red?.[k] ?? 0), 0);
     const invMetaUSD = invVal(["1515", "meta", "facebook", "instagram"]);
     const invTikTokUSD = invVal(["1514", "tiktok", "tik tok"]);
@@ -293,23 +302,20 @@ export default function ExecutiveTable({
     const cacTotal = safeDiv0(invTotalPEN, clientesTotalReal);
 
     const byOriginCli = Object.fromEntries(Object.entries(byOriginCliSet).map(([k, s]) => [k, s.size]));
-    const byOriginCliFull = Object.fromEntries(Object.entries(byOriginCliSetFull).map(([k, s]) => [k, s.size]));
 
     return {
       invMetaPEN, leadsMeta, cplMeta, cacMeta,
       invTikTokPEN, leadsTikTok, cplTikTok, cacTikTok,
       invTotalPEN, leadsTotal, cplTotal, cacTotal,
-      totalServ, cantServ, ticketServ,
-      totalProd, cantProd, ticketProd,
+      totalServ, cantServ, ticketServ: cantServ ? totalServ/cantServ : 0,
+      totalProd, cantProd, ticketProd: cantProd ? totalProd/cantProd : 0,
       totalMes: totalServ + totalProd,
-      totalServFull, cantServFull, ticketServFull,
-      totalProdFull, cantProdFull, ticketProdFull,
-      totalMesFull: totalServFull + totalProdFull,
-      byOrigin, byOriginFull, byOriginCli, byOriginCliFull
+      totalServFull, totalProdFull, totalMesFull: totalServFull + totalProdFull,
+      byOrigin, byEmployee, 
+      byOriginCli
     };
   }
 
-  // === PREPARAR DATA ===
   const perMonth = finalFechas.map((f) => ({
     label: String(f?.label || "").toUpperCase(),
     anio: f?.anio,
@@ -317,7 +323,6 @@ export default function ExecutiveTable({
     metrics: computeMetricsForMonth(f?.anio, f?.mes),
   }));
 
-  // === ORDENAMIENTO DE ORÍGENES ===
   const selectedMonthKey = selectedMonth ? aliasMes(MESES[selectedMonth - 1]) : "";
   const getVentaMesSeleccionado = (key) => {
     if (!selectedMonthAlias) return 0;
@@ -333,28 +338,20 @@ export default function ExecutiveTable({
     const valA = getVentaMesSeleccionado(a);
     const valB = getVentaMesSeleccionado(b);
     if (valA !== valB) return valB - valA;
-    const sa = sumTotalServ(a);
-    const sb = sumTotalServ(b);
-    if (sb !== sa) return sb - sa;
     return a.localeCompare(b);
   });
 
-  // Modificación 2: El mes base (última columna) siempre al final en los ordenamientos por origen
-  const getPerMonthSortedByOrigin = (okey) => {
-      // Identificar el objeto del Mes Base (que sabemos que es el último en perMonth)
-      const baseMonthObj = perMonth[perMonth.length - 1];
+  const getPerMonthSortedByOrigin = (okey) => [...perMonth].sort((a, b) => {
+    const totalA = Number(a.metrics?.byOrigin?.[okey]?.total || 0);
+    const totalB = Number(b.metrics?.byOrigin?.[okey]?.total || 0);
+    return totalA - totalB;
+  });
 
-      // Ordenar el resto de meses (todos menos el último)
-      const others = perMonth.slice(0, -1);
-      others.sort((a, b) => {
-          const totalA = Number(a.metrics?.byOrigin?.[okey]?.total || 0);
-          const totalB = Number(b.metrics?.byOrigin?.[okey]?.total || 0);
-          return totalA - totalB; // Orden ascendente
-      });
-
-      // Retornar: RestoOrdenado + MesBaseAlFinal
-      return [...others, baseMonthObj];
-  };
+  const getPerMonthSortedByEmployee = (empKey) => [...perMonth].sort((a, b) => {
+    const totalA = Number(a.metrics?.byEmployee?.[empKey]?.total || 0);
+    const totalB = Number(b.metrics?.byEmployee?.[empKey]?.total || 0);
+    return totalA - totalB;
+  });
 
   const rows = [
     { key: "invMetaPEN", label: "INVERSIÓN META", type: "money-usd" },
@@ -387,22 +384,20 @@ export default function ExecutiveTable({
     { key: `o:${okey}:pct`, label: "% PARTICIPACIÓN", type: "float2" },
   ];
 
-  // === RENDERIZADO ===
+  // === FILAS PARA EMPLEADO: ACTIVADO CLIENTES ===
+  const rowsPerEmployee = (empKey) => [
+    { key: `e:${empKey}:total`, label: "VENTA SERVICIOS", type: "money" },
+    { key: `e:${empKey}:cant`, label: "CANTIDAD SERVICIOS", type: "int" },
+    { key: `e:${empKey}:cli`, label: "CLIENTES ATENDIDOS", type: "int" }, 
+    { key: `e:${empKey}:ticket`, label: "TICKET MEDIO SERVICIOS", type: "money" },
+    { key: `e:${empKey}:pct`, label: "% PARTICIPACIÓN VENTA", type: "float2" },
+  ];
 
   const MonthSelector = ({ currentKey, onChange }) => {
-    // Modificación 3: Filtrar las opciones que ya están mostradas en las columnas estáticas (0 a length-2)
     const otherDisplayedKeys = new Set(
-      finalFechas.slice(0, -1).map(f => {
-        const mNorm = aliasMes(String(f.mes || "").toLowerCase());
-        return `${f.anio}-${mNorm}`;
-      })
+      finalFechas.slice(1).map(f => `${f.anio}-${aliasMes(String(f.mes || "").toLowerCase())}`)
     );
-
-    const available = allMonthOptions.filter(o => {
-      const oNorm = aliasMes(String(o.mes || "").toLowerCase());
-      const oKey = `${o.anio}-${oNorm}`;
-      return !otherDisplayedKeys.has(oKey);
-    });
+    const available = allMonthOptions.filter(o => !otherDisplayedKeys.has(`${o.anio}-${aliasMes(String(o.mes || "").toLowerCase())}`));
 
     return (
       <div style={sSelectorContainer}>
@@ -420,12 +415,8 @@ export default function ExecutiveTable({
     );
   };
 
-  const TableHeadForOrigin = ({ okey }) => {
-    const perMonthSorted = getPerMonthSortedByOrigin(okey);
-    
-    // Obtenemos los datos del mes base (último en finalFechas)
-    const baseFechas = finalFechas[finalFechas.length - 1];
-    
+  const TableHeadForEmployee = ({ empKey }) => {
+    const perMonthSorted = getPerMonthSortedByEmployee(empKey);
     return (
       <thead>
         <tr>
@@ -433,21 +424,81 @@ export default function ExecutiveTable({
           {perMonthSorted.map((m, idx) => {
             const highlight = isSelectedMonth(m);
             const currentKey = `${m.anio}-${aliasMes(String(m.mes).toLowerCase())}`;
-            
-            // Verificamos si esta columna corresponde al Mes Base
-            const isBaseColumn = (
-                String(m.anio) === String(baseFechas.anio) && 
-                aliasMes(String(m.mes).toLowerCase()) === aliasMes(String(baseFechas.mes).toLowerCase())
+            const isFirstColumnOriginal = (
+              String(m.anio) === String(finalFechas[0].anio) && 
+              aliasMes(String(m.mes).toLowerCase()) === aliasMes(String(finalFechas[0].mes).toLowerCase())
             );
-
             return (
               <th key={idx} style={thStyle(highlight)}>
-                {/* Modificación 4: El selector aparece si es la columna del Mes Base */}
-                {isBaseColumn ? (
-                  <MonthSelector 
-                    currentKey={currentKey} 
-                    onChange={setMonthOverride} 
-                  />
+                {isFirstColumnOriginal ? (
+                  <MonthSelector currentKey={currentKey} onChange={setMonthOverride} />
+                ) : (
+                  m.label
+                )}
+              </th>
+            );
+          })}
+        </tr>
+      </thead>
+    );
+  };
+
+  const renderRowsForEmployee = (empKey, rowsToRender) => {
+    const perMonthSorted = getPerMonthSortedByEmployee(empKey);
+    return rowsToRender.map((r) => (
+      <tr key={r.key}>
+        <td style={{ ...sCellBold, background: gold, color: "#000", fontWeight: 800 }}>
+          {r.label}
+        </td>
+        {perMonthSorted.map((m, idx) => {
+          const eData = m.metrics?.byEmployee?.[empKey] || { total: 0, cant: 0 };
+          let val = 0, isPct = false;
+
+          if (r.key.endsWith(":total")) val = eData.total;
+          else if (r.key.endsWith(":cant")) val = eData.cant;
+          else if (r.key.endsWith(":cli")) val = eData.clients ? eData.clients.size : 0; // <--- TOMA EL TAMAÑO DEL SET
+          else if (r.key.endsWith(":ticket")) val = eData.cant ? eData.total / eData.cant : 0;
+          else if (r.key.endsWith(":pct")) {
+            const base = Number(m.metrics?.totalMes || 0);
+            val = base > 0 ? (eData.total / base) * 100 : 0;
+            isPct = true;
+          }
+          const txt = isPct 
+            ? `${fmtNum(val, 2)} %` 
+            : r.type === "money" 
+            ? fmtMoney(val) 
+            : r.type === "int" 
+            ? fmtNum(val, 0) 
+            : fmtNum(val, 2);
+
+          const highlight = isSelectedMonth(m);
+          return (
+            <td key={idx} style={cellStyle(highlight)}>
+              {txt}
+            </td>
+          );
+        })}
+      </tr>
+    ));
+  };
+
+  const TableHeadForOrigin = ({ okey }) => {
+    const perMonthSorted = getPerMonthSortedByOrigin(okey);
+    return (
+      <thead>
+        <tr>
+          <th style={{ ...sThLeft, background: gold, color: "#000" }} />
+          {perMonthSorted.map((m, idx) => {
+            const highlight = isSelectedMonth(m);
+            const currentKey = `${m.anio}-${aliasMes(String(m.mes).toLowerCase())}`;
+            const isFirstColumnOriginal = (
+                String(m.anio) === String(finalFechas[0].anio) && 
+                aliasMes(String(m.mes).toLowerCase()) === aliasMes(String(finalFechas[0].mes).toLowerCase())
+              );
+            return (
+              <th key={idx} style={thStyle(highlight)}>
+                 {isFirstColumnOriginal ? (
+                  <MonthSelector currentKey={currentKey} onChange={setMonthOverride} />
                 ) : (
                   m.label
                 )}
@@ -506,13 +557,9 @@ export default function ExecutiveTable({
         {perMonth.map((m, idx) => {
           const highlight = isSelectedMonth(m);
           const currentKey = `${m.anio}-${aliasMes(String(m.mes).toLowerCase())}`;
-          
-          // Modificación 5: El selector está en la ÚLTIMA columna (índice 4 o length-1)
-          const isLastColumn = idx === perMonth.length - 1;
-
           return (
             <th key={idx} style={thStyle(highlight)}>
-              {isLastColumn ? (
+              {idx === 0 ? (
                 <MonthSelector currentKey={currentKey} onChange={setMonthOverride} />
               ) : (
                 m.label
@@ -569,6 +616,25 @@ export default function ExecutiveTable({
             </table>
           </div>
         ))}
+        
+        <div style={{width:'100%', marginTop: 60, marginBottom: 20, borderBottom:'2px solid #000'}}/>
+        <span style={{...chipTitle, background: '#000', color: gold, padding: '10px 20px', borderRadius: 8}}>
+            RENDIMIENTO POR COLABORADOR
+        </span>
+
+        {TARGET_EMPLOYEES.map((empKey) => (
+          <div key={empKey} style={{ marginTop: 40 }}>
+            <div style={chipContainer}>
+              <span style={chipTitle}>{empKey}</span>
+            </div>
+            <table style={sTable}>
+              <TableHeadForEmployee empKey={empKey} />
+              <tbody>{renderRowsForEmployee(empKey, rowsPerEmployee(empKey))}</tbody>
+            </table>
+          </div>
+        ))}
+
+        <div style={{width:'100%', marginTop: 60, marginBottom: 20, borderBottom:'2px solid #000'}}/>
         <span style={chipTitle}>DETALLE DE INVERSIÓN EN REDES VS RESULTADOS EN LEADS</span>
       </div>
 
