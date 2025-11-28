@@ -40,7 +40,7 @@ export const STYLES = {
     borderRadius: 4,
     fontWeight: 700,
     letterSpacing: 0.3,
-    fontSize: 25,
+    fontSize: 28,
   },
 
   // --- Selectores (NUEVO) ---
@@ -53,7 +53,7 @@ export const STYLES = {
     border: `1px solid ${COLORS.black}`, // Borde negro para contraste
     borderRadius: 4,
     padding: "4px 8px",
-    fontSize: "16px",
+    fontSize: "24px",
     fontWeight: 800,
     color: COLORS.black,
     maxWidth: "100%",
@@ -76,7 +76,7 @@ export const STYLES = {
     background: COLORS.red,
     textAlign: "center",
     fontWeight: 700,
-    fontSize: 23,
+    fontSize: 26,
     padding: "10px",
   },
   thLeft: {
@@ -84,7 +84,7 @@ export const STYLES = {
     background: COLORS.red,
     textAlign: "center",
     fontWeight: 700,
-    fontSize: 23,
+    fontSize: 26,
     padding: "10px",
     width: 260,
   },
@@ -105,13 +105,13 @@ export const STYLES = {
     background: COLORS.black,
     color: COLORS.white,
     fontWeight: 700,
-    fontSize: 25,
+    fontSize: 28,
   },
   rowRedFooter: {
     background: COLORS.red,
     color: COLORS.white,
     fontWeight: 700,
-    fontSize: 25,
+    fontSize: 28,
   },
 
   cellBlack: {
@@ -119,7 +119,7 @@ export const STYLES = {
     background: "transparent",
     color: COLORS.white,
     fontWeight: 700,
-    fontSize: 25,
+    fontSize: 28,
   },
 
   cellWhite: {
@@ -127,7 +127,7 @@ export const STYLES = {
     background: COLORS.white,
     color: COLORS.black,
     fontWeight: 700,
-    fontSize: 25,
+    fontSize: 28,
   },
 
   cellFooterRed: {
@@ -135,7 +135,7 @@ export const STYLES = {
     background: COLORS.gold,
     color: COLORS.white,
     fontWeight: 700,
-    fontSize: 25,
+    fontSize: 28,
   },
 };
 
@@ -144,7 +144,7 @@ export const getPctCellStyle = (pct) => ({
   background: COLORS.white,
   color: pct >= 100 ? "#00a100" : COLORS.red,
   fontWeight: 700,
-  fontSize: 25,
+  fontSize: 28,
 });
 
 export const getCellStyle = (isLast) => ({
@@ -152,14 +152,14 @@ export const getCellStyle = (isLast) => ({
   background: isLast ? COLORS.gold : COLORS.white,
   color: isLast ? COLORS.white : COLORS.black,
   fontWeight: isLast ? 700 : "normal",
-  fontSize: 25,
+  fontSize: 28,
 });
 
 export const getThStyle = (isLast) => ({
   ...STYLES.thMes,
   background: COLORS.gold,
   color: COLORS.black,
-  fontSize: 25,
+  fontSize: 28,
 });
 
 // === EXPORTS ===

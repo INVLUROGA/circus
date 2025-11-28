@@ -6,7 +6,7 @@ import RankingDialog from "./dialogs/RankingDialog";
 
 // Helpers
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontWeight: "bold" };
-const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "20px" };
+const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "25px" };
 const toKey = (s = "") => String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
 const methodKey = (s = "") => toKey(s).replace(/\s+/g, "_");
 const round2 = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
