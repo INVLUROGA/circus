@@ -73,13 +73,15 @@ export default function ExecutiveTable({
   const [monthOverride, setMonthOverride] = useState(null);
   const allMonthOptions = useMemo(() => getAvailableMonthsFromVentas(ventas), [ventas]);
 
+  // Modificación 1: El mes seleccionado (Override) reemplaza al ÚLTIMO elemento, no al primero.
   const finalFechas = useMemo(() => {
     if (!fechas || fechas.length === 0) return [];
     const newFechas = [...fechas];
     if (monthOverride) {
       const foundOption = allMonthOptions.find(o => o.key === monthOverride);
       if (foundOption) {
-        newFechas[0] = {
+        // Asignamos al último índice
+        newFechas[newFechas.length - 1] = {
           label: foundOption.label,
           anio: foundOption.anio,
           mes: foundOption.mes
@@ -337,11 +339,22 @@ export default function ExecutiveTable({
     return a.localeCompare(b);
   });
 
-  const getPerMonthSortedByOrigin = (okey) => [...perMonth].sort((a, b) => {
-    const totalA = Number(a.metrics?.byOrigin?.[okey]?.total || 0);
-    const totalB = Number(b.metrics?.byOrigin?.[okey]?.total || 0);
-    return totalA - totalB;
-  });
+  // Modificación 2: El mes base (última columna) siempre al final en los ordenamientos por origen
+  const getPerMonthSortedByOrigin = (okey) => {
+      // Identificar el objeto del Mes Base (que sabemos que es el último en perMonth)
+      const baseMonthObj = perMonth[perMonth.length - 1];
+
+      // Ordenar el resto de meses (todos menos el último)
+      const others = perMonth.slice(0, -1);
+      others.sort((a, b) => {
+          const totalA = Number(a.metrics?.byOrigin?.[okey]?.total || 0);
+          const totalB = Number(b.metrics?.byOrigin?.[okey]?.total || 0);
+          return totalA - totalB; // Orden ascendente
+      });
+
+      // Retornar: RestoOrdenado + MesBaseAlFinal
+      return [...others, baseMonthObj];
+  };
 
   const rows = [
     { key: "invMetaPEN", label: "INVERSIÓN META", type: "money-usd" },
@@ -377,8 +390,9 @@ export default function ExecutiveTable({
   // === RENDERIZADO ===
 
   const MonthSelector = ({ currentKey, onChange }) => {
+    // Modificación 3: Filtrar las opciones que ya están mostradas en las columnas estáticas (0 a length-2)
     const otherDisplayedKeys = new Set(
-      finalFechas.slice(1).map(f => {
+      finalFechas.slice(0, -1).map(f => {
         const mNorm = aliasMes(String(f.mes || "").toLowerCase());
         return `${f.anio}-${mNorm}`;
       })
@@ -408,6 +422,10 @@ export default function ExecutiveTable({
 
   const TableHeadForOrigin = ({ okey }) => {
     const perMonthSorted = getPerMonthSortedByOrigin(okey);
+    
+    // Obtenemos los datos del mes base (último en finalFechas)
+    const baseFechas = finalFechas[finalFechas.length - 1];
+    
     return (
       <thead>
         <tr>
@@ -416,15 +434,16 @@ export default function ExecutiveTable({
             const highlight = isSelectedMonth(m);
             const currentKey = `${m.anio}-${aliasMes(String(m.mes).toLowerCase())}`;
             
-            const isFirstColumnOriginal = (
-              String(m.anio) === String(finalFechas[0].anio) && 
-              aliasMes(String(m.mes).toLowerCase()) === aliasMes(String(finalFechas[0].mes).toLowerCase())
+            // Verificamos si esta columna corresponde al Mes Base
+            const isBaseColumn = (
+                String(m.anio) === String(baseFechas.anio) && 
+                aliasMes(String(m.mes).toLowerCase()) === aliasMes(String(baseFechas.mes).toLowerCase())
             );
 
             return (
               <th key={idx} style={thStyle(highlight)}>
-                {/* SI ES LA PRIMERA COLUMNA, MUESTRA SELECTOR, SINO EL TEXTO */}
-                {isFirstColumnOriginal ? (
+                {/* Modificación 4: El selector aparece si es la columna del Mes Base */}
+                {isBaseColumn ? (
                   <MonthSelector 
                     currentKey={currentKey} 
                     onChange={setMonthOverride} 
@@ -487,10 +506,13 @@ export default function ExecutiveTable({
         {perMonth.map((m, idx) => {
           const highlight = isSelectedMonth(m);
           const currentKey = `${m.anio}-${aliasMes(String(m.mes).toLowerCase())}`;
+          
+          // Modificación 5: El selector está en la ÚLTIMA columna (índice 4 o length-1)
+          const isLastColumn = idx === perMonth.length - 1;
+
           return (
             <th key={idx} style={thStyle(highlight)}>
-              {/* SI ES ÍNDICE 0, MUESTRA SELECTOR, SINO EL TEXTO */}
-              {idx === 0 ? (
+              {isLastColumn ? (
                 <MonthSelector currentKey={currentKey} onChange={setMonthOverride} />
               ) : (
                 m.label
