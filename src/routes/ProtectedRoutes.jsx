@@ -20,7 +20,8 @@ import timezone from "dayjs/plugin/timezone";
 // dayjs.tz.setDefault("America/Lima");
 
 
-
+// La ruta debe apuntar a la carpeta GestInventario donde está el archivo
+const ProductosPage = lazy(() => import('../pages/pagePT/GestInventario/ProductosPage'));
 const NuevaVentaManicure = lazy(() => import('../pages/pagePT/nuevaVenta'));
 const NuevaVenta = lazy(() => import('../pages/pagePT/nuevaVenta'));
 const Seguimiento = lazy(() => import('../pages/pagePT/seguimiento'));
@@ -151,6 +152,12 @@ export default function ProtectedRoutes() {
 						sections.find(e=>e.url==='/resumen-ventas-x-dia-calendario')&&
                         <Route path='resumen-ventas-x-dia-calendario' element={<ResumenVentaxDiaCalendario/>}/>
 					}
+					{/* Opción A: Si lo agregas a tus permisos en BD con la url '/gest-inventario/maestro-productos' */}
+{
+    sections.find(e => e.url === '/gest-inventario/maestro-productos') &&
+    <Route path='gest-inventario/maestro-productos' element={<ProductosPage id_empresa={599} />} />
+}
+
 					{
 						sections.find(e=>e.url==='/agregar-articulos-chorrillos')&&
                         <Route path='agregar-articulos-chorrillos' element={<ArticulosNuevos/>}/>

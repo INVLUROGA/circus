@@ -11,19 +11,16 @@
   import { RankingEstilista } from "./components/RankingEstilista";
   import { MatrizEmpleadoMes } from "./components/MatrizEmpleadoMes";
   import { TopControls } from "./components/TopControls";
-      import PTApi from '@/common/api/PTApi';
-
+  import PTApi from '@/common/api/PTApi';
   import MatrizServicios from "./components/MatrizServicios";
-  const generarMesesDinamicos = (cantidad = 8, baseMonth1to12, baseYear) => {
+  const generarMesesDinamicos = (cantidad = 5, baseMonth1to12, baseYear) => {
     const meses = [
       "enero","febrero","marzo","abril","mayo","junio",
       "julio","agosto","septiembre","octubre","noviembre","diciembre"
     ];
     const mesesLabel = meses.map(m => m.toUpperCase());
-
     const baseMonthIdx = (baseMonth1to12 ?? (new Date().getMonth() + 1)) - 1;
     const y = baseYear ?? new Date().getFullYear();
-
     const out = [];
     for (let i = cantidad - 1; i >= 0; i--) {
       const d = new Date(y, baseMonthIdx - i, 1);
@@ -50,8 +47,8 @@
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [cutDay, setCutDay] = useState(new Date().getDate());
     const [initDay, setInitDay] = useState(1);
-    const year = new Date().getFullYear();
-  const [tasaCambio, setTasaCambio] = React.useState(3.37); // 👈 estado global
+const [year, setYear] = useState(new Date().getFullYear()); // Agrega estado para año si TopControls lo permite cambiar  
+const [tasaCambio, setTasaCambio] = React.useState(3.37); 
 
   const [canalParams, setCanalParams] = useState([]);
 
@@ -82,13 +79,31 @@ useEffect(() => {
 }, []);
 
     const mesesDinamicos = useMemo(
-      () => generarMesesDinamicos(8, selectedMonth, year),
+      () => generarMesesDinamicos(5, selectedMonth, year),
       [selectedMonth, year]
     );
     const mesesEmpleados = useMemo(
       () => generarMesesDinamicos(5, selectedMonth, year),
       [selectedMonth, year]
     );
+    useEffect(() => {
+    if (!id_empresa) return;
+
+    const fechaFin = new Date(); 
+    
+    const fechaInicio = new Date();
+    fechaInicio.setMonth(fechaFin.getMonth() - 9);
+    fechaInicio.setDate(1);
+
+    const rangoFechas = [fechaInicio, fechaFin];
+
+    // Llamamos al store nuevo que usa '/circus/obtener-ventas-temp'
+    obtenerTablaVentas(id_empresa, rangoFechas);
+    
+    // Leads (si aplica)
+    obtenerLeads(id_empresa);
+
+  }, [id_empresa, selectedMonth]);
   const handleSetUltimoDiaMesesDinamicos = () => {
     const lastDaysMap = mesesDinamicos.reduce((acc, f) => {
       const monthIdx = new Date(`${f.anio}-${f.mes}-01`).getMonth();
@@ -154,7 +169,7 @@ const countClientsForMonthByOrigin = (ventasList, anio, mesNombre, fromDay, cut,
 
   const uniques = new Set();
   for (const v of (ventasList || [])) {
-    const d = toDateSafe(v?.fecha_venta || v?.fecha || v?.createdAt);
+    const d = toDateSafe(v?.fecha_venta || v?.fecha );
     if (!d || d.getFullYear() !== Number(anio) || d.getMonth() !== monthIdx) continue;
 
     const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
@@ -221,7 +236,7 @@ const originMap = {
                     1451: "YOHANDRY",
                     1450: "CANJE",
                     1449: "Preferencial",
-                    1526: "TIKTOK,",
+                    1526: "TIKTOK",
   0: "OTROS",                   
   "": "OTROS",               
   null: "OTROS", undefined: "OTROS" 
@@ -258,7 +273,8 @@ const originMap = {
                   initialDay={initDay}
                   cutDay={cutDay}
                   originMap={originMap}  
-                  tasaCambio={tasaCambio}       
+                  tasaCambio={tasaCambio}
+                  selectedMonth={selectedMonth}
                 />
               </Col>
 
@@ -280,7 +296,7 @@ const originMap = {
                     1451: "YOHANDRY",
                     1450: "CANJE",
                     1449: "Preferencial",
-                    1526: "TIKTOK,"
+                    1526: "TIKTOK"
                   }}
                 />
               </Col>
@@ -321,7 +337,7 @@ const originMap = {
           <Col lg={12} className="mb-5">
             <MatrizEmpleadoMes
               dataVenta={dataVentas}
-              filtrarFecha={mesesEmpleados}
+              filtrarFecha={mesesDinamicos}
               datoEstadistico="Total Ventas"
                 initialDay={initDay}
 

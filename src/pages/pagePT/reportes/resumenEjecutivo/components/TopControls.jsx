@@ -267,8 +267,8 @@ export function TopControls({
     alignItems: "flex-start",
     justifyContent: "flex-start",
     height: "auto",
-    minWidth: 200,
-    padding: "8px 12px",
+    minWidth: 150,
+    padding: "6px 10px",
     gap: 4,
   };
 
@@ -401,7 +401,32 @@ export function TopControls({
 
         {/* Reloj + Cierre */}
         <RealTimeClock />
-        <button
+     
+ {/* TIPO DE CAMBIO */}
+        <div style={rateBoxStyle} title="Tipo de cambio USD a PEN">
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              width: "100%",
+              gap: 12,
+            }}
+          >
+            <span style={{ fontSize: "1.35rem", fontWeight: 700 }}>TC:</span>
+            <span
+              style={{
+                fontVariantNumeric: "tabular-nums",
+                fontSize: "1.35rem",
+                fontWeight: 800,
+              }}
+            >
+              {formattedRate}
+            </span>
+          </div>     
+          
+        </div>        
+           <button
           onClick={handleClickUseLastDay}
           className="btn btn-outline-warning"
           style={{
@@ -413,58 +438,7 @@ export function TopControls({
         >
           Cierre
         </button>
-        
-      </div>
-
-      <div style={dividerStyle} />
-
-      {/* FILA INFERIOR */}
-      <div style={bottomRowStyle}>
-        {(vigentesBreakdown || []).map((it, idx) => (
-          <AvatarMiniBox key={idx} item={it} />
-        ))}
-        {/* TIPO DE CAMBIO */}
-        <div style={rateBoxStyle} title="Tipo de cambio USD a PEN">
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              width: "100%",
-              gap: 12,
-            }}
-          >
-            <span style={{ fontSize: "1rem", fontWeight: 700 }}>USD → PEN</span>
-            <span
-              style={{
-                fontVariantNumeric: "tabular-nums",
-                fontSize: "1.35rem",
-                fontWeight: 800,
-              }}
-            >
-              {formattedRate}
-            </span>
-          </div>
-          <span style={miniTextStyle}>
-            {usdPenRate.loading && !usdPenRate.error
-              ? "Actualizando tipo de cambio…"
-              : usdPenRate.error
-              ? `Sin conexión, usando referencia S/ ${FALLBACK_USD_PEN_RATE.toFixed(
-                  3
-                )}`
-              : updatedLabel
-              ? ` ${updatedLabel}`
-              : "Dato obtenido"}
-          </span>
-          {usingFallback ? (
-            <span style={miniTextStyle}>
-              Valor de referencia manual {`S/ ${FALLBACK_USD_PEN_RATE.toFixed(3)}`}
-            </span>
-          ) : (
-            <span style={miniTextStyle}></span>
-          )}
-        </div>
-      </div>
+      </div>    
     </div>
   );
 }

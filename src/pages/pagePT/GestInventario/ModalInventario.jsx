@@ -35,19 +35,13 @@ const registerImgAvatar={
     imgAvatar_BASE64: ''
 }
 export const ModalInventario = ({onHide, show, data, isLoading, onShow, showToast, id_enterprice, id_zona}) => {
-    // const blobImage = urlToBlob(`${config.API_IMG.AVATAR_ARTICULO}${data?.dataImg?.name_image}`)
-    // console.log(`${config.API_IMG.AVATAR_ARTICULO}${data.dataImg?.name_image}`);
-    // const [imagen, setImagen] = useState(`${config.API_IMG.AVATAR_ARTICULO}${data?.dataImg?.name_image}`); // base64
-	const [selectedFile, setSelectedFile] = useState(null);
+  	const [selectedFile, setSelectedFile] = useState(null);
     const [selectedAvatar, setselectedAvatar] = useState(null)
     const [showLoading, setshowLoading] = useState(false)
     const { obtenerArticulo, obtenerArticulos, actualizarArticulo, startRegisterArticulos, articulo } = useInventarioStore()
     const { DataGeneral:dataMarcas, obtenerParametroPorEntidadyGrupo:obtenerMarcas } = useTerminoStore()
     const { DataGeneral:dataEtiquetasBusqueda, obtenerParametroPorEntidadyGrupo:obtenerEtiquetasBusqueda } = useTerminoStore()
-    
-    // const { DataGeneral:dataLugares, obtenerParametroPorEntidadyGrupo:obtenerLugares } = useTerminoStore()
     const { obtenerZonas, dataZonas } =  useTerminoStore()
-    
     const resetAvatar = ()=>{
         setSelectedFile(null)
         setselectedAvatar(null)

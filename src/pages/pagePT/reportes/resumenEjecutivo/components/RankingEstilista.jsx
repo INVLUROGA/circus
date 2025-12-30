@@ -2,14 +2,16 @@ import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { Button } from "primereact/button";
 import { NumberFormatMoney } from "@/components/CurrencyMask";
 import { useTerminoMetodoPagoStore } from "@/hooks/hookApi/FormaPagoStore/useTerminoMetodoPagoStore";
-import  RankingDialog  from "./dialogs/RankingDialog";
+import RankingDialog from "./dialogs/RankingDialog";
 
 // Helpers
 const thStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontWeight: "bold" };
-const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "20px" };
+const tdStyle = { border: "1px solid #ccc", padding: "8px", textAlign: "center", fontSize: "25px" };
 const toKey = (s = "") => String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
 const methodKey = (s = "") => toKey(s).replace(/\s+/g, "_");
 const round2 = (x) => Math.round((Number(x) + Number.EPSILON) * 100) / 100;
+const canon = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+
 const fixDeltaToTotal = (obj, total) => {
   const suma = round2(Object.values(obj).reduce((a, b) => a + Number(b || 0), 0));
   const delta = round2(total - suma);
@@ -19,6 +21,7 @@ const fixDeltaToTotal = (obj, total) => {
   }
   return obj;
 };
+
 const repartirLineaPorMetodos = (totalLinea, pagosByMethod, headerLabel) => {
   const map = Object.fromEntries(Object.keys(headerLabel).map((k) => [k, 0]));
   const totalPagos = Object.values(pagosByMethod).reduce((a, b) => a + Number(b || 0), 0);
@@ -29,11 +32,14 @@ const repartirLineaPorMetodos = (totalLinea, pagosByMethod, headerLabel) => {
       map[k] = round2(totalLinea * (Number(v) / totalPagos));
     }
   } else {
+    // Si no hay pagos registrados pero hay venta (ej. deuda o error), asignar al primero por defecto o dejar en 0
+    // Aquí asumimos que si el factor es 0, totalLinea ya será 0, así que esto no impacta.
     const first = Object.keys(headerLabel)[0];
     if (first) map[first] = round2(totalLinea);
   }
   return fixDeltaToTotal(map, round2(totalLinea));
 };
+
 const getPagos = (venta) => {
   const arr = venta?.detalleVenta_pagoVenta || venta?.detalle_pagoVenta || venta?.tb_pago_ventas || venta?.pago_venta || venta?.detalle_pagos || [];
   return arr.map((p) => ({
@@ -41,6 +47,7 @@ const getPagos = (venta) => {
     monto: Number(p?.parcial_monto ?? p?.monto ?? p?.monto_pago ?? p?.importe ?? p?.monto_detalle) || 0,
   }));
 };
+
 function toLimaDate(iso) {
   if (!iso) return null;
   try {
@@ -49,6 +56,7 @@ function toLimaDate(iso) {
     return new Date(utcMs - 5 * 60 * 60000);
   } catch { return null; }
 }
+
 function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
   if (!filtro || !filtro.mes || !filtro.anio) return ventas;
   const mapa = { enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5, julio: 6, agosto: 7, septiembre: 8, setiembre: 8, octubre: 9, noviembre: 10, diciembre: 11 };
@@ -69,9 +77,12 @@ function filtrarVentasPorMes(ventas = [], filtro, initDay = 1, cutDay) {
     return inRangeLocal(fecha);
   });
 }
+
+// === LÓGICA MODIFICADA CON FACTOR ===
 function rankingPorEmpleado(ventas = []) {
   const map = new Map();
   const ventasPorEmpleado = new Map();
+
   const getAcc = (empleado) => {
     if (!map.has(empleado)) {
       map.set(empleado, { empleado, totalVentas: 0, cantidadVentas: 0, ventasProductos: 0, cantidadProductos: 0, ventasServicios: 0, cantidadServicios: 0 });
@@ -79,35 +90,64 @@ function rankingPorEmpleado(ventas = []) {
     }
     return map.get(empleado);
   };
+
   for (const v of ventas) {
     const idVenta = v?.id ?? v?.numero_transac;
-    if (Array.isArray(v?.detalle_ventaProductos)) {
-      for (const it of v.detalle_ventaProductos) {
-        const empleado = it?.empleado_producto?.nombres_apellidos_empl;
-        if (!empleado) continue;
-        const cantidad = Number(it?.cantidad) || 0;
-        const precio = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
-        const importe = precio * cantidad;
-        const acc = getAcc(empleado);
-        acc.ventasProductos += importe;
-        acc.cantidadProductos += cantidad;
-        ventasPorEmpleado.get(empleado).add(idVenta);
-      }
+    
+    // 1. Calcular Factor de la Venta (Pagado vs Teórico)
+    const pagos = getPagos(v);
+    const totalPagado = pagos.reduce((a,b) => a + b.monto, 0);
+
+    const prods = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos 
+                : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+    const servs = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+
+    let totalTeorico = 0;
+    prods.forEach(p => totalTeorico += (Number(p.cantidad)||1) * (Number(p.tarifa_monto)||Number(p.tb_producto?.prec_venta)||0));
+    servs.forEach(s => totalTeorico += (Number(s.cantidad)||1) * (Number(s.tarifa_monto)||0));
+
+    let factor = 1;
+    if (totalTeorico > 0) {
+        factor = totalPagado / totalTeorico;
+    } else {
+        factor = 0; // Si no hay valor teórico pero hay pago, o es 0, factor 0 por seguridad
+        if(totalPagado > 0 && totalTeorico === 0) factor = 1; // Caso borde: propina pura o servicio sin precio
     }
-    if (Array.isArray(v?.detalle_ventaservicios)) {
-      for (const it of v.detalle_ventaservicios) {
-        const empleado = it?.empleado_servicio?.nombres_apellidos_empl;
-        if (!empleado) continue;
-        const cantidad = Number(it?.cantidad) || 0;
-        const precio = Number(it?.tarifa_monto) || 0;
-        const importe = precio * cantidad;
-        const acc = getAcc(empleado);
-        acc.ventasServicios += importe;
-        acc.cantidadServicios += cantidad;
-        ventasPorEmpleado.get(empleado).add(idVenta);
-      }
+
+    // 2. Aplicar Factor a los ítems
+    for (const it of prods) {
+      const empleado = it?.empleado_producto?.nombres_apellidos_empl;
+      if (!empleado) continue;
+      
+      const cantidad = Number(it?.cantidad) || 0;
+      const precioTeorico = Number(it?.tarifa_monto) || Number(it?.tb_producto?.prec_venta) || 0;
+      
+      // PRECIO REAL = TEÓRICO * FACTOR
+      const importe = (precioTeorico * cantidad) * factor;
+
+      const acc = getAcc(empleado);
+      acc.ventasProductos += importe;
+      acc.cantidadProductos += cantidad;
+      ventasPorEmpleado.get(empleado).add(idVenta);
+    }
+
+    for (const it of servs) {
+      const empleado = it?.empleado_servicio?.nombres_apellidos_empl;
+      if (!empleado) continue;
+      
+      const cantidad = Number(it?.cantidad) || 0;
+      const precioTeorico = Number(it?.tarifa_monto) || 0;
+
+      // PRECIO REAL = TEÓRICO * FACTOR
+      const importe = (precioTeorico * cantidad) * factor;
+
+      const acc = getAcc(empleado);
+      acc.ventasServicios += importe;
+      acc.cantidadServicios += cantidad;
+      ventasPorEmpleado.get(empleado).add(idVenta);
     }
   }
+
   const out = [];
   for (const [empleado, acc] of map.entries()) {
     acc.totalVentas = acc.ventasProductos + acc.ventasServicios;
@@ -129,8 +169,6 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     obtenerFormaDePagosActivos().catch((err) => console.error("Error cargando métodos activos", err));
   }, []);
 
-  const canon = (s) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
-
   const ventasMes = useMemo(() => {
     if (Array.isArray(filtrarFecha)) {
       return filtrarFecha.flatMap((f) => filtrarVentasPorMes(dataVenta, f, initialDay, cutDay));
@@ -138,9 +176,10 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     return filtrarVentasPorMes(dataVenta, filtrarFecha, initialDay, cutDay);
   }, [dataVenta, filtrarFecha, initialDay, cutDay]);
 
+  // === LÓGICA DEL MODAL TAMBIÉN ACTUALIZADA CON FACTOR ===
   function buildModalData(ventasEmpleado = [], empleadoKey) {
     const headerLabel = {};
-    let totalCostoServiciosCalc = 0; // Acumulador para el costo de servicios
+    let totalCostoServiciosCalc = 0; 
 
     for (const v of ventasEmpleado) {
       for (const p of getPagos(v)) {
@@ -157,57 +196,76 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
     const totalesMetodo = Object.fromEntries(Object.keys(headerLabel).map((k) => [k, 0]));
 
     for (const v of ventasEmpleado) {
-      const servicios = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
-      const productos = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+      // 1. Calcular Factor también en el modal
+      const pagos = getPagos(v);
+      const totalPagado = pagos.reduce((a,b) => a + b.monto, 0);
 
-      const pagosByMethod = getPagos(v).reduce((acc, p) => {
+      const prodsAll = Array.isArray(v?.detalle_ventaProductos) ? v.detalle_ventaProductos 
+                     : Array.isArray(v?.detalle_ventaproductos) ? v.detalle_ventaproductos : [];
+      const servsAll = Array.isArray(v?.detalle_ventaservicios) ? v.detalle_ventaservicios : [];
+
+      let totalTeorico = 0;
+      prodsAll.forEach(p => totalTeorico += (Number(p.cantidad)||1) * (Number(p.tarifa_monto)||Number(p.tb_producto?.prec_venta)||0));
+      servsAll.forEach(s => totalTeorico += (Number(s.cantidad)||1) * (Number(s.tarifa_monto)||0));
+
+      let factor = 1;
+      if (totalTeorico > 0) factor = totalPagado / totalTeorico;
+      else factor = 0;
+
+      // 2. Procesar detalle aplicando factor
+      const pagosByMethod = pagos.reduce((acc, p) => {
         const k = methodKey(p.label);
         if (k) acc[k] = (acc[k] || 0) + Number(p.monto || 0);
         return acc;
       }, {});
 
-      for (const s of servicios) {
+      for (const s of servsAll) {
         const emp = canon(s?.empleado_servicio?.nombres_apellidos_empl);
         if (emp !== empleadoKey) continue;
         
         const cantidad = Number(s?.cantidad ?? 1) || 0;
-        const pVenta = Number(s?.tarifa_monto) || 0;
+        const pTeorico = Number(s?.tarifa_monto) || 0;
+        const pVentaReal = pTeorico * factor; // Factor aplicado
 
-        // === CÁLCULO DE COSTO DE SERVICIO ===
-        // Verificamos múltiples propiedades donde podría estar el precio de compra
         const costoUnit = Number(s?.circus_servicio?.precio_compra) || 
                           Number(s?.tb_servicio?.precio_compra) || 
                           Number(s?.costo) || 0;
         totalCostoServiciosCalc += (cantidad * costoUnit);
-        // ======================================
 
-        const totalLinea = cantidad * pVenta;
+        const totalLinea = cantidad * pVentaReal;
         const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
         for (const [k, vmet] of Object.entries(lineaMetodos)) totalesMetodo[k] += Number(vmet) || 0;
+        
         serviciosFlat.push({
           nombre: s?.circus_servicio?.nombre_servicio || s?.tb_servicio?.nombre_servicio || s?.nombre_servicio || s?.nombre || "—",
           cantidad,
-          pVenta,
+          pVenta: pVentaReal, // Precio Real
           ...lineaMetodos,
         });
       }
 
-      for (const p of productos) {
+      for (const p of prodsAll) {
+        const emp = canon(p?.empleado_producto?.nombres_apellidos_empl);
+        if (emp !== empleadoKey) continue;
+
         const cantidad = Number(p?.cantidad ?? 1) || 1;
-        const precioVentaU = Number(p?.tarifa_monto) || Number(p?.tb_producto?.prec_venta) || 0;
+        const pTeorico = Number(p?.tarifa_monto) || Number(p?.tb_producto?.prec_venta) || 0;
+        const precioVentaUReal = pTeorico * factor; // Factor aplicado
+
         const precioCompraU = Number(p?.tb_producto?.prec_compra) || 0;
         const nombre = p?.tb_producto?.nombre_producto || p?.nombre_producto || p?.nombre || "-";
-        const totalLinea = precioVentaU * cantidad;
+        
+        const totalLinea = precioVentaUReal * cantidad;
         const lineaMetodos = repartirLineaPorMetodos(totalLinea, pagosByMethod, headerLabel);
         for (const [k, vmet] of Object.entries(lineaMetodos)) {
           totalesMetodo[k] += Number(vmet) || 0;
         }
-        productosFlat.push({ nombre, cantidad, precioVentaU, precioCompraU });
+        productosFlat.push({ nombre, cantidad, precioVentaU: precioVentaUReal, precioCompraU });
       }
     }
 
     const productosAgrupados = Object.values(productosFlat.reduce((acc, p) => {
-        const key = `${p.nombre}-${p.metodo}-${p.precioVentaU}`;
+        const key = `${p.nombre}-${p.precioVentaU}`; // Agrupamos por precio real ahora
         if (!acc[key]) acc[key] = { ...p, cantidad: 0 };
         acc[key].cantidad += Number(p.cantidad) || 0;
         return acc;
@@ -260,7 +318,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
       serviciosOrdenados,
       productosAgrupados: productosOrdenados,
       modalResumen,
-      totalCostoServicios: totalCostoServiciosCalc, // Devolvemos el costo
+      totalCostoServicios: totalCostoServiciosCalc, 
     };
   }
 
@@ -273,9 +331,8 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
       });
 
       const data = buildModalData(ventasEmpleado, key);
-      setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA ${cutDay}`);
+      setModalTitle(`VENTAS — ${empleadoNombre.split(" ")[0]} — AL DÍA ${cutDay || 'FIN DE MES'}`);
       setModalData(data);
-      // Actualizamos el estado con el costo que calculamos
       setModalCostoServicios(data.totalCostoServicios); 
       setModalOpen(true);
     }, [ventasMes, cutDay]);
@@ -292,7 +349,7 @@ export const RankingEstilista = ({ dataVenta = [], filtrarFecha, initialDay = 1,
         onHide={() => setModalOpen(false)} 
         title={modalTitle} 
         data={modalData} 
-        totalCostoServicios={modalCostoServicios} // Pasamos el costo al dialog
+        totalCostoServicios={modalCostoServicios} 
       />
     </>
   );

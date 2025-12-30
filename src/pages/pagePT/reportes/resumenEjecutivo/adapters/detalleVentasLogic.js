@@ -1,4 +1,3 @@
-// adapters/detalleVentasLogic.js
 
 export const round2 = (x) =>
   Math.round((Number(x) + Number.EPSILON) * 100) / 100;
@@ -6,9 +5,7 @@ export const round2 = (x) =>
 // Etiqueta de porcentaje
 export const pctLabel = (v) => `${(v * 100).toFixed(2)}%`;
 
-/**
- * Resumen de VENTAS POR SERVICIOS (tabla de arriba)
- */
+
 export function buildResumenServicios({
   modalResumen,
   totalCostoServicios,
@@ -26,7 +23,7 @@ export function buildResumenServicios({
   const rentaMonto = round2(baseImponible * rateRenta);
 
   const netoParaComision = round2(
-    bruto - igvMonto - tarjetaMonto - rentaMonto
+    bruto - igvMonto - tarjetaMonto - rentaMonto-costoTotal   
   );
 
   const netoAntesComision = round2(

@@ -39,6 +39,8 @@ export const normalizarVentasExcel = (ventas = []) => {
 			tipo_op: pago?.parametro_forma_pago?.label_param || '',
 			n_oper: pago?.n_operacion || '',
 			op_elect_s: pago?.parcial_monto || 0,
+			        responsable_venta: responsableVenta,
+
 		});
 
 		const filasProd = detalle_ventaProductos.flatMap((p) =>

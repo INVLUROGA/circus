@@ -127,7 +127,7 @@ export const useCalendarStore = () => {
 				// 3. Generamos la fecha final sumando minutos
 				const endDate = new Date(startDate.getTime() + totalMinutes * 60_000);
 				return {
-					id: d.id,
+					id:String(d.id),
 					num_Doc_cli: d.tb_cliente?.numDoc_cli,
 					tel_cli: d.tb_cliente?.tel_cli,
 					title: `${d.tb_cliente?.nombre_cli || ''} ${d.tb_cliente?.apPaterno_cli || ''} ${d.tb_cliente?.apMaterno_cli || ''}`,
