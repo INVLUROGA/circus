@@ -102,6 +102,7 @@ const AcumuladoAnualPorDiaCalendario = lazy(()=>import('../pages/pagePT/reportes
 const VentasxDiaCalendario = lazy(()=>import('../pages/pagePT/reportes/ventasxDiaCalendario/index.jsx'))
 const Dnis = lazy(() => import('../pages/pagePT/ventaCanje'));
 const Cvs = lazy(() => import('../pages/pagePT/ventaCanje'));
+const ContratoProv = lazy(()=>import('../pages/public/ContratoProv/Index.jsx'))
 // const Mofs = lazy(()=>import('../pages/pagePT/reportes/Mofs'))
 // const ResumenComparativo = lazy(()=>import('../pages/pagePT/reportes/resumenComparativo/index.jsx'))
 /**
